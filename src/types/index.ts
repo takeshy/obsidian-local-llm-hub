@@ -1,14 +1,18 @@
+// Supported LLM frameworks
+export type LlmFramework = "ollama" | "lm-studio" | "vllm" | "other";
+
 // Local LLM configuration (OpenAI-compatible API)
 export interface LocalLlmConfig {
+  framework: LlmFramework;     // Which LLM framework is being used
   baseUrl: string;              // e.g. "http://localhost:11434" (Ollama) or "http://localhost:1234" (LM Studio)
   model: string;                // e.g. "llama3", "mistral", "gemma2"
   apiKey?: string;              // Optional API key (for services that require it)
   temperature?: number;         // 0.0-2.0 (undefined = server default)
   maxTokens?: number;           // Max response tokens (undefined = server default)
-  enableThinking?: boolean;     // Whether the model supports thinking (e.g. DeepSeek, QwQ)
 }
 
 export const DEFAULT_LOCAL_LLM_CONFIG: LocalLlmConfig = {
+  framework: "ollama",
   baseUrl: "http://localhost:11434",
   model: "",
 };
@@ -17,7 +21,6 @@ export const DEFAULT_LOCAL_LLM_CONFIG: LocalLlmConfig = {
 export interface RagConfig {
   enabled: boolean;
   embeddingModel: string;       // e.g. "nomic-embed-text"
-  embeddingBaseUrl: string;     // defaults to LLM server baseUrl
   targetFolders: string[];      // folders to index (empty = all)
   excludePatterns: string[];    // regex patterns to exclude
   chunkSize: number;            // characters per chunk
@@ -28,7 +31,6 @@ export interface RagConfig {
 export const DEFAULT_RAG_CONFIG: RagConfig = {
   enabled: false,
   embeddingModel: "nomic-embed-text",
-  embeddingBaseUrl: "",
   targetFolders: [],
   excludePatterns: [],
   chunkSize: 1000,

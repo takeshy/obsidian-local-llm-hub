@@ -13,10 +13,10 @@ interface EmbeddingResponse {
 }
 
 /**
- * Get the embedding server base URL (falls back to LLM server)
+ * Get the embedding server base URL (same as LLM server)
  */
-function getEmbeddingBaseUrl(ragConfig: RagConfig, llmConfig: LocalLlmConfig): string {
-  return ragConfig.embeddingBaseUrl || llmConfig.baseUrl;
+function getEmbeddingBaseUrl(_ragConfig: RagConfig, llmConfig: LocalLlmConfig): string {
+  return llmConfig.baseUrl;
 }
 
 /**

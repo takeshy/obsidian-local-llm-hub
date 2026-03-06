@@ -259,7 +259,7 @@ function getTargetFiles(app: App, ragConfig: RagConfig, workspaceFolder: string)
   });
 }
 
-function chunkText(
+export function chunkText(
   text: string,
   chunkSize: number,
   chunkOverlap: number,
@@ -297,7 +297,7 @@ function chunkText(
   return chunks;
 }
 
-function simpleChecksum(content: string): string {
+export function simpleChecksum(content: string): string {
   let hash = 0;
   for (let i = 0; i < content.length; i++) {
     const char = content.charCodeAt(i);
@@ -307,7 +307,7 @@ function simpleChecksum(content: string): string {
   return hash.toString(36);
 }
 
-function cosineSimilarity(a: Float32Array, b: Float32Array): number {
+export function cosineSimilarity(a: Float32Array, b: Float32Array): number {
   let dot = 0;
   let normA = 0;
   let normB = 0;

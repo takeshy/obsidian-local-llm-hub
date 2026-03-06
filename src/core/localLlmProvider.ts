@@ -25,6 +25,9 @@ interface OpenAiModelsResponse {
   data: OpenAiModel[];
 }
 
+/** Families that are embedding-only models (not usable for chat) */
+const EMBEDDING_FAMILIES = new Set(["nomic-bert", "bert", "snowflake-arctic-embed"]);
+
 /**
  * Verify connection to local LLM server and check available models
  */
@@ -39,35 +42,47 @@ export async function verifyLocalLlm(config: LocalLlmConfig): Promise<{
       headers["Authorization"] = `Bearer ${config.apiKey}`;
     }
 
-    let response;
-    try {
-      response = await requestUrl({
-        url: `${config.baseUrl}/v1/models`,
-        method: "GET",
-        headers,
-      });
-    } catch {
-      // requestUrl throws on non-2xx; try Ollama's /api/tags
+    if (config.framework === "ollama") {
+      // Use Ollama's /api/tags (has model family info for filtering embedding models)
       try {
         const ollamaResponse = await requestUrl({
           url: `${config.baseUrl}/api/tags`,
           method: "GET",
         });
-        const ollamaData = ollamaResponse.json as { models?: { name: string }[] };
-        const models = ollamaData.models?.map((m: { name: string }) => m.name) || [];
+        const ollamaData = ollamaResponse.json as {
+          models?: { name: string; details?: { families?: string[] } }[];
+        };
+        const models = (ollamaData.models || [])
+          .filter(m => !isEmbeddingModel(m.details?.families))
+          .map(m => m.name);
         return { success: true, models };
       } catch {
         return { success: false, error: `Cannot connect to ${config.baseUrl}. Is the server running?` };
       }
     }
 
-    const data = response.json as OpenAiModelsResponse;
-    const models = data.data?.map((m: OpenAiModel) => m.id) || [];
-    return { success: true, models };
+    // OpenAI-compatible /v1/models (LM Studio, vLLM, etc.)
+    try {
+      const response = await requestUrl({
+        url: `${config.baseUrl}/v1/models`,
+        method: "GET",
+        headers,
+      });
+      const data = response.json as OpenAiModelsResponse;
+      const models = data.data?.map((m: OpenAiModel) => m.id) || [];
+      return { success: true, models };
+    } catch {
+      return { success: false, error: `Cannot connect to ${config.baseUrl}. Is the server running?` };
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { success: false, error: message };
   }
+}
+
+function isEmbeddingModel(families?: string[]): boolean {
+  if (!families) return false;
+  return families.some(f => EMBEDDING_FAMILIES.has(f));
 }
 
 /**
@@ -76,6 +91,26 @@ export async function verifyLocalLlm(config: LocalLlmConfig): Promise<{
 export async function fetchLocalLlmModels(config: LocalLlmConfig): Promise<string[]> {
   const result = await verifyLocalLlm(config);
   return result.models || [];
+}
+
+/**
+ * Fetch available embedding models from an Ollama server
+ */
+export async function fetchEmbeddingModels(baseUrl: string): Promise<string[]> {
+  try {
+    const response = await requestUrl({
+      url: `${baseUrl}/api/tags`,
+      method: "GET",
+    });
+    const data = response.json as {
+      models?: { name: string; details?: { families?: string[] } }[];
+    };
+    return (data.models || [])
+      .filter(m => isEmbeddingModel(m.details?.families))
+      .map(m => m.name);
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -111,7 +146,8 @@ export async function* localLlmChatStream(
     ...(config.temperature != null && { temperature: config.temperature }),
     ...(config.maxTokens != null && { max_tokens: config.maxTokens }),
   };
-  if (enableThinking === false) {
+  // vLLM supports disabling thinking via chat_template_kwargs
+  if (config.framework === "vllm" && enableThinking === false) {
     requestBody.chat_template_kwargs = { enable_thinking: false };
   }
   const body = JSON.stringify(requestBody);

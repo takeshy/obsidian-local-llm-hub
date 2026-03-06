@@ -290,6 +290,9 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.editHistory.diff) {
       this.settings.editHistory.diff = { ...DEFAULT_SETTINGS.editHistory.diff };
     }
+    if (!this.settings.llmConfig.framework) {
+      this.settings.llmConfig.framework = "ollama";
+    }
     if (!this.settings.slashCommands) {
       this.settings.slashCommands = [];
     }

@@ -22,9 +22,12 @@ export const ja: Record<string, string> = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "LLM設定",
-  "settings.llmModal.desc": "OpenAI互換APIのローカルLLMサーバーを設定します。Ollama、LM Studio、llama.cpp、vLLM、LocalAI等に対応。",
+  "settings.llmModal.desc": "OpenAI互換APIのローカルLLMサーバーを設定します。Ollama、LM Studio、vLLM等に対応。",
+  "settings.llmModal.framework": "フレームワーク",
+  "settings.llmModal.frameworkDesc": "使用するLLMサーバーを選択",
+  "settings.llmModal.frameworkOther": "その他",
   "settings.llmModal.baseUrl": "ベースURL",
-  "settings.llmModal.baseUrlDesc": "サーバーのエンドポイントURL（例: Ollama http://localhost:11434、LM Studio http://localhost:1234）",
+  "settings.llmModal.baseUrlDesc": "サーバーのエンドポイントURL",
   "settings.llmModal.baseUrlRequired": "ベースURLは必須です",
   "settings.llmModal.apiKey": "APIキー（任意）",
   "settings.llmModal.apiKeyDesc": "認証が必要なプロバイダー向け",
@@ -40,8 +43,6 @@ export const ja: Record<string, string> = {
   "settings.llmModal.testing": "テスト中...",
   "settings.llmModal.connectionSuccess": "接続成功",
   "settings.llmModal.connectionFailed": "接続失敗",
-  "settings.llmModal.enableThinking": "思考モード有効化",
-  "settings.llmModal.enableThinkingDesc": "思考/推論をサポートするモデル向け（DeepSeek、QwQ等）。チャットにトグルを表示。",
   "settings.llmModal.temperature": "Temperature",
   "settings.llmModal.temperatureDesc": "ランダム性の制御（0.0-2.0）。空欄でサーバーデフォルト。",
   "settings.llmModal.maxTokens": "最大トークン数",
@@ -641,15 +642,4 @@ export const ja: Record<string, string> = {
   "workflow.generation.thinking": "思考中...",
   "workflow.generation.parseFailed": "生成されたワークフローの解析に失敗しました",
   "workflow.generation.executionHistoryIncluded": "実行履歴をコンテキストとして含めました",
-
-  // Settings - Workflow
-  "settings.workflow": "ワークフロー",
-  "settings.workflowDesc": "ワークフロー自動化の設定",
-  "settings.workflowHotkeys": "ワークフローホットキー",
-  "settings.workflowHotkeys.desc": "キーボードショートカットでワークフローをトリガー",
-  "settings.registeredHotkeys": "登録済みホットキー",
-  "settings.registeredHotkeys.desc": "{{count}}件のワークフローにホットキーが有効",
-  "settings.workflowEventTriggers": "ワークフローイベントトリガー",
-  "settings.workflowEventTriggers.desc": "ファイルイベントで自動実行されるワークフロー",
-  "settings.removeEventTrigger": "トリガーを削除",
 };

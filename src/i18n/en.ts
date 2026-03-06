@@ -22,9 +22,12 @@ export const en = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "LLM settings", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "settings.llmModal.desc": "Configure a local LLM server with OpenAI-compatible API. Supports Ollama, LM Studio, llama.cpp, vLLM, LocalAI, and more.", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
+  "settings.llmModal.desc": "Configure a local LLM server with OpenAI-compatible API. Supports Ollama, LM Studio, vLLM, and more.", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
+  "settings.llmModal.framework": "Framework",
+  "settings.llmModal.frameworkDesc": "Select your LLM server framework", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
+  "settings.llmModal.frameworkOther": "Other",
   "settings.llmModal.baseUrl": "Base URL",
-  "settings.llmModal.baseUrlDesc": "Server endpoint URL (e.g. http://localhost:11434 for Ollama, http://localhost:1234 for LM Studio)",
+  "settings.llmModal.baseUrlDesc": "Server endpoint URL",
   "settings.llmModal.baseUrlRequired": "Base URL is required",
   "settings.llmModal.apiKey": "API key (optional)",
   "settings.llmModal.apiKeyDesc": "Required by some providers for authentication",
@@ -40,8 +43,6 @@ export const en = {
   "settings.llmModal.testing": "Testing...",
   "settings.llmModal.connectionSuccess": "Connected successfully",
   "settings.llmModal.connectionFailed": "Connection failed",
-  "settings.llmModal.enableThinking": "Enable thinking",
-  "settings.llmModal.enableThinkingDesc": "Enable for models that support thinking/reasoning (e.g. DeepSeek, QwQ). Shows a toggle in chat.",
   "settings.llmModal.temperature": "Temperature",
   "settings.llmModal.temperatureDesc": "Controls randomness (0.0-2.0). Leave empty for server default.",
   "settings.llmModal.maxTokens": "Max tokens",
@@ -644,18 +645,7 @@ export const en = {
 
   // Workflow commands
   "command.runWorkflow": "Run workflow",
-  "command.generateWorkflow": "Generate workflow with AI",  
-
-  // Settings - Workflow
-  "settings.workflow": "Workflow",
-  "settings.workflowDesc": "Configure workflow automation settings",
-  "settings.workflowHotkeys": "Workflow hotkeys",
-  "settings.workflowHotkeys.desc": "Enable workflows to be triggered via keyboard shortcuts",
-  "settings.registeredHotkeys": "Registered hotkeys",
-  "settings.registeredHotkeys.desc": "{{count}} workflow(s) with hotkeys enabled",
-  "settings.workflowEventTriggers": "Workflow event triggers",
-  "settings.workflowEventTriggers.desc": "Workflows that run automatically on file events",
-  "settings.removeEventTrigger": "Remove trigger",
+  "command.generateWorkflow": "Generate workflow with AI",
 } as const;
 
 export type TranslationKey = keyof typeof en;

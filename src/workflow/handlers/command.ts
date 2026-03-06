@@ -45,7 +45,7 @@ Please revise the output based on the user's feedback above.`;
   }
 
   const llmConfig = plugin.settings.llmConfig;
-  const enableThinking = node.properties["enableThinking"] !== "false" && !!llmConfig.enableThinking;
+  const enableThinking = node.properties["enableThinking"] !== "false";
 
   // Parse attachments property (comma-separated variable names containing FileExplorerData)
   const attachmentsStr = node.properties["attachments"] || "";

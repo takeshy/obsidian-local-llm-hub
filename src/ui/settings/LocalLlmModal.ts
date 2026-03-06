@@ -1,7 +1,7 @@
 import { Modal, App, Setting, Notice } from "obsidian";
 import { verifyLocalLlm, fetchLocalLlmModels } from "src/core/localLlmProvider";
 import { t } from "src/i18n";
-import type { LocalLlmConfig } from "src/types";
+import type { LocalLlmConfig, LlmFramework } from "src/types";
 
 export class LocalLlmModal extends Modal {
   private config: LocalLlmConfig;
@@ -26,19 +26,49 @@ export class LocalLlmModal extends Modal {
     const descEl = contentEl.createDiv({ cls: "llm-hub-modal-desc" });
     descEl.textContent = t("settings.llmModal.desc");
 
+    // Framework
+    const frameworkDefaults: Record<LlmFramework, string> = {
+      ollama: "http://localhost:11434",
+      "lm-studio": "http://localhost:1234",
+      vllm: "http://localhost:8000",
+      other: "http://localhost:8080",
+    };
+
+    const baseUrlInput = { el: null as HTMLInputElement | null };
+
+    new Setting(contentEl)
+      .setName(t("settings.llmModal.framework"))
+      .setDesc(t("settings.llmModal.frameworkDesc"))
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption("ollama", "Ollama")
+          .addOption("lm-studio", "LM Studio") // eslint-disable-line obsidianmd/ui/sentence-case -- proper noun
+          .addOption("vllm", "vLLM")  
+          .addOption("other", t("settings.llmModal.frameworkOther"))
+          .setValue(this.config.framework)
+          .onChange((value) => {
+            const fw = value as LlmFramework;
+            this.config.framework = fw;
+            // Update base URL placeholder
+            if (baseUrlInput.el) {
+              baseUrlInput.el.placeholder = frameworkDefaults[fw];
+            }
+          });
+      });
+
     // Base URL
     new Setting(contentEl)
       .setName(t("settings.llmModal.baseUrl"))
       .setDesc(t("settings.llmModal.baseUrlDesc"))
       .addText((text) => {
         text
-          // eslint-disable-next-line obsidianmd/ui/sentence-case -- URL placeholder
-          .setPlaceholder("http://localhost:11434")
+          .setPlaceholder(frameworkDefaults[this.config.framework])
           .setValue(this.config.baseUrl)
           .onChange((value) => {
             this.config.baseUrl = value;
           });
         text.inputEl.addClass("llm-hub-wide-input");
+        baseUrlInput.el = text.inputEl;
       });
 
     // API Key (optional)
@@ -115,18 +145,6 @@ export class LocalLlmModal extends Modal {
           this.config.model = value;
         });
     });
-
-    // Enable thinking
-    new Setting(contentEl)
-      .setName(t("settings.llmModal.enableThinking"))
-      .setDesc(t("settings.llmModal.enableThinkingDesc"))
-      .addToggle((toggle) => {
-        toggle
-          .setValue(this.config.enableThinking ?? false)
-          .onChange((value) => {
-            this.config.enableThinking = value || undefined;
-          });
-      });
 
     // Temperature
     new Setting(contentEl)

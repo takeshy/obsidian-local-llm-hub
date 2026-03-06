@@ -618,7 +618,7 @@ export class AIWorkflowModal extends Modal {
       let streamUsage: StreamChunkUsage | undefined;
       const startTime = Date.now();
       for await (const chunk of localLlmChatStream(
-        config, messages, systemPrompt, abortController.signal, config.enableThinking
+        config, messages, systemPrompt, abortController.signal
       )) {
         if (generationCancelled || abortController.signal.aborted) break;
         if (chunk.type === "thinking" && chunk.content) {

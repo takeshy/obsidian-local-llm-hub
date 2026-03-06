@@ -48,7 +48,7 @@ export default function Chat({ plugin }: ChatProps) {
 
   const llmConfig = plugin.settings.llmConfig;
   const ragConfig = plugin.settings.ragConfig;
-  const thinkingAvailable = !!llmConfig.enableThinking;
+  const thinkingAvailable = llmConfig.framework === "vllm";
   const ragAvailable = ragConfig.enabled;
 
   // Auto-scroll to bottom
