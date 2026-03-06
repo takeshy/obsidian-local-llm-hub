@@ -467,6 +467,11 @@ export default function Chat({ plugin }: ChatProps) {
         vaultFiles={vaultFiles}
         hasSelection={hasSelection}
         app={plugin.app}
+        slashCommands={plugin.settings.slashCommands.map(cmd => ({
+          name: cmd.name,
+          description: cmd.description || "",
+          promptTemplate: cmd.promptTemplate,
+        }))}
       />
     </div>
   );

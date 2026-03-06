@@ -1,0 +1,1361 @@
+import { App, Modal, Notice, Platform, parseYaml, TFile } from "obsidian";
+import type { LocalLlmHubPlugin } from "src/plugin";
+import { localLlmChatStream } from "src/core/localLlmProvider";
+import type { LocalLlmConfig, StreamChunkUsage, Message } from "src/types";
+import { getWorkflowSpecification } from "src/workflow/workflowSpec";
+import type { SidebarNode, WorkflowNodeType, ExecutionStep } from "src/workflow/types";
+import { ExecutionHistoryManager } from "src/workflow/history";
+import { computeLineDiff } from "./EditConfirmationModal";
+import { WorkflowGenerationModal } from "./WorkflowGenerationModal";
+import { showWorkflowPreview } from "./WorkflowPreviewModal";
+import { showExecutionHistorySelect } from "./ExecutionHistorySelectModal";
+import { formatError } from "src/utils/error";
+import { t } from "src/i18n";
+
+export type AIWorkflowMode = "create" | "modify";
+
+export interface ResolvedMention {
+  original: string; // e.g., "@notes/file.md"
+  content: string;  // The file content
+}
+
+export interface AIWorkflowResult {
+  yaml: string;
+  nodes: SidebarNode[];
+  name: string;
+  outputPath?: string; // Only for create mode
+  explanation?: string; // AI's explanation of changes
+  description?: string; // User's original request
+  mode?: AIWorkflowMode; // "create" or "modify"
+  resolvedMentions?: ResolvedMention[]; // File contents that were embedded
+}
+
+// Result type for confirmation modal
+export type ConfirmResult = "ok" | "no" | "cancel";
+
+export interface WorkflowConfirmResult {
+  result: ConfirmResult;
+  additionalRequest?: string;
+}
+
+// Confirmation modal for reviewing changes
+class WorkflowConfirmModal extends Modal {
+  private oldYaml: string;
+  private newYaml: string;
+  private explanation?: string;
+  private previousRequest: string;
+  private resolvePromise: (result: WorkflowConfirmResult) => void;
+  private additionalRequestEl: HTMLTextAreaElement | null = null;
+  private additionalRequestContainerEl: HTMLElement | null = null;
+  private isShowingAdditionalRequest = false;
+
+  constructor(
+    app: App,
+    oldYaml: string,
+    newYaml: string,
+    explanation: string | undefined,
+    previousRequest: string,
+    resolvePromise: (result: WorkflowConfirmResult) => void
+  ) {
+    super(app);
+    this.oldYaml = oldYaml;
+    this.newYaml = newYaml;
+    this.explanation = explanation;
+    this.previousRequest = previousRequest;
+    this.resolvePromise = resolvePromise;
+  }
+
+  onOpen(): void {
+    const { contentEl, modalEl } = this;
+    contentEl.empty();
+    contentEl.addClass("llm-hub-workflow-confirm-modal");
+    modalEl.addClass("llm-hub-modal-resizable");
+
+    // Drag handle with title
+    const dragHandle = contentEl.createDiv({ cls: "modal-drag-handle" });
+    dragHandle.createEl("h2", { text: t("aiWorkflow.confirmChanges") });
+    this.setupDragHandle(dragHandle, modalEl);
+
+    // Explanation section (if available)
+    if (this.explanation) {
+      const explanationContainer = contentEl.createDiv({ cls: "llm-hub-workflow-explanation" });
+      explanationContainer.createEl("h3", { text: t("aiWorkflow.aiExplanation") });
+      explanationContainer.createEl("p", { text: this.explanation });
+    }
+
+    // Create diff view
+    const diffContainer = contentEl.createDiv({ cls: "llm-hub-diff-view" });
+    const diffLines = computeLineDiff(this.oldYaml, this.newYaml);
+
+    for (const line of diffLines) {
+      const lineEl = diffContainer.createDiv({
+        cls: `llm-hub-diff-line llm-hub-diff-${line.type}`,
+      });
+
+      // Line number gutter
+      const gutterEl = lineEl.createSpan({ cls: "llm-hub-diff-gutter" });
+      if (line.type === "removed") {
+        gutterEl.textContent = "-";
+      } else if (line.type === "added") {
+        gutterEl.textContent = "+";
+      } else {
+        gutterEl.textContent = " ";
+      }
+
+      // Content
+      const contentSpan = lineEl.createSpan({ cls: "llm-hub-diff-content" });
+      contentSpan.textContent = line.content;
+    }
+
+    // Additional request container (hidden initially)
+    this.additionalRequestContainerEl = contentEl.createDiv({
+      cls: "llm-hub-workflow-preview-additional is-hidden"
+    });
+    this.additionalRequestContainerEl.createEl("label", {
+      text: t("workflow.preview.additionalRequest")
+    });
+    this.additionalRequestEl = this.additionalRequestContainerEl.createEl("textarea", {
+      cls: "llm-hub-workflow-preview-additional-input",
+      attr: {
+        placeholder: t("workflow.preview.additionalPlaceholder"),
+        rows: "3"
+      },
+    });
+
+    // Buttons
+    const buttonContainer = contentEl.createDiv({ cls: "llm-hub-workflow-buttons" });
+
+    const cancelBtn = buttonContainer.createEl("button", { text: t("workflow.preview.cancel") });
+    cancelBtn.addEventListener("click", () => {
+      this.resolvePromise({ result: "cancel" });
+      this.close();
+    });
+
+    const noBtn = buttonContainer.createEl("button", { text: t("workflow.preview.no") });
+    noBtn.addEventListener("click", () => {
+      if (!this.isShowingAdditionalRequest) {
+        // First click: show additional request input with previous request pre-filled
+        this.isShowingAdditionalRequest = true;
+        this.additionalRequestContainerEl?.removeClass("is-hidden");
+        if (this.additionalRequestEl && this.previousRequest) {
+          this.additionalRequestEl.value = this.previousRequest;
+        }
+        this.additionalRequestEl?.focus();
+        noBtn.textContent = t("workflow.preview.regenerate");
+        noBtn.addClass("mod-cta");
+        applyBtn.removeClass("mod-cta");
+      } else {
+        // Second click: submit with additional request
+        const additionalRequest = this.additionalRequestEl?.value?.trim() || "";
+        this.resolvePromise({
+          result: "no",
+          additionalRequest,
+        });
+        this.close();
+      }
+    });
+
+    const applyBtn = buttonContainer.createEl("button", {
+      text: t("workflow.confirm.useThis"),
+      cls: "mod-cta",
+    });
+    applyBtn.addEventListener("click", () => {
+      this.resolvePromise({ result: "ok" });
+      this.close();
+    });
+  }
+
+  private setupDragHandle(dragHandle: HTMLElement, modalEl: HTMLElement): void {
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = modalEl.getBoundingClientRect();
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      // Set position to fixed for dragging
+      modalEl.setCssStyles({
+        position: "fixed",
+        left: `${startLeft}px`,
+        top: `${startTop}px`,
+        transform: "none",
+        margin: "0",
+      });
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      modalEl.setCssStyles({
+        left: `${startLeft + dx}px`,
+        top: `${startTop + dy}px`,
+      });
+    };
+
+    const onMouseUp = () => {
+      isDragging = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    dragHandle.addEventListener("mousedown", onMouseDown);
+  }
+
+  onClose(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+// Helper function to show confirmation modal
+function showWorkflowConfirmation(
+  app: App,
+  oldYaml: string,
+  newYaml: string,
+  explanation: string | undefined,
+  previousRequest: string
+): Promise<WorkflowConfirmResult> {
+  return new Promise((resolve) => {
+    const modal = new WorkflowConfirmModal(app, oldYaml, newYaml, explanation, previousRequest, resolve);
+    modal.open();
+  });
+}
+
+// Mention item interface
+interface MentionItem {
+  value: string;
+  description: string;
+}
+
+export class AIWorkflowModal extends Modal {
+  private plugin: LocalLlmHubPlugin;
+  private mode: AIWorkflowMode;
+  private existingYaml?: string;
+  private existingName?: string;
+  private resolvePromise: (result: AIWorkflowResult | null) => void;
+
+  private nameInputEl: HTMLInputElement | null = null;
+  private outputPathEl: HTMLInputElement | null = null;
+  private descriptionEl: HTMLTextAreaElement | null = null;
+  private confirmCheckbox: HTMLInputElement | null = null;
+  private generateBtn: HTMLButtonElement | null = null;
+  private statusEl: HTMLElement | null = null;
+  private isGenerating = false;
+
+  // Mention autocomplete state
+  private mentionAutocompleteEl: HTMLElement | null = null;
+  private mentionItems: MentionItem[] = [];
+  private mentionIndex = 0;
+  private mentionStartPos = 0;
+  private showingMentionAutocomplete = false;
+  private clickOutsideHandler: ((e: MouseEvent) => void) | null = null;
+
+  private defaultOutputPath?: string;
+
+  // Resize state
+  private isDragging = false;
+  private isResizing = false;
+  private resizeDirection = "";
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private modalStartX = 0;
+  private modalStartY = 0;
+  private resizeStartWidth = 0;
+  private resizeStartHeight = 0;
+
+  // Execution history state (for modify mode)
+  private selectedExecutionSteps: ExecutionStep[] = [];
+  private executionHistoryInfoEl: HTMLElement | null = null;
+
+  constructor(
+    app: App,
+    plugin: LocalLlmHubPlugin,
+    mode: AIWorkflowMode,
+    resolvePromise: (result: AIWorkflowResult | null) => void,
+    existingYaml?: string,
+    existingName?: string,
+    defaultOutputPath?: string
+  ) {
+    super(app);
+    this.plugin = plugin;
+    this.mode = mode;
+    this.existingYaml = existingYaml;
+    this.existingName = existingName;
+    this.resolvePromise = resolvePromise;
+    this.defaultOutputPath = defaultOutputPath;
+  }
+
+  onOpen(): void {
+    const { contentEl, modalEl } = this;
+    contentEl.empty();
+    contentEl.addClass("llm-hub-workflow-modal");
+    modalEl.addClass("llm-hub-resizable-modal");
+
+    // Drag handle with title
+    const dragHandle = contentEl.createDiv({ cls: "modal-drag-handle" });
+    const title =
+      this.mode === "create"
+        ? t("aiWorkflow.createTitle")
+        : t("aiWorkflow.modifyTitle");
+    dragHandle.createEl("h2", { text: title });
+    this.setupDrag(dragHandle, modalEl);
+
+    // Add resize handles
+    this.addResizeHandles(modalEl);
+
+    // Name and output path (only for create mode)
+    if (this.mode === "create") {
+      // Name input
+      const nameContainer = contentEl.createDiv({ cls: "llm-hub-workflow-input-row" });
+      nameContainer.createEl("label", { text: t("aiWorkflow.workflowName") });
+      this.nameInputEl = nameContainer.createEl("input", {
+        type: "text",
+        cls: "llm-hub-workflow-name-input",
+        attr: { placeholder: t("aiWorkflow.namePlaceholder") },
+      });
+
+      // Output path input
+      const pathContainer = contentEl.createDiv({ cls: "llm-hub-workflow-input-row" });
+      pathContainer.createEl("label", { text: t("aiWorkflow.outputPath") });
+      const defaultPath = this.defaultOutputPath || "workflows/{{name}}";
+      this.outputPathEl = pathContainer.createEl("input", {
+        type: "text",
+        cls: "llm-hub-workflow-path-input",
+        value: defaultPath,
+        attr: { placeholder: "workflows/{{name}}" },
+      });
+      pathContainer.createEl("div", {
+        cls: "llm-hub-workflow-hint",
+        text: t("aiWorkflow.pathHint"),
+      });
+    }
+
+    // Description label
+    const descLabel =
+      this.mode === "create"
+        ? t("aiWorkflow.describeCreate")
+        : t("aiWorkflow.describeModify");
+
+    contentEl.createEl("label", {
+      text: descLabel,
+      cls: "llm-hub-workflow-label",
+    });
+
+    // Description textarea container (for autocomplete positioning)
+    const textareaContainer = contentEl.createDiv({ cls: "llm-hub-workflow-textarea-container" });
+
+    // Mention autocomplete dropdown
+    this.mentionAutocompleteEl = textareaContainer.createDiv({
+      cls: "llm-hub-autocomplete llm-hub-workflow-mention-autocomplete is-hidden",
+    });
+
+    // Description textarea
+    this.descriptionEl = textareaContainer.createEl("textarea", {
+      cls: "llm-hub-workflow-textarea",
+      attr: {
+        placeholder:
+          this.mode === "create"
+            ? t("aiWorkflow.placeholderCreate")
+            : t("aiWorkflow.placeholderModify"),
+        rows: "6",
+      },
+    });
+
+    // Setup mention autocomplete handlers
+    this.setupMentionAutocomplete();
+
+    // Hint for @ mention
+    contentEl.createEl("div", {
+      cls: "llm-hub-workflow-hint",
+      text: t("aiWorkflow.mentionHint"),
+    });
+
+    // Show current workflow for modify mode
+    if (this.mode === "modify" && this.existingYaml) {
+      const details = contentEl.createEl("details", {
+        cls: "llm-hub-workflow-existing",
+      });
+      details.createEl("summary", { text: t("aiWorkflow.currentWorkflow") });
+      details.createEl("pre", {
+        text: this.existingYaml,
+        cls: "llm-hub-workflow-yaml-preview",
+      });
+    }
+
+    // Confirmation checkbox (only for modify mode)
+    if (this.mode === "modify") {
+      const confirmContainer = contentEl.createDiv({ cls: "llm-hub-workflow-confirm-row" });
+      this.confirmCheckbox = confirmContainer.createEl("input", {
+        type: "checkbox",
+        attr: { id: "llm-hub-workflow-confirm-checkbox" },
+      });
+      this.confirmCheckbox.checked = true; // Default to checked
+      confirmContainer.createEl("label", {
+        text: t("aiWorkflow.confirmCheckbox"),
+        attr: { for: "llm-hub-workflow-confirm-checkbox" },
+      });
+
+      // Execution history reference row (only for modify mode)
+      const executionHistoryRow = contentEl.createDiv({ cls: "llm-hub-workflow-execution-history-row" });
+
+      const executionHistoryBtn = executionHistoryRow.createEl("button", {
+        cls: "llm-hub-workflow-execution-history-btn",
+      });
+      executionHistoryBtn.createSpan({ text: t("workflow.preview.referenceHistory") });
+
+      this.executionHistoryInfoEl = executionHistoryRow.createDiv({
+        cls: "llm-hub-workflow-execution-history-info"
+      });
+
+      executionHistoryBtn.addEventListener("click", () => {
+        void this.openExecutionHistorySelect();
+      });
+    }
+
+    // Status area
+    this.statusEl = contentEl.createDiv({ cls: "llm-hub-workflow-status" });
+
+    // Buttons
+    const buttonContainer = contentEl.createDiv({ cls: "llm-hub-workflow-buttons" });
+
+    const cancelBtn = buttonContainer.createEl("button", { text: t("common.cancel") });
+    cancelBtn.addEventListener("click", () => {
+      this.resolvePromise(null);
+      this.close();
+    });
+
+    this.generateBtn = buttonContainer.createEl("button", {
+      text: this.mode === "create" ? t("aiWorkflow.generate") : t("aiWorkflow.modify"),
+      cls: "mod-cta",
+    });
+    this.generateBtn.addEventListener("click", () => {
+      void this.generate();
+    });
+
+    // Focus appropriate field
+    if (this.mode === "create") {
+      setTimeout(() => this.nameInputEl?.focus(), 50);
+    } else {
+      setTimeout(() => this.descriptionEl?.focus(), 50);
+    }
+  }
+
+  /**
+   * Open execution history select modal (for modify mode)
+   */
+  private async openExecutionHistorySelect(): Promise<void> {
+    const activeFile = this.app.workspace.getActiveFile();
+    if (!activeFile) {
+      new Notice(t("workflowModal.noExecutionHistory"));
+      return;
+    }
+
+    try {
+      const encryption = this.plugin.settings.encryption;
+      const encryptionConfig = encryption?.enabled ? {
+        enabled: true,
+        encryptWorkflowHistory: encryption.encryptWorkflowHistory,
+        publicKey: encryption.publicKey || "",
+        encryptedPrivateKey: encryption.encryptedPrivateKey || "",
+        salt: encryption.salt || "",
+      } : undefined;
+      const historyManager = new ExecutionHistoryManager(
+        this.app,
+        this.plugin.settings.workspaceFolder,
+        encryptionConfig
+      );
+      const executionRecords = await historyManager.loadRecords(activeFile.path);
+
+      if (executionRecords.length === 0) {
+        new Notice(t("workflowModal.noExecutionHistory"));
+        return;
+      }
+
+      const result = await showExecutionHistorySelect(this.app, executionRecords);
+      if (result && result.selectedSteps.length > 0) {
+        this.selectedExecutionSteps = result.selectedSteps;
+        this.updateExecutionHistoryInfo();
+      }
+    } catch (e) {
+      console.error("Failed to load execution history:", formatError(e));
+      new Notice(t("workflowModal.noExecutionHistory"));
+    }
+  }
+
+  /**
+   * Update execution history info display
+   */
+  private updateExecutionHistoryInfo(): void {
+    if (!this.executionHistoryInfoEl) return;
+
+    if (this.selectedExecutionSteps.length > 0) {
+      this.executionHistoryInfoEl.textContent = t("workflow.preview.stepsSelected", {
+        count: String(this.selectedExecutionSteps.length),
+      });
+      this.executionHistoryInfoEl.removeClass("is-hidden");
+    } else {
+      this.executionHistoryInfoEl.textContent = "";
+      this.executionHistoryInfoEl.addClass("is-hidden");
+    }
+  }
+
+  private async generate(): Promise<void> {
+    if (this.isGenerating) return;
+
+    // Validate name for create mode
+    if (this.mode === "create") {
+      const name = this.nameInputEl?.value?.trim();
+      if (!name) {
+        new Notice(t("aiWorkflow.enterName"));
+        return;
+      }
+    }
+
+    const description = this.descriptionEl?.value?.trim();
+    if (!description) {
+      new Notice(t("aiWorkflow.enterDescription"));
+      return;
+    }
+
+    // Get name for create mode
+    const workflowName = this.mode === "create"
+      ? this.nameInputEl?.value?.trim() || "workflow"
+      : this.existingName || "workflow";
+
+    // Get output path template for create mode
+    const outputPathTemplate = this.mode === "create"
+      ? this.outputPathEl?.value?.trim() || "workflows/{{name}}/main"
+      : undefined;
+
+    // Resolve @ mentions (embed file content, selection, etc.)
+    const { resolved: resolvedDescription, mentions: resolvedMentions } = await this.resolveMentions(description);
+
+    // Get model display name from config
+    const modelDisplayName = this.plugin.settings.llmConfig.model || "Local LLM";
+
+    // Close input modal and start generation flow
+    this.close();
+
+    // Determine the workflow path for loading execution history
+    // For modify mode, use the active file path; for create mode, we'll construct it later
+    const activeFile = this.app.workspace.getActiveFile();
+    const workflowPath = this.mode === "modify" && activeFile ? activeFile.path : undefined;
+
+    // Start the generation with preview loop
+    // Use resolved description (with @mentions expanded) as the request
+    // Pass selected execution steps if any (for modify mode)
+    await this.runGenerationLoop(
+      resolvedDescription,
+      workflowName,
+      outputPathTemplate,
+      resolvedMentions,
+      workflowPath,
+      modelDisplayName,
+      undefined,  // previousYaml
+      [],         // requestHistory
+      this.selectedExecutionSteps.length > 0 ? this.selectedExecutionSteps : undefined
+    );
+  }
+
+  /**
+   * Run the generation loop with progress display and preview confirmation
+   */
+  private async runGenerationLoop(
+    currentRequest: string,
+    workflowName: string,
+    outputPathTemplate: string | undefined,
+    resolvedMentions: ResolvedMention[],
+    workflowPath: string | undefined,
+    modelDisplayName: string,
+    previousYaml?: string,
+    requestHistory: string[] = [],
+    selectedExecutionSteps?: ExecutionStep[]
+  ): Promise<void> {
+
+    // Create AbortController for cancellation
+    const abortController = new AbortController();
+    let generationCancelled = false;
+
+    // Open the generation modal
+    const generationModal = new WorkflowGenerationModal(
+      this.app,
+      currentRequest,
+      abortController,
+      () => { generationCancelled = true; },
+      selectedExecutionSteps?.length ?? 0,
+      modelDisplayName
+    );
+    generationModal.open();
+
+    try {
+      // Build prompts
+      const systemPrompt = this.buildSystemPrompt();
+      const userPrompt = this.buildUserPrompt(currentRequest, workflowName, previousYaml, requestHistory, selectedExecutionSteps);
+
+      let response = "";
+
+      // Use local LLM provider for streaming generation
+      const config: LocalLlmConfig = {
+        ...this.plugin.settings.llmConfig,
+      };
+      const messages: Message[] = [{
+        role: "user",
+        content: userPrompt,
+        timestamp: Date.now(),
+      }];
+      let streamUsage: StreamChunkUsage | undefined;
+      const startTime = Date.now();
+      for await (const chunk of localLlmChatStream(
+        config, messages, systemPrompt, abortController.signal, config.enableThinking
+      )) {
+        if (generationCancelled || abortController.signal.aborted) break;
+        if (chunk.type === "thinking" && chunk.content) {
+          generationModal.appendThinking(chunk.content);
+        } else if (chunk.type === "text" && chunk.content) {
+          response += chunk.content;
+        } else if (chunk.type === "done") {
+          streamUsage = chunk.usage;
+        } else if (chunk.type === "error") {
+          throw new Error(chunk.error || "Unknown error");
+        }
+      }
+      const elapsedMs = Date.now() - startTime;
+      generationModal.setComplete();
+
+      // Close generation modal
+      generationModal.close();
+
+      // Show usage as Notice
+      const usageNotice = WorkflowGenerationModal.formatUsageNotice(streamUsage, elapsedMs);
+      if (usageNotice && !generationCancelled) {
+        new Notice(usageNotice);
+      }
+
+      // Check if cancelled
+      if (generationCancelled) {
+        this.resolvePromise(null);
+        return;
+      }
+
+      // Parse the response
+      const result = this.parseResponse(response);
+
+      if (!result) {
+        new Notice(t("workflow.generation.parseFailed"));
+        this.resolvePromise(null);
+        return;
+      }
+
+      // Add metadata to result - only store current request as description
+      result.description = currentRequest;
+      result.mode = this.mode;
+      result.resolvedMentions = resolvedMentions.length > 0 ? resolvedMentions : undefined;
+
+      // Override name with user input for create mode
+      if (this.mode === "create") {
+        result.name = workflowName;
+        if (outputPathTemplate) {
+          result.outputPath = outputPathTemplate.replace(/\{\{name\}\}/g, workflowName);
+        }
+      }
+
+      // For modify mode with confirmation enabled, use the diff view
+      const needsDiffConfirmation =
+        this.mode === "modify" &&
+        this.confirmCheckbox?.checked &&
+        this.existingYaml;
+
+      if (needsDiffConfirmation) {
+        const confirmResult = await showWorkflowConfirmation(
+          this.app,
+          this.existingYaml!,
+          result.yaml,
+          result.explanation,
+          currentRequest
+        );
+
+        if (confirmResult.result === "ok") {
+          this.resolvePromise(result);
+        } else if (confirmResult.result === "no") {
+          // User wants modifications
+          const updatedHistory = [...requestHistory, currentRequest];
+          await this.runGenerationLoop(
+            confirmResult.additionalRequest || "",  // New request from user
+            workflowName,
+            outputPathTemplate,
+            resolvedMentions,
+            workflowPath,     // Workflow path for execution history
+            modelDisplayName,
+            result.yaml,      // Previous YAML for reference
+            updatedHistory,   // Accumulated request history
+            selectedExecutionSteps  // Keep original execution steps for context
+          );
+        } else {
+          // User cancelled
+          this.resolvePromise(null);
+        }
+        return;
+      }
+
+      // Show preview modal for create mode and modify mode without diff confirmation
+      // Pass the current request so user can edit it for the next iteration
+      const previewResult = await showWorkflowPreview(
+        this.app,
+        result.yaml,
+        result.nodes,
+        result.name,
+        currentRequest
+      );
+
+      if (previewResult.result === "ok") {
+        // User approved - return the result
+        this.resolvePromise(result);
+      } else if (previewResult.result === "no") {
+        // User wants modifications
+        const updatedHistory = [...requestHistory, currentRequest];
+        await this.runGenerationLoop(
+          previewResult.additionalRequest || "",  // New request from user
+          workflowName,
+          outputPathTemplate,
+          resolvedMentions,
+          workflowPath,     // Workflow path for execution history
+          modelDisplayName,
+          result.yaml,      // Previous YAML for reference
+          updatedHistory,   // Accumulated request history
+          selectedExecutionSteps  // Keep original execution steps for context
+        );
+      } else {
+        // User cancelled
+        this.resolvePromise(null);
+      }
+    } catch (error) {
+      generationModal.close();
+      const message = formatError(error);
+      new Notice(`Error: ${message}`);
+      this.resolvePromise(null);
+    }
+  }
+
+  private buildSystemPrompt(): string {
+    // Build dynamic workflow specification with current settings
+    const workflowSpec = getWorkflowSpecification();
+
+    return `You are a workflow generator for Obsidian. You create and modify workflows in YAML format.
+
+${workflowSpec}
+
+IMPORTANT RULES:
+1. Output ONLY the workflow YAML, no explanation or markdown code fences
+2. The YAML must be valid and parseable
+3. Include a descriptive "name" field
+4. Use unique, descriptive node IDs (e.g., "read-input", "process-data", "save-result")
+5. Ensure all variables are initialized before use
+6. Use proper control flow (next, trueNext, falseNext)
+7. Start output directly with "name:" - no code fences, no explanation`;
+  }
+
+  private buildUserPrompt(
+    currentRequest: string,
+    workflowName?: string,
+    previousYaml?: string,
+    requestHistory: string[] = [],
+    selectedExecutionSteps?: ExecutionStep[]
+  ): string {
+    if (this.mode === "create") {
+      // If we have previous request/YAML from regeneration, include as reference
+      if (requestHistory.length > 0 && previousYaml) {
+        // Build numbered history of all requests
+        const historySection = requestHistory.map((req, idx) => `${idx + 1}. ${req}`).join("\n");
+
+        // Build execution history section if steps are selected
+        let executionSection = "";
+        if (selectedExecutionSteps && selectedExecutionSteps.length > 0) {
+          executionSection = this.formatExecutionSteps(selectedExecutionSteps);
+        }
+
+        return `Create or modify a workflow based on the following request.
+
+REFERENCE (previous attempts):
+${historySection}
+
+Previous output:
+${previousYaml}
+${executionSection}
+NEW REQUEST:
+${currentRequest}
+
+Output only the complete YAML for the workflow, starting with "name: ${workflowName}".`;
+      }
+      return `Create a new workflow named "${workflowName}" that does the following:
+
+${currentRequest}
+
+Output only the YAML for the workflow, starting with "name: ${workflowName}".`;
+    } else {
+      // Build execution history section if steps are selected
+      let executionSection = "";
+      if (selectedExecutionSteps && selectedExecutionSteps.length > 0) {
+        executionSection = this.formatExecutionSteps(selectedExecutionSteps);
+      }
+
+      return `Modify the following workflow according to these requirements:
+
+CURRENT WORKFLOW:
+${this.existingYaml}
+${executionSection}
+MODIFICATIONS REQUESTED:
+${currentRequest}
+
+Output only the complete modified YAML, starting with "name:".`;
+    }
+  }
+
+  /**
+   * Format execution steps for LLM context
+   */
+  private formatExecutionSteps(steps: ExecutionStep[]): string {
+    if (steps.length === 0) return "";
+
+    const formattedSteps = steps.map((step, idx) => {
+      const lines: string[] = [];
+      lines.push(`Step ${idx + 1} [${step.nodeType}] ${step.nodeId}:`);
+
+      if (step.input && Object.keys(step.input).length > 0) {
+        const inputStr = JSON.stringify(step.input, null, 2)
+          .split("\n")
+          .map(line => "  " + line)
+          .join("\n");
+        lines.push(`  Input: ${inputStr}`);
+      }
+
+      if (step.status === "error" && step.error) {
+        lines.push(`  Error: ${step.error}`);
+      } else if (step.output !== undefined) {
+        const outputStr = typeof step.output === "string"
+          ? step.output.substring(0, 500) + (step.output.length > 500 ? "..." : "")
+          : JSON.stringify(step.output, null, 2).substring(0, 500);
+        lines.push(`  Output: ${outputStr}`);
+      }
+
+      lines.push(`  Status: ${step.status}`);
+
+      return lines.join("\n");
+    }).join("\n\n");
+
+    return `
+EXECUTION HISTORY (selected steps):
+${formattedSteps}
+
+`;
+  }
+
+  /**
+   * Strip YAML frontmatter from file content
+   */
+  private stripFrontmatter(content: string): string {
+    // Match YAML frontmatter: starts with ---, ends with ---
+    const frontmatterRegex = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
+    return content.replace(frontmatterRegex, "").trim();
+  }
+
+  private async resolveMentions(text: string): Promise<{ resolved: string; mentions: ResolvedMention[] }> {
+    let resolved = text;
+    const mentions: ResolvedMention[] = [];
+
+    // Find all @ mentions: @{selection}, @{content}, @filepath
+    const mentionRegex = /@(\{selection\}|\{content\}|[^\s@]+)/g;
+    const matches = [...text.matchAll(mentionRegex)];
+
+    for (const match of matches) {
+      const mention = match[1];
+      let replacement = match[0]; // Keep original if resolution fails
+      let content: string | null = null;
+
+      if (mention === "{selection}") {
+        // Get selected text from editor
+        const editor = this.app.workspace.activeEditor?.editor;
+        if (editor && editor.somethingSelected()) {
+          content = editor.getSelection();
+          replacement = `[Selected text]\n${content}\n[/Selected text]`;
+        }
+      } else if (mention === "{content}") {
+        // Get content of active note
+        const activeFile = this.app.workspace.getActiveFile();
+        if (activeFile) {
+          const rawContent = await this.app.vault.read(activeFile);
+          content = this.stripFrontmatter(rawContent);
+          replacement = `[Content of ${activeFile.path}]\n${content}\n[/Content]`;
+        }
+      } else {
+        // It's a file path - try to read the file
+        const file = this.app.vault.getAbstractFileByPath(mention);
+        if (file instanceof TFile) {
+          try {
+            const rawContent = await this.app.vault.read(file);
+            content = this.stripFrontmatter(rawContent);
+            replacement = `[Content of ${mention}]\n${content}\n[/Content]`;
+          } catch {
+            // Keep original mention if file can't be read
+          }
+        }
+      }
+
+      if (content !== null) {
+        mentions.push({ original: match[0], content });
+      }
+
+      resolved = resolved.replace(match[0], replacement);
+    }
+
+    return { resolved, mentions };
+  }
+
+  private parseResponse(response: string): AIWorkflowResult | null {
+    try {
+      let yaml = "";
+      let yamlStartIdx = -1;
+
+      // Try to find a code block containing "name:" and "nodes:"
+      const codeBlockRegex = /```\w*\s*([\s\S]*?)```/g;
+      let match;
+      while ((match = codeBlockRegex.exec(response)) !== null) {
+        const content = match[1].trim();
+        if (content.includes("name:") && content.includes("nodes:")) {
+          yaml = content;
+          yamlStartIdx = match.index;
+          break;
+        }
+      }
+
+      // If no valid code block found, try to find YAML directly in response
+      if (!yaml) {
+        const nameMatch = response.match(/(?:^|\n)(name:\s*\S+[\s\S]*?nodes:\s*[\s\S]*?)(?:\n```|$)/);
+        if (nameMatch && nameMatch.index !== undefined) {
+          yaml = nameMatch[1].trim();
+          yamlStartIdx = nameMatch.index;
+        }
+      }
+
+      // Final fallback: find "name:" and take everything from there
+      if (!yaml) {
+        const startIdx = response.indexOf("name:");
+        if (startIdx >= 0) {
+          yaml = response.substring(startIdx).trim();
+          // Remove trailing code fence if present
+          yaml = yaml.replace(/\n```\s*$/, "").trim();
+          yamlStartIdx = startIdx;
+        }
+      }
+
+      if (!yaml) {
+        console.error("Could not find valid workflow YAML in response:", response);
+        return null;
+      }
+
+      // Extract explanation (text before YAML)
+      let explanation = "";
+      if (yamlStartIdx > 0) {
+        explanation = response.substring(0, yamlStartIdx).trim();
+        // Remove code fence markers from explanation
+        explanation = explanation.replace(/```\w*\s*$/gm, "").trim();
+      }
+
+      // Parse YAML
+      const parsed = parseYaml(yaml) as {
+        name?: string;
+        nodes?: Array<{
+          id?: string;
+          type?: string;
+          next?: string;
+          trueNext?: string;
+          falseNext?: string;
+          [key: string]: unknown;
+        }>;
+      };
+
+      if (!parsed || !Array.isArray(parsed.nodes)) {
+        console.error("Invalid workflow structure:", parsed);
+        return null;
+      }
+
+      // Convert to SidebarNode format
+      const nodes: SidebarNode[] = parsed.nodes.map((node, index) => {
+        const { id, type, next, trueNext, falseNext, ...properties } = node;
+
+        // Convert all properties to strings
+        const stringProps: Record<string, string> = {};
+        for (const [key, value] of Object.entries(properties)) {
+          if (value === null || value === undefined) {
+            stringProps[key] = "";
+          } else if (typeof value === "object") {
+            stringProps[key] = JSON.stringify(value);
+          } else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            stringProps[key] = String(value);
+          } else {
+            stringProps[key] = JSON.stringify(value);
+          }
+        }
+
+        const sidebarNode: SidebarNode = {
+          id: String(id || `node-${index + 1}`),
+          type: (type || "variable") as WorkflowNodeType,
+          properties: stringProps,
+        };
+
+        // Add connection properties
+        if (next) {
+          sidebarNode.next = String(next);
+        }
+        if (trueNext) {
+          sidebarNode.trueNext = String(trueNext);
+        }
+        if (falseNext) {
+          sidebarNode.falseNext = String(falseNext);
+        }
+
+        return sidebarNode;
+      });
+
+      return {
+        yaml,
+        nodes,
+        name: parsed.name || "AI Generated Workflow",
+        explanation: explanation || undefined,
+      };
+    } catch (error) {
+      console.error("Failed to parse AI workflow response:", formatError(error), response);
+      return null;
+    }
+  }
+
+  private setupDrag(header: HTMLElement, modalEl: HTMLElement): void {
+    const onMouseDown = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).tagName === "BUTTON") return;
+
+      this.isDragging = true;
+      this.dragStartX = e.clientX;
+      this.dragStartY = e.clientY;
+
+      const rect = modalEl.getBoundingClientRect();
+      this.modalStartX = rect.left;
+      this.modalStartY = rect.top;
+
+      modalEl.setCssStyles({
+        position: "fixed",
+        margin: "0",
+        transform: "none",
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+      });
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!this.isDragging) return;
+
+      const deltaX = e.clientX - this.dragStartX;
+      const deltaY = e.clientY - this.dragStartY;
+
+      modalEl.setCssStyles({
+        left: `${this.modalStartX + deltaX}px`,
+        top: `${this.modalStartY + deltaY}px`,
+      });
+    };
+
+    const onMouseUp = () => {
+      this.isDragging = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    header.addEventListener("mousedown", onMouseDown);
+  }
+
+  private addResizeHandles(modalEl: HTMLElement): void {
+    const directions = ["n", "e", "s", "w", "ne", "nw", "se", "sw"];
+    for (const dir of directions) {
+      const handle = document.createElement("div");
+      handle.className = `llm-hub-resize-handle llm-hub-resize-${dir}`;
+      handle.dataset.direction = dir;
+      modalEl.appendChild(handle);
+      this.setupResize(handle, modalEl, dir);
+    }
+  }
+
+  private setupResize(handle: HTMLElement, modalEl: HTMLElement, direction: string): void {
+    const onMouseDown = (e: MouseEvent) => {
+      this.isResizing = true;
+      this.resizeDirection = direction;
+      this.dragStartX = e.clientX;
+      this.dragStartY = e.clientY;
+
+      const rect = modalEl.getBoundingClientRect();
+      this.resizeStartWidth = rect.width;
+      this.resizeStartHeight = rect.height;
+      this.modalStartX = rect.left;
+      this.modalStartY = rect.top;
+
+      modalEl.setCssStyles({
+        position: "fixed",
+        margin: "0",
+        transform: "none",
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+      });
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!this.isResizing) return;
+
+      const deltaX = e.clientX - this.dragStartX;
+      const deltaY = e.clientY - this.dragStartY;
+      const dir = this.resizeDirection;
+
+      let newWidth = this.resizeStartWidth;
+      let newHeight = this.resizeStartHeight;
+      let newLeft = this.modalStartX;
+      let newTop = this.modalStartY;
+
+      if (dir.includes("e")) {
+        newWidth = Math.max(400, this.resizeStartWidth + deltaX);
+      }
+      if (dir.includes("w")) {
+        newWidth = Math.max(400, this.resizeStartWidth - deltaX);
+        newLeft = this.modalStartX + (this.resizeStartWidth - newWidth);
+      }
+      if (dir.includes("s")) {
+        newHeight = Math.max(300, this.resizeStartHeight + deltaY);
+      }
+      if (dir.includes("n")) {
+        newHeight = Math.max(300, this.resizeStartHeight - deltaY);
+        newTop = this.modalStartY + (this.resizeStartHeight - newHeight);
+      }
+
+      modalEl.setCssStyles({
+        width: `${newWidth}px`,
+        height: `${newHeight}px`,
+        left: `${newLeft}px`,
+        top: `${newTop}px`,
+      });
+    };
+
+    const onMouseUp = () => {
+      this.isResizing = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    handle.addEventListener("mousedown", onMouseDown);
+  }
+
+  private setupMentionAutocomplete(): void {
+    if (!this.descriptionEl || !this.mentionAutocompleteEl) return;
+
+    const textarea = this.descriptionEl;
+    const autocomplete = this.mentionAutocompleteEl;
+
+    // Input handler for @ detection
+    textarea.addEventListener("input", () => {
+      const value = textarea.value;
+      const cursorPos = textarea.selectionStart;
+      const textBeforeCursor = value.substring(0, cursorPos);
+      const atMatch = textBeforeCursor.match(/@([^\s@]*)$/);
+
+      if (atMatch) {
+        const query = atMatch[1];
+        this.mentionStartPos = cursorPos - atMatch[0].length;
+        this.mentionItems = this.buildMentionCandidates(query);
+        this.mentionIndex = 0;
+
+        if (this.mentionItems.length > 0) {
+          this.showingMentionAutocomplete = true;
+          this.renderMentionAutocomplete();
+          this.positionAutocomplete(textarea, autocomplete);
+          autocomplete.removeClass("is-hidden");
+        } else {
+          this.hideMentionAutocomplete();
+        }
+      } else {
+        this.hideMentionAutocomplete();
+      }
+    });
+
+    // Keyboard handler
+    textarea.addEventListener("keydown", (e) => {
+      if (!this.showingMentionAutocomplete) return;
+
+      if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+        e.preventDefault();
+        this.mentionIndex = Math.min(this.mentionIndex + 1, this.mentionItems.length - 1);
+        this.renderMentionAutocomplete();
+        return;
+      }
+      if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+        e.preventDefault();
+        this.mentionIndex = Math.max(this.mentionIndex - 1, 0);
+        this.renderMentionAutocomplete();
+        return;
+      }
+      if (e.key === "Enter" && this.mentionItems.length > 0) {
+        e.preventDefault();
+        this.selectMention(this.mentionItems[this.mentionIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        this.hideMentionAutocomplete();
+        return;
+      }
+    });
+
+    // Click outside to close (store handler for cleanup)
+    this.clickOutsideHandler = (e: MouseEvent) => {
+      if (this.showingMentionAutocomplete &&
+          !autocomplete.contains(e.target as Node) &&
+          e.target !== textarea) {
+        this.hideMentionAutocomplete();
+      }
+    };
+    document.addEventListener("click", this.clickOutsideHandler);
+  }
+
+  private buildMentionCandidates(query: string): MentionItem[] {
+    const hasActiveNote = !!this.app.workspace.getActiveFile();
+    const editor = this.app.workspace.activeEditor?.editor;
+    const hasSelection = editor ? editor.somethingSelected() : false;
+
+    const variables: MentionItem[] = [
+      ...(hasSelection ? [{ value: "{selection}", description: "Selected text in editor" }] : []),
+      ...(hasActiveNote ? [{ value: "{content}", description: "Content of active note" }] : []),
+    ];
+
+    // Get vault files
+    const files = this.app.vault.getMarkdownFiles().map((f) => ({
+      value: f.path,
+      description: "Vault file",
+    }));
+
+    const all = [...variables, ...files];
+    if (!query) return all.slice(0, 10);
+
+    const lowerQuery = query.toLowerCase();
+    return all.filter((item) => item.value.toLowerCase().includes(lowerQuery)).slice(0, 10);
+  }
+
+  private renderMentionAutocomplete(): void {
+    if (!this.mentionAutocompleteEl) return;
+
+    this.mentionAutocompleteEl.empty();
+    this.mentionItems.forEach((item, index) => {
+      const itemEl = this.mentionAutocompleteEl!.createDiv({
+        cls: `llm-hub-autocomplete-item ${index === this.mentionIndex ? "active" : ""}`,
+      });
+      itemEl.createSpan({
+        cls: "llm-hub-autocomplete-name",
+        text: item.value,
+      });
+      itemEl.createSpan({
+        cls: "llm-hub-autocomplete-desc",
+        text: item.description,
+      });
+
+      itemEl.addEventListener("click", () => this.selectMention(item));
+      itemEl.addEventListener("mouseenter", () => {
+        this.mentionIndex = index;
+        this.renderMentionAutocomplete();
+      });
+    });
+  }
+
+  private selectMention(mention: MentionItem): void {
+    if (!this.descriptionEl) return;
+
+    const textarea = this.descriptionEl;
+    const cursorPos = textarea.selectionStart;
+    const before = textarea.value.substring(0, this.mentionStartPos);
+    const after = textarea.value.substring(cursorPos);
+    // Keep @ prefix for later processing (file content embedding)
+    const newValue = before + "@" + mention.value + " " + after;
+
+    textarea.value = newValue;
+    this.hideMentionAutocomplete();
+
+    // Set cursor position after inserted mention (includes @)
+    const newPos = this.mentionStartPos + 1 + mention.value.length + 1;
+    textarea.setSelectionRange(newPos, newPos);
+    textarea.focus();
+  }
+
+  private hideMentionAutocomplete(): void {
+    this.showingMentionAutocomplete = false;
+    if (this.mentionAutocompleteEl) {
+      this.mentionAutocompleteEl.addClass("is-hidden");
+    }
+  }
+
+  private positionAutocomplete(textarea: HTMLTextAreaElement, autocomplete: HTMLElement): void {
+    const rect = textarea.getBoundingClientRect();
+
+    // Position above the textarea using fixed positioning
+    autocomplete.setCssStyles({
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      bottom: `${window.innerHeight - rect.top + 4}px`,
+      top: "auto",
+    });
+  }
+
+  onClose(): void {
+    // Clean up event listener
+    if (this.clickOutsideHandler) {
+      document.removeEventListener("click", this.clickOutsideHandler);
+      this.clickOutsideHandler = null;
+    }
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+// Helper function to open the modal
+export function promptForAIWorkflow(
+  app: App,
+  plugin: LocalLlmHubPlugin,
+  mode: AIWorkflowMode,
+  existingYaml?: string,
+  existingName?: string,
+  defaultOutputPath?: string
+): Promise<AIWorkflowResult | null> {
+  return new Promise((resolve) => {
+    const modal = new AIWorkflowModal(
+      app,
+      plugin,
+      mode,
+      resolve,
+      existingYaml,
+      existingName,
+      defaultOutputPath
+    );
+    modal.open();
+  });
+}

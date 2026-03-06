@@ -1,9 +1,16 @@
-import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Modal, type Editor } from "obsidian";
+import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Modal, TFile, type Editor } from "obsidian";
 import { ChatView, VIEW_TYPE_LLM_CHAT } from "src/ui/ChatView";
+import { WorkflowView, VIEW_TYPE_WORKFLOW } from "src/ui/WorkflowView";
+import { CryptView, CRYPT_VIEW_TYPE } from "src/ui/CryptView";
 import { SettingsTab } from "src/ui/SettingsTab";
 import { type LocalLlmHubSettings, DEFAULT_SETTINGS } from "src/types";
 import { initLocale, t } from "src/i18n";
 import { formatError } from "src/utils/error";
+import { EncryptionManager } from "src/plugin/encryptionManager";
+import { WorkflowManager } from "src/plugin/workflowManager";
+import { initEditHistoryManager, getEditHistoryManager } from "src/core/editHistory";
+import { isEncryptedFile } from "src/core/crypto";
+import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
 // Simple event emitter for settings updates
 export class SettingsEmitter {
@@ -33,6 +40,8 @@ export class SettingsEmitter {
 export class LocalLlmHubPlugin extends Plugin {
   settings: LocalLlmHubSettings = { ...DEFAULT_SETTINGS };
   settingsEmitter = new SettingsEmitter();
+  encryptionManager!: EncryptionManager;
+  workflowManager!: WorkflowManager;
   private lastActiveMarkdownView: MarkdownView | null = null;
 
   onload(): void {
@@ -40,9 +49,18 @@ export class LocalLlmHubPlugin extends Plugin {
 
     void this.loadSettings().then(() => {
       this.settingsEmitter.emit("settings-updated", this.settings);
+
+      // Initialize edit history manager
+      initEditHistoryManager(this.app, this.settings.editHistory);
     }).catch((e) => {
       console.error("Local LLM Hub: Failed to load settings:", formatError(e));
     });
+
+    // Initialize encryption manager
+    this.encryptionManager = new EncryptionManager(this);
+
+    // Initialize workflow manager
+    this.workflowManager = new WorkflowManager(this);
 
     // Settings tab
     this.addSettingTab(new SettingsTab(this.app, this));
@@ -53,9 +71,24 @@ export class LocalLlmHubPlugin extends Plugin {
       (leaf) => new ChatView(leaf, this)
     );
 
-    // Ensure chat view on layout ready
+    // CryptView for encrypted files
+    this.registerView(
+      CRYPT_VIEW_TYPE,
+      (leaf) => new CryptView(leaf, this)
+    );
+
+    // Workflow view
+    this.registerView(
+      VIEW_TYPE_WORKFLOW,
+      (leaf) => new WorkflowView(leaf, this)
+    );
+
+    // Ensure views on layout ready and register workflow hotkeys/events
     this.app.workspace.onLayoutReady(() => {
       void this.ensureChatViewExists();
+      void this.ensureWorkflowViewExists();
+      this.workflowManager.registerHotkeys();
+      this.workflowManager.registerEventListeners();
     });
 
     // Track active markdown view for selection capture
@@ -64,6 +97,55 @@ export class LocalLlmHubPlugin extends Plugin {
         if (leaf?.view instanceof MarkdownView) {
           this.lastActiveMarkdownView = leaf.view;
         }
+      })
+    );
+
+    // Handle file open - check for encrypted files and init snapshots
+    this.registerEvent(
+      this.app.workspace.on("file-open", (file) => {
+        if (file instanceof TFile) {
+          void this.encryptionManager.checkAndOpenEncryptedFile(file);
+          const manager = getEditHistoryManager();
+          if (manager) {
+            void manager.initSnapshot(file.path);
+          }
+        }
+      })
+    );
+
+    // Handle file rename for edit history
+    this.registerEvent(
+      this.app.vault.on("rename", (file, oldPath) => {
+        const manager = getEditHistoryManager();
+        if (manager && file instanceof TFile) {
+          manager.handleFileRename(oldPath, file.path);
+        }
+      })
+    );
+
+    // Handle file delete for edit history
+    this.registerEvent(
+      this.app.vault.on("delete", (file) => {
+        const manager = getEditHistoryManager();
+        if (manager && file instanceof TFile) {
+          manager.handleFileDelete(file.path);
+        }
+      })
+    );
+
+    // File menu: encrypt/decrypt
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (!(file instanceof TFile) || !file.path.endsWith(".md")) return;
+
+        menu.addItem((item) => {
+          item
+            .setTitle(t("command.encryptFile"))
+            .setIcon("lock")
+            .onClick(() => {
+              void this.encryptionManager.encryptFile(file);
+            });
+        });
       })
     );
 
@@ -132,20 +214,102 @@ export class LocalLlmHubPlugin extends Plugin {
         modal.open();
       },
     });
+
+    // Workflow commands
+    this.addCommand({
+      id: "open-workflow",
+      name: t("command.runWorkflow"),
+      callback: () => {
+        void this.activateWorkflowView();
+      },
+    });
+
+    // Encrypt/Decrypt commands
+    this.addCommand({
+      id: "encrypt-file",
+      name: t("command.encryptFile"),
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) return false;
+        if (checking) return true;
+        void this.encryptionManager.encryptFile(file);
+      },
+    });
+
+    this.addCommand({
+      id: "decrypt-file",
+      name: t("command.decryptFile"),
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) return false;
+        if (checking) return true;
+        void this.encryptionManager.decryptCurrentFile(file);
+      },
+    });
+
+    // Edit history commands
+    this.addCommand({
+      id: "show-edit-history",
+      name: t("command.showEditHistory"),
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) return false;
+        if (checking) return true;
+        new EditHistoryModal(this.app, file.path).open();
+      },
+    });
+
+    this.addCommand({
+      id: "restore-previous-version",
+      name: t("command.restorePreviousVersion"),
+      checkCallback: (checking) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) return false;
+        const manager = getEditHistoryManager();
+        if (!manager || !manager.hasHistory(file.path)) return false;
+        if (checking) return true;
+        new EditHistoryModal(this.app, file.path).open();
+      },
+    });
   }
 
   onunload(): void {
-    // Cleanup handled by Obsidian
+    this.workflowManager.cleanup();
   }
 
   async loadSettings(): Promise<void> {
     const data = await this.loadData();
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+    // Ensure nested objects have defaults
+    if (!this.settings.encryption) {
+      this.settings.encryption = { ...DEFAULT_SETTINGS.encryption };
+    }
+    if (!this.settings.editHistory) {
+      this.settings.editHistory = { ...DEFAULT_SETTINGS.editHistory };
+    }
+    if (!this.settings.editHistory.diff) {
+      this.settings.editHistory.diff = { ...DEFAULT_SETTINGS.editHistory.diff };
+    }
+    if (!this.settings.slashCommands) {
+      this.settings.slashCommands = [];
+    }
+    if (!this.settings.enabledWorkflowHotkeys) {
+      this.settings.enabledWorkflowHotkeys = [];
+    }
+    if (!this.settings.enabledWorkflowEventTriggers) {
+      this.settings.enabledWorkflowEventTriggers = [];
+    }
   }
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
     this.settingsEmitter.emit("settings-updated", this.settings);
+
+    // Update edit history manager settings
+    const manager = getEditHistoryManager();
+    if (manager) {
+      manager.updateSettings(this.settings.editHistory);
+    }
   }
 
   private async ensureChatViewExists(): Promise<void> {
@@ -156,6 +320,32 @@ export class LocalLlmHubPlugin extends Plugin {
         await leaf.setViewState({ type: VIEW_TYPE_LLM_CHAT, active: false });
       }
     }
+  }
+
+  private async ensureWorkflowViewExists(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_WORKFLOW);
+    if (existing.length === 0) {
+      const leaf = this.app.workspace.getRightLeaf(false);
+      if (leaf) {
+        await leaf.setViewState({ type: VIEW_TYPE_WORKFLOW, active: false });
+      }
+    }
+  }
+
+  async activateWorkflowView(): Promise<void> {
+    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_WORKFLOW);
+    let leaf: WorkspaceLeaf;
+
+    if (existing.length > 0) {
+      leaf = existing[0];
+    } else {
+      const rightLeaf = this.app.workspace.getRightLeaf(false);
+      if (!rightLeaf) return;
+      leaf = rightLeaf;
+      await leaf.setViewState({ type: VIEW_TYPE_WORKFLOW, active: true });
+    }
+
+    void this.app.workspace.revealLeaf(leaf);
   }
 
   async activateChatView(): Promise<void> {

@@ -73,6 +73,58 @@ export interface StreamChunk {
   usage?: StreamChunkUsage;
 }
 
+// Encryption settings
+export interface EncryptionSettings {
+  enabled: boolean;
+  encryptChatHistory: boolean;
+  encryptWorkflowHistory: boolean;
+  publicKey: string;
+  encryptedPrivateKey: string;
+  salt: string;
+}
+
+export const DEFAULT_ENCRYPTION_SETTINGS: EncryptionSettings = {
+  enabled: false,
+  encryptChatHistory: false,
+  encryptWorkflowHistory: false,
+  publicKey: "",
+  encryptedPrivateKey: "",
+  salt: "",
+};
+
+// Edit history settings
+export interface EditHistorySettings {
+  enabled: boolean;
+  diff: {
+    contextLines: number;
+  };
+}
+
+export const DEFAULT_EDIT_HISTORY_SETTINGS: EditHistorySettings = {
+  enabled: true,
+  diff: {
+    contextLines: 3,
+  },
+};
+
+// Slash command
+export interface SlashCommand {
+  id: string;
+  name: string;
+  promptTemplate: string;
+  description?: string;
+}
+
+// Obsidian event types for workflow triggers
+export type ObsidianEventType = "create" | "modify" | "delete" | "rename" | "file-open";
+
+// Workflow event trigger
+export interface WorkflowEventTrigger {
+  workflowId: string; // "path#name" format
+  events: ObsidianEventType[];
+  filePattern?: string;
+}
+
 // Plugin settings
 export interface LocalLlmHubSettings {
   llmConfig: LocalLlmConfig;
@@ -81,6 +133,12 @@ export interface LocalLlmHubSettings {
   workspaceFolder: string;
   saveChatHistory: boolean;
   systemPrompt: string;
+  encryption: EncryptionSettings;
+  editHistory: EditHistorySettings;
+  slashCommands: SlashCommand[];
+  enabledWorkflowHotkeys: string[];
+  enabledWorkflowEventTriggers: WorkflowEventTrigger[];
+  lastSelectedWorkflowPath?: string;
 }
 
 export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
@@ -90,4 +148,9 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   workspaceFolder: "LocalLlmHub",
   saveChatHistory: true,
   systemPrompt: "",
+  encryption: { ...DEFAULT_ENCRYPTION_SETTINGS },
+  editHistory: { ...DEFAULT_EDIT_HISTORY_SETTINGS },
+  slashCommands: [],
+  enabledWorkflowHotkeys: [],
+  enabledWorkflowEventTriggers: [],
 };

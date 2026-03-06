@@ -538,3 +538,3541 @@
   justify-content: flex-end;
   margin-top: 16px;
 }
+
+/* ── ConfirmModal ─────────────────────────────────── */
+.llm-hub-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ── Password Prompt ──────────────────────────────── */
+.llm-hub-password-input {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.llm-hub-button-container {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ── CryptView ────────────────────────────────────── */
+.llm-hub-crypt-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.llm-hub-crypt-error {
+  padding: 20px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.llm-hub-crypt-password {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+}
+
+.llm-hub-crypt-password-icon {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.llm-hub-crypt-password h3 {
+  margin: 0 0 8px;
+}
+
+.llm-hub-crypt-password p {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.llm-hub-crypt-password-form {
+  display: flex;
+  gap: 8px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.llm-hub-crypt-password-form input {
+  flex: 1;
+}
+
+.llm-hub-crypt-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+}
+
+.llm-hub-crypt-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.llm-hub-crypt-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.llm-hub-crypt-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.llm-hub-crypt-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.llm-hub-crypt-filename {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.llm-hub-crypt-unsaved {
+  font-size: 12px;
+  color: var(--text-warning);
+}
+
+.llm-hub-crypt-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.llm-hub-crypt-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.llm-hub-crypt-btn.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.llm-hub-crypt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.llm-hub-crypt-btn-decrypt {
+  color: var(--text-error);
+}
+
+.llm-hub-crypt-content {
+  flex: 1;
+  overflow: auto;
+}
+
+.llm-hub-crypt-preview {
+  padding: 16px;
+}
+
+.llm-hub-crypt-textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  padding: 16px;
+  font-family: var(--font-monospace);
+  font-size: 14px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+}
+
+.llm-hub-crypt-textarea:focus {
+  outline: none;
+}
+
+/* ── Edit History Modal ───────────────────────────── */
+.llm-hub-modal-resizable {
+  max-width: 700px;
+  width: 90%;
+  max-height: 80vh;
+}
+
+.llm-hub-edit-history-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+
+.llm-hub-edit-history-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 12px;
+}
+
+.llm-hub-edit-history-current-changes {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.llm-hub-edit-history-current-changes h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.llm-hub-edit-history-stats {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.llm-hub-edit-history-additions {
+  color: var(--text-success);
+}
+
+.llm-hub-edit-history-deletions {
+  color: var(--text-error);
+}
+
+.llm-hub-edit-history-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.llm-hub-edit-history-btn {
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.llm-hub-edit-history-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-edit-history-btn-reset {
+  background: transparent;
+  border: 1px solid var(--text-error);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-error);
+}
+
+.llm-hub-edit-history-btn-reset:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-edit-history-timeline {
+  padding-left: 12px;
+}
+
+.llm-hub-edit-history-current {
+  padding: 8px 0;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.llm-hub-edit-history-marker {
+  color: var(--interactive-accent);
+}
+
+.llm-hub-edit-history-entry {
+  position: relative;
+  padding: 8px 0 8px 16px;
+  border-left: 2px solid var(--background-modifier-border);
+}
+
+.llm-hub-edit-history-connector {
+  position: absolute;
+  left: -6px;
+  top: 14px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--background-modifier-border);
+}
+
+.llm-hub-edit-history-entry-content {
+  padding-left: 8px;
+}
+
+.llm-hub-edit-history-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.llm-hub-edit-history-time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.llm-hub-edit-history-source {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.llm-hub-edit-history-model {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+}
+
+.llm-hub-edit-history-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.llm-hub-edit-history-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-edit-history-footer-left {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Diff Modal ───────────────────────────────────── */
+.llm-hub-diff-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+
+.llm-hub-diff-stats {
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.llm-hub-diff-additions {
+  color: var(--text-success);
+  font-weight: 500;
+}
+
+.llm-hub-diff-deletions {
+  color: var(--text-error);
+  font-weight: 500;
+}
+
+.llm-hub-diff-content {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.llm-hub-diff-legend {
+  display: flex;
+  gap: 16px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+.llm-hub-diff-legend-removed {
+  color: var(--text-error);
+}
+
+.llm-hub-diff-legend-added {
+  color: var(--text-success);
+}
+
+.llm-hub-diff-pre {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.llm-hub-diff-line {
+  white-space: pre;
+}
+
+.llm-hub-diff-hunk {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
+.llm-hub-diff-add {
+  background: rgba(0, 200, 0, 0.1);
+  color: var(--text-success);
+}
+
+.llm-hub-diff-remove {
+  background: rgba(200, 0, 0, 0.1);
+  color: var(--text-error);
+}
+
+.llm-hub-diff-context {
+  color: var(--text-muted);
+}
+
+.llm-hub-diff-actions {
+  padding-top: 8px;
+}
+
+/* ── Drag Handle ──────────────────────────────────── */
+.modal-drag-handle {
+  cursor: move;
+  user-select: none;
+  padding: 0 0 8px;
+}
+
+/* ── Copy Input ───────────────────────────────────── */
+.llm-hub-copy-input-container {
+  margin-bottom: 12px;
+}
+
+.llm-hub-copy-input {
+  width: 100%;
+}
+
+/* ── Settings Textarea ────────────────────────────── */
+.llm-hub-settings-textarea-container .setting-item-control {
+  width: 100%;
+}
+
+.llm-hub-settings-textarea {
+  width: 100% !important;
+  min-width: 200px;
+}
+
+/* ===============================================
+   Workflow Styles
+   =============================================== */
+
+.llm-hub-workflow-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.llm-hub-hotkey-enabled {
+  color: var(--interactive-accent);
+}
+
+.llm-hub-event-enabled {
+  color: var(--color-yellow);
+}
+
+.llm-hub-hidden {
+  display: none;
+}
+
+.llm-hub-workflow-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.llm-hub-workflow-sidebar-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Workflow sidebar buttons container */
+.llm-hub-workflow-sidebar-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.llm-hub-workflow-sidebar-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.llm-hub-workflow-sidebar-add-btn {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.llm-hub-workflow-sidebar-add-btn:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-workflow-sidebar-select {
+  width: 100%;
+}
+
+/* Error Banner */
+.llm-hub-workflow-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  margin: 8px 12px;
+  background: rgba(var(--color-red-rgb), 0.15);
+  border: 1px solid var(--color-red);
+  border-radius: 6px;
+  color: var(--text-normal);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.llm-hub-workflow-error-icon {
+  flex-shrink: 0;
+  color: var(--color-red);
+  font-size: 14px;
+}
+
+.llm-hub-workflow-error-message {
+  word-break: break-word;
+}
+
+.llm-hub-workflow-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.llm-hub-workflow-sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  gap: 8px;
+}
+
+.llm-hub-workflow-sidebar-footer button {
+  flex: 1;
+}
+
+.llm-hub-workflow-sidebar-footer .llm-hub-workflow-sidebar-hotkey-btn {
+  flex: 0;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.llm-hub-workflow-sidebar-footer .llm-hub-workflow-sidebar-hotkey-btn.llm-hub-hotkey-enabled {
+  color: var(--interactive-accent);
+}
+
+.llm-hub-workflow-sidebar-footer .llm-hub-workflow-sidebar-event-btn {
+  flex: 0;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.llm-hub-workflow-sidebar-footer .llm-hub-workflow-sidebar-event-btn.llm-hub-event-enabled {
+  color: var(--color-yellow);
+}
+
+/* Node List */
+.llm-hub-workflow-node-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.llm-hub-workflow-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
+}
+
+/* Node Card */
+.llm-hub-workflow-node-card {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+  position: relative;
+}
+
+.llm-hub-workflow-node-card:hover {
+  background-color: var(--background-secondary-alt);
+}
+
+.llm-hub-workflow-node-card.llm-hub-workflow-node-dragging {
+  opacity: 0.5;
+}
+
+.llm-hub-workflow-node-card.llm-hub-workflow-drop-above {
+  border-top: 2px solid var(--interactive-accent);
+}
+
+.llm-hub-workflow-node-card.llm-hub-workflow-drop-below {
+  border-bottom: 2px solid var(--interactive-accent);
+}
+
+/* Drag Handle */
+.llm-hub-workflow-node-drag-handle {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  cursor: grab;
+  padding: 4px;
+  font-size: 12px;
+}
+
+.llm-hub-workflow-node-drag-handle:hover {
+  color: var(--text-normal);
+}
+
+/* Node Header */
+.llm-hub-workflow-node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.llm-hub-workflow-node-type {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.llm-hub-workflow-node-id {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-accent);
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.llm-hub-workflow-node-type-variable,
+.llm-hub-workflow-node-type-set {
+  background-color: var(--color-blue);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-if,
+.llm-hub-workflow-node-type-while {
+  background-color: var(--color-orange);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-command {
+  background-color: var(--color-purple);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-http,
+.llm-hub-workflow-node-type-json {
+  background-color: var(--color-cyan);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-note,
+.llm-hub-workflow-node-type-note-read,
+.llm-hub-workflow-node-type-note-search,
+.llm-hub-workflow-node-type-note-list,
+.llm-hub-workflow-node-type-folder-list {
+  background-color: var(--color-green);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-prompt-file,
+.llm-hub-workflow-node-type-prompt-selection,
+.llm-hub-workflow-node-type-prompt-value,
+.llm-hub-workflow-node-type-file-explorer {
+  background-color: var(--color-pink);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-open {
+  background-color: var(--color-cyan);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-dialog {
+  background-color: var(--color-yellow);
+  color: black;
+}
+
+.llm-hub-workflow-node-type-workflow {
+  background-color: var(--color-purple);
+  color: white;
+}
+
+.llm-hub-workflow-node-type-rag-sync {
+  background-color: var(--color-red);
+  color: white;
+}
+
+/* Node Summary */
+.llm-hub-workflow-node-summary {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-left: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Node Comment */
+.llm-hub-workflow-node-comment {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-yellow);
+  margin-top: 2px;
+  margin-left: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.llm-hub-workflow-node-comment.is-multiline {
+  cursor: pointer;
+}
+
+.llm-hub-workflow-node-comment-toggle {
+  font-size: 8px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-style: normal;
+}
+
+.llm-hub-workflow-node-comment-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.llm-hub-workflow-node-comment.is-expanded .llm-hub-workflow-node-comment-text {
+  white-space: pre-wrap;
+  text-overflow: unset;
+}
+
+/* Node Actions */
+.llm-hub-workflow-node-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  margin-left: 16px;
+}
+
+.llm-hub-workflow-node-action-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.llm-hub-workflow-node-action-delete {
+  color: var(--text-error);
+}
+
+/* Arrow between nodes */
+.llm-hub-workflow-node-arrow {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 16px;
+  padding: 4px 0;
+}
+
+.llm-hub-workflow-node-arrow::before {
+  content: "\2193"; /* Down arrow */
+}
+
+/* Incoming connection indicator */
+.llm-hub-workflow-node-incoming {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 16px;
+  margin-bottom: 2px;
+}
+
+.llm-hub-workflow-incoming-badge {
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+}
+
+.llm-hub-workflow-incoming-true {
+  color: var(--color-green);
+  border-left: 3px solid var(--color-green);
+}
+
+.llm-hub-workflow-incoming-false {
+  color: var(--color-red);
+  border-left: 3px solid var(--color-red);
+}
+
+.llm-hub-workflow-incoming-next {
+  color: var(--text-muted);
+  border-left: 3px solid var(--text-muted);
+}
+
+/* Outgoing connection indicator */
+.llm-hub-workflow-node-outgoing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 16px;
+  justify-content: center;
+}
+
+.llm-hub-workflow-outgoing-badge {
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+  color: var(--text-accent);
+}
+
+/* Branch indicator for if/while nodes */
+.llm-hub-workflow-node-branch {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 16px;
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.llm-hub-workflow-branch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: var(--background-secondary);
+  border-radius: 4px;
+}
+
+.llm-hub-workflow-branch-label {
+  font-weight: 600;
+  font-size: 11px;
+  min-width: 40px;
+}
+
+.llm-hub-workflow-branch-label-true {
+  color: var(--color-green);
+}
+
+.llm-hub-workflow-branch-label-false {
+  color: var(--color-red);
+}
+
+.llm-hub-workflow-branch-arrow {
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-branch-target {
+  color: var(--text-accent);
+  font-family: monospace;
+  font-size: 11px;
+}
+
+/* Node Editor Modal */
+.llm-hub-workflow-node-editor-modal {
+  padding: 20px;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-node-editor-modal h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-node-editor-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 8px;
+}
+
+.llm-hub-workflow-node-editor-textarea {
+  width: 100%;
+  max-height: 200px;
+  resize: vertical;
+}
+
+/* MCP checkboxes in node editor */
+
+
+
+
+/* Path suggestion dropdown for workflow node editor */
+.llm-hub-workflow-path-suggestions {
+  position: absolute;
+  z-index: 100;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.llm-hub-workflow-path-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-path-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.llm-hub-workflow-path-suggestion-item:hover,
+.llm-hub-workflow-path-suggestion-item.is-selected {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-workflow-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* History Modal Styles */
+.llm-hub-workflow-history-modal {
+  padding: 20px;
+  min-width: 700px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-history-container {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-history-list-panel {
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.llm-hub-workflow-history-list-panel h3 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.llm-hub-workflow-history-list-header {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-history-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-history-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.llm-hub-workflow-history-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.llm-hub-workflow-history-select-all:hover {
+  color: var(--text-normal);
+}
+
+.llm-hub-workflow-history-select-all input {
+  margin: 0;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.llm-hub-workflow-history-delete-selected-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  background-color: var(--background-modifier-error);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.llm-hub-workflow-history-delete-selected-btn:hover {
+  filter: brightness(1.1);
+}
+
+.llm-hub-workflow-history-checkbox {
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.llm-hub-workflow-history-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.llm-hub-workflow-history-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.llm-hub-workflow-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.llm-hub-workflow-history-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.llm-hub-workflow-history-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
+}
+
+.llm-hub-workflow-history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  cursor: pointer;
+}
+
+.llm-hub-workflow-history-item:hover {
+  background-color: var(--background-secondary);
+}
+
+.llm-hub-workflow-history-item.is-selected {
+  background-color: var(--background-secondary-alt);
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.llm-hub-workflow-history-item:last-child {
+  border-bottom: none;
+}
+
+.llm-hub-workflow-history-status {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.llm-hub-workflow-status-completed {
+  background-color: var(--color-green);
+}
+
+.llm-hub-workflow-status-error {
+  background-color: var(--color-red);
+}
+
+.llm-hub-workflow-status-running {
+  background-color: var(--color-orange);
+}
+
+.llm-hub-workflow-status-cancelled {
+  background-color: var(--color-yellow);
+}
+
+.llm-hub-workflow-history-time {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.llm-hub-workflow-history-duration {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-history-status-text {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* History Detail Panel */
+.llm-hub-workflow-history-detail-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-history-detail-panel h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.llm-hub-workflow-history-detail {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 12px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-workflow-detail-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-detail-row {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.llm-hub-workflow-detail-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.llm-hub-workflow-detail-step {
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  padding: 10px;
+  border-left: 3px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-detail-step.llm-hub-workflow-step-success {
+  border-left-color: var(--color-green);
+}
+
+.llm-hub-workflow-detail-step.llm-hub-workflow-step-error {
+  border-left-color: var(--color-red);
+}
+
+.llm-hub-workflow-detail-step.llm-hub-workflow-step-skipped {
+  border-left-color: var(--color-yellow);
+}
+
+.llm-hub-workflow-step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-step-type {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.llm-hub-workflow-step-status {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.llm-hub-workflow-step-status-success {
+  background-color: var(--color-green);
+  color: white;
+}
+
+.llm-hub-workflow-step-status-error {
+  background-color: var(--color-red);
+  color: white;
+}
+
+.llm-hub-workflow-step-status-skipped {
+  background-color: var(--color-yellow);
+  color: black;
+}
+
+.llm-hub-workflow-step-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.llm-hub-workflow-step-section {
+  margin-top: 8px;
+}
+
+.llm-hub-workflow-step-section strong {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.llm-hub-workflow-step-section pre {
+  margin: 0;
+  padding: 8px;
+  background-color: var(--background-primary);
+  border-radius: 4px;
+  font-size: 11px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.llm-hub-workflow-step-pre-scrollable {
+  max-height: 300px;
+  overflow-y: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.llm-hub-workflow-step-thinking {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+}
+
+.llm-hub-workflow-step-thinking-summary {
+  padding: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.llm-hub-workflow-step-thinking-summary:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.llm-hub-workflow-step-thinking pre {
+  margin: 0;
+  padding: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.llm-hub-workflow-btn-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.llm-hub-workflow-step-error {
+  margin-top: 8px;
+  color: var(--text-error);
+  font-size: 12px;
+}
+
+.llm-hub-workflow-detail-actions {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  gap: 8px;
+}
+
+.llm-hub-workflow-detail-delete-btn {
+  color: var(--text-error);
+}
+
+/* Mobile Styles for Workflow History Modal */
+.is-mobile .llm-hub-workflow-history-modal {
+  min-width: unset;
+  padding: 12px;
+}
+
+.is-mobile .llm-hub-workflow-history-container {
+  flex-direction: column;
+}
+
+.is-mobile .llm-hub-workflow-history-list-panel {
+  width: 100%;
+  max-height: 40vh;
+}
+
+.is-mobile .llm-hub-workflow-history-detail-panel {
+  min-height: 200px;
+}
+
+.is-mobile .llm-hub-workflow-history-list-panel h3,
+.is-mobile .llm-hub-workflow-history-detail-panel h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.is-mobile .llm-hub-workflow-history-item {
+  padding: 8px 10px;
+}
+
+.is-mobile .llm-hub-workflow-history-time {
+  font-size: 11px;
+}
+
+.is-mobile .llm-hub-workflow-history-duration,
+.is-mobile .llm-hub-workflow-history-status-text {
+  font-size: 10px;
+}
+
+.is-mobile .llm-hub-workflow-detail-row {
+  font-size: 12px;
+}
+
+.is-mobile .llm-hub-workflow-detail-actions {
+  flex-wrap: wrap;
+}
+
+/* Mobile Styles for Workflow */
+.is-mobile .gemini-helper-tab {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+/* Workflow Prompt Modals */
+.llm-hub-workflow-file-prompt-modal,
+.llm-hub-workflow-value-prompt-modal,
+.llm-hub-workflow-selection-prompt-modal {
+  padding: 20px;
+}
+
+.llm-hub-workflow-file-prompt-modal h2,
+.llm-hub-workflow-value-prompt-modal h2,
+.llm-hub-workflow-selection-prompt-modal h2 {
+  margin: 0 0 16px 0;
+}
+
+.llm-hub-workflow-file-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-select-file-btn {
+  flex-shrink: 0;
+}
+
+.llm-hub-workflow-selected-file-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llm-hub-workflow-file-preview-container {
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-file-preview-container h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-file-preview {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+}
+
+.llm-hub-workflow-file-preview-image {
+  max-width: 100%;
+  max-height: 300px;
+}
+
+.llm-hub-workflow-file-path-input input {
+  width: 100%;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.llm-hub-workflow-value-input-container {
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-value-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.llm-hub-workflow-value-textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.llm-hub-workflow-selection-instruction {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-selection-textarea-container {
+  margin-bottom: 12px;
+}
+
+.llm-hub-workflow-selection-textarea {
+  width: 100%;
+  height: 250px;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: var(--font-monospace);
+  resize: vertical;
+}
+
+.llm-hub-workflow-selection-info {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-prompt-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* ===============================================
+   Edit Confirmation Modal Styles
+   =============================================== */
+
+.llm-hub-workflow-confirm-modal {
+  width: 600px;
+  height: 500px;
+  max-width: 90vw;
+  max-height: 80vh;
+}
+
+.llm-hub-workflow-confirm-modal .modal-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.llm-hub-workflow-confirm-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  cursor: move;
+}
+
+.llm-hub-workflow-confirm-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-confirm-title-row h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.llm-hub-workflow-confirm-mode {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.llm-hub-workflow-confirm-path {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-confirm-path strong {
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+}
+
+.llm-hub-workflow-confirm-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.llm-hub-workflow-confirm-preview-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-confirm-preview-content {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.llm-hub-workflow-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-confirm-actions button {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Utility classes */
+.llm-hub-hidden {
+  display: none;
+}
+
+/* Edit Confirmation Additional Request */
+.llm-hub-workflow-confirm-additional-container {
+  padding: 0 16px 16px;
+}
+
+.llm-hub-workflow-confirm-additional-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-confirm-modal .llm-hub-workflow-confirm-additional-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-normal);
+  box-sizing: border-box;
+  min-height: 80px;
+}
+
+.llm-hub-workflow-confirm-modal .llm-hub-workflow-confirm-additional-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.llm-hub-workflow-confirm-modal .llm-hub-workflow-confirm-additional-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ===============================================
+   Dialog Prompt Modal Styles
+   =============================================== */
+
+.llm-hub-workflow-dialog-modal {
+  min-width: 350px;
+  max-width: 500px;
+}
+
+.llm-hub-workflow-dialog-header {
+  margin-bottom: 12px;
+}
+
+.llm-hub-workflow-dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.llm-hub-workflow-dialog-message {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  color: var(--text-normal);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.llm-hub-workflow-dialog-markdown {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  background: var(--background-secondary);
+  border-radius: 6px;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+.llm-hub-workflow-dialog-markdown * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-workflow-dialog-markdown p:first-child {
+  margin-top: 0;
+}
+
+.llm-hub-workflow-dialog-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.llm-hub-workflow-dialog-markdown pre {
+  background: var(--background-primary);
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.llm-hub-workflow-dialog-markdown code {
+  background: var(--background-primary);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 13px;
+}
+
+.llm-hub-workflow-dialog-markdown ul,
+.llm-hub-workflow-dialog-markdown ol {
+  padding-left: 20px;
+}
+
+/* Dialog HTML iframe container */
+.llm-hub-workflow-dialog-html-container {
+  width: 100%;
+  min-height: 300px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-dialog-html-iframe {
+  width: 100%;
+  height: 400px;
+  border: none;
+}
+
+.llm-hub-workflow-dialog-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.llm-hub-workflow-dialog-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.llm-hub-workflow-dialog-option:hover {
+  background: var(--background-secondary-alt);
+}
+
+.llm-hub-workflow-dialog-option.selected {
+  background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent);
+}
+
+.llm-hub-workflow-dialog-option input[type="checkbox"],
+.llm-hub-workflow-dialog-option input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.llm-hub-workflow-dialog-option-label {
+  font-size: 14px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.llm-hub-workflow-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.llm-hub-workflow-dialog-buttons button {
+  padding: 8px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.llm-hub-workflow-dialog-buttons button.mod-cta {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+}
+
+.llm-hub-workflow-dialog-buttons button.mod-cta:hover {
+  opacity: 0.9;
+}
+
+.llm-hub-workflow-dialog-buttons button:not(.mod-cta) {
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.llm-hub-workflow-dialog-buttons button:not(.mod-cta):hover {
+  background: var(--background-modifier-hover);
+}
+
+/* AI Workflow Modal */
+.llm-hub-workflow-modal {
+  min-width: 500px;
+}
+
+.llm-hub-workflow-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.llm-hub-workflow-name-input,
+.llm-hub-workflow-path-input {
+  width: 100%;
+  min-width: 360px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.llm-hub-workflow-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+/* AI Workflow textarea container for mention autocomplete */
+.llm-hub-workflow-textarea-container {
+  position: relative;
+}
+
+.llm-hub-workflow-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.llm-hub-workflow-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* AI Workflow mention autocomplete - fixed position to avoid clipping */
+.llm-hub-workflow-mention-autocomplete {
+  position: fixed;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10000;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.llm-hub-workflow-mention-autocomplete.is-hidden {
+  display: none;
+}
+
+.llm-hub-workflow-existing {
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-existing summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-yaml-preview {
+  max-height: 200px;
+  overflow: auto;
+  padding: 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.llm-hub-workflow-model-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-model-select {
+  flex: 1;
+}
+
+.llm-hub-workflow-status {
+  min-height: 24px;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.llm-hub-workflow-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* AI Workflow attachment */
+.llm-hub-workflow-attachment-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: var(--background-modifier-hover);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.llm-hub-workflow-attach-btn:hover {
+  background: var(--background-modifier-active);
+  background: var(--background-modifier-active);
+}
+
+.llm-hub-workflow-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.llm-hub-workflow-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+}
+
+.llm-hub-workflow-attachment-remove {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+.llm-hub-workflow-attachment-remove:hover {
+  color: var(--text-error);
+}
+
+/* AI Workflow modal drag handle */
+.llm-hub-workflow-modal .modal-drag-handle {
+  cursor: move;
+  padding: 8px 0;
+  margin: -16px -16px 16px -16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-modal .modal-drag-handle h2 {
+  margin: 0;
+}
+
+/* Workflow panel AI button */
+.llm-hub-workflow-empty-state .llm-hub-workflow-sidebar-run-btn,
+.llm-hub-workflow-empty-state .llm-hub-workflow-sidebar-ai-btn {
+  width: 200px;
+}
+
+.llm-hub-workflow-sidebar-run-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: 1px solid var(--interactive-accent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.llm-hub-workflow-sidebar-run-btn:hover {
+  background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent-hover);
+}
+
+.llm-hub-workflow-sidebar-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.llm-hub-workflow-sidebar-ai-btn:hover:not(:disabled) {
+  background: var(--interactive-accent-hover);
+}
+
+.llm-hub-workflow-sidebar-ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Hide button labels on mobile */
+.is-mobile .llm-hub-workflow-btn-label {
+  display: none;
+}
+
+.is-mobile .llm-hub-workflow-sidebar-add-btn {
+  padding: 6px 8px;
+}
+
+.llm-hub-workflow-sidebar-history-btn,
+.llm-hub-workflow-sidebar-save-btn,
+.llm-hub-workflow-sidebar-canvas-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.llm-hub-workflow-sidebar-history-btn:hover,
+.llm-hub-workflow-sidebar-save-btn:hover,
+.llm-hub-workflow-sidebar-canvas-btn:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+.llm-hub-workflow-sidebar-canvas-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* AI Workflow confirmation checkbox row */
+.llm-hub-workflow-confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-confirm-row input[type="checkbox"] {
+  margin: 0;
+}
+
+.llm-hub-workflow-confirm-row label {
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* AI Workflow execution history row */
+.llm-hub-workflow-execution-history-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-execution-history-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.llm-hub-workflow-execution-history-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.llm-hub-workflow-execution-history-info {
+  font-size: 13px;
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
+.llm-hub-workflow-execution-history-info.is-hidden {
+  display: none;
+}
+
+/* AI Workflow confirmation modal */
+.llm-hub-workflow-confirm-modal {
+  min-width: 700px;
+  max-width: 90vw;
+}
+
+.llm-hub-workflow-modal-resizable.modal {
+  width: 80vw;
+  max-width: 1200px;
+  height: 80vh;
+  max-height: 90vh;
+  resize: both;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.llm-hub-workflow-modal-resizable .modal-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+/* Workflow Selector Modal */
+.llm-hub-workflow-selector-modal-container {
+  width: 800px;
+  max-width: 90vw;
+  height: 600px;
+  max-height: 80vh;
+}
+
+.llm-hub-workflow-selector-modal-container .modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-selector-modal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.llm-hub-workflow-selector-modal h2 {
+  margin: 0 0 12px 0;
+  flex-shrink: 0;
+}
+
+.llm-hub-workflow-selector-search {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.llm-hub-workflow-selector-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  font-size: 14px;
+}
+
+.llm-hub-workflow-selector-search-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.llm-hub-workflow-selector-main {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-selector-left-pane {
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-selector-file-list {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--background-secondary);
+}
+
+.llm-hub-workflow-selector-folder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--background-primary-alt);
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-weight: 500;
+}
+
+.llm-hub-workflow-selector-folder-icon {
+  font-size: 10px;
+}
+
+.llm-hub-workflow-selector-file-item {
+  padding: 8px 10px 8px 24px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  transition: background 0.15s;
+}
+
+.llm-hub-workflow-selector-file-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-workflow-selector-file-item:focus {
+  background: var(--background-modifier-hover);
+  outline: none;
+}
+
+.llm-hub-workflow-selector-file-item.is-selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.llm-hub-workflow-selector-no-files {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.llm-hub-workflow-selector-right-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-selector-preview {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-selector-preview:not(:empty) {
+  color: var(--text-normal);
+}
+
+.llm-hub-workflow-selector-dropdown-container {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.llm-hub-workflow-selector-dropdown-container.is-hidden {
+  display: none;
+}
+
+.llm-hub-workflow-selector-dropdown-container label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-selector-dropdown {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+  font-size: 13px;
+}
+
+.llm-hub-workflow-selector-buttons {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.llm-hub-workflow-selector-buttons button {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+/* Workflow Selector - Visual Preview */
+.llm-hub-workflow-selector-workflow-name {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-selector-nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Override node card styles in selector preview */
+.llm-hub-workflow-selector-nodes .llm-hub-workflow-node-card {
+  cursor: default;
+}
+
+.llm-hub-workflow-selector-nodes .llm-hub-workflow-node-card:hover {
+  background-color: var(--background-secondary);
+}
+
+.llm-hub-workflow-selector-nodes .llm-hub-workflow-node-header {
+  margin-left: 0;
+}
+
+.llm-hub-workflow-selector-nodes .llm-hub-workflow-node-summary {
+  margin-left: 0;
+}
+
+/* Workflow Selector - AI Workflow History */
+.llm-hub-workflow-selector-history {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-selector-history-summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 4px 0;
+  user-select: none;
+  list-style: none;
+}
+
+.llm-hub-workflow-selector-history-summary::-webkit-details-marker {
+  display: none;
+}
+
+.llm-hub-workflow-selector-history-summary::before {
+  content: "▼ ";
+  font-size: 10px;
+}
+
+.llm-hub-workflow-selector-history:not([open]) .llm-hub-workflow-selector-history-summary::before {
+  content: "▶ ";
+}
+
+.llm-hub-workflow-selector-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.llm-hub-workflow-selector-history-item {
+  padding: 6px 10px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.llm-hub-workflow-selector-history-more {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px;
+}
+
+/* Workflow Selector - Mobile layout */
+@media (max-width: 600px) {
+  .llm-hub-workflow-selector-modal-container {
+    width: 100vw;
+    height: 90vh;
+    max-width: 100vw;
+    max-height: 90vh;
+  }
+
+  .llm-hub-workflow-selector-main {
+    flex-direction: column;
+  }
+
+  .llm-hub-workflow-selector-left-pane {
+    width: 100%;
+    height: 150px;
+    flex-shrink: 0;
+  }
+
+  .llm-hub-workflow-selector-right-pane {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .llm-hub-workflow-selector-preview {
+    max-height: none;
+  }
+}
+
+   Workflow Generation Modal Styles
+   =============================================== */
+
+.llm-hub-workflow-generation-modal {
+  min-width: 500px;
+}
+
+.llm-hub-workflow-generation-modal-content .modal-drag-handle {
+  cursor: move;
+  padding: 8px 0;
+  margin: -16px -16px 16px -16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-generation-modal-content .modal-drag-handle h2 {
+  margin: 0;
+}
+
+.llm-hub-workflow-generation-model-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 0.75em;
+  font-weight: normal;
+  background: var(--background-modifier-success);
+  color: var(--text-on-accent);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.llm-hub-workflow-generation-request {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.llm-hub-workflow-generation-request h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.llm-hub-workflow-generation-request-content {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.llm-hub-workflow-generation-history-info {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-generation-history-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: var(--background-modifier-success);
+  color: var(--text-on-accent);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.llm-hub-workflow-generation-thinking-section {
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-generation-thinking-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.llm-hub-workflow-generation-thinking {
+  min-height: 80px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  font-family: var(--font-monospace);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.llm-hub-workflow-generation-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--background-modifier-hover);
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-generation-loading-dots {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.llm-hub-workflow-generation-loading-dots .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  animation: workflow-dot-pulse 1.4s ease-in-out infinite;
+}
+
+.llm-hub-workflow-generation-loading-dots .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.llm-hub-workflow-generation-loading-dots .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes workflow-dot-pulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.llm-hub-workflow-generation-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+   Workflow Preview Modal Styles
+   =============================================== */
+
+.llm-hub-workflow-preview-modal {
+  min-width: 600px;
+  max-width: 900px;
+}
+
+.llm-hub-workflow-preview-modal-content .modal-drag-handle {
+  cursor: move;
+  padding: 8px 0;
+  margin: -16px -16px 16px -16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-preview-modal-content .modal-drag-handle h2 {
+  margin: 0;
+}
+
+.llm-hub-workflow-preview-name {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.llm-hub-workflow-preview-nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.llm-hub-workflow-preview-node-card {
+  padding: 10px 14px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  transition: border-color 0.15s;
+}
+
+.llm-hub-workflow-preview-node-card:hover {
+  border-color: var(--interactive-accent);
+}
+
+.llm-hub-workflow-preview-node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.llm-hub-workflow-preview-node-type {
+  padding: 2px 6px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.llm-hub-workflow-preview-node-id {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+}
+
+.llm-hub-workflow-preview-node-summary {
+  font-size: 13px;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.llm-hub-workflow-preview-node-connections {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-preview-yaml-section {
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-preview-yaml-section summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  background: var(--background-modifier-hover);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-preview-yaml-section summary:hover {
+  background: var(--background-modifier-active);
+}
+
+.llm-hub-workflow-preview-yaml {
+  margin: 8px 0 0 0;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--font-monospace);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.llm-hub-workflow-preview-additional {
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-preview-additional.is-hidden {
+  display: none;
+}
+
+.llm-hub-workflow-preview-additional label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.llm-hub-workflow-preview-additional-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  resize: vertical;
+}
+
+.llm-hub-workflow-preview-additional-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.llm-hub-workflow-preview-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.llm-hub-workflow-preview-buttons button {
+  padding: 8px 16px;
+}
+
+/* Mobile: Full screen modals */
+.is-mobile .llm-hub-workflow-generation-modal,
+.is-mobile .llm-hub-workflow-preview-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  transform: none !important;
+}
+
+.is-mobile .llm-hub-workflow-generation-modal-content,
+.is-mobile .llm-hub-workflow-preview-modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.is-mobile .llm-hub-workflow-generation-modal-content .modal-drag-handle,
+.is-mobile .llm-hub-workflow-preview-modal-content .modal-drag-handle {
+  flex-shrink: 0;
+  cursor: default;
+}
+
+/* Workflow Generation Modal - Mobile */
+.is-mobile .llm-hub-workflow-generation-request {
+  flex-shrink: 0;
+  max-height: 60px;
+  overflow-y: auto;
+}
+
+.is-mobile .llm-hub-workflow-generation-thinking-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.is-mobile .llm-hub-workflow-generation-thinking {
+  min-height: 60px;
+  max-height: 120px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-mobile .llm-hub-workflow-generation-status {
+  flex-shrink: 0;
+}
+
+.is-mobile .llm-hub-workflow-generation-buttons {
+  flex-shrink: 0;
+  padding-top: 8px;
+}
+
+.is-mobile .llm-hub-workflow-generation-buttons button {
+  width: 100%;
+  padding: 10px;
+}
+
+/* Workflow Preview Modal - Mobile */
+.is-mobile .llm-hub-workflow-preview-name {
+  flex-shrink: 0;
+}
+
+.is-mobile .llm-hub-workflow-preview-nodes {
+  flex: 1;
+  min-height: 100px;
+  max-height: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-mobile .llm-hub-workflow-preview-yaml-section {
+  flex-shrink: 0;
+}
+
+.is-mobile .llm-hub-workflow-preview-yaml {
+  max-height: 120px;
+}
+
+.is-mobile .llm-hub-workflow-preview-additional {
+  flex-shrink: 0;
+}
+
+.is-mobile .llm-hub-workflow-preview-additional-input {
+  min-height: 60px;
+}
+
+.is-mobile .llm-hub-workflow-preview-buttons {
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.is-mobile .llm-hub-workflow-preview-buttons button {
+  width: 100%;
+  padding: 12px;
+}
+
+/* Reduce content height when textarea is focused on mobile */
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .modal-drag-handle {
+  display: none !important;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .llm-hub-workflow-preview-name {
+  padding: 4px 8px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .llm-hub-workflow-preview-nodes {
+  max-height: 30vh;
+  min-height: 60px;
+  flex: 0 0 auto;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .llm-hub-workflow-preview-yaml-section {
+  display: none !important;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused {
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .llm-hub-workflow-preview-additional {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .llm-hub-workflow-preview-additional label {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .llm-hub-workflow-preview-additional-input {
+  height: 60px;
+  min-height: 60px;
+  max-height: 60px;
+  resize: none;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal-content.textarea-focused .llm-hub-workflow-preview-buttons {
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+/* Workflow Preview - Execution History Row */
+.llm-hub-workflow-preview-execution-history-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.llm-hub-workflow-preview-execution-history-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.llm-hub-workflow-preview-execution-history-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+.llm-hub-workflow-preview-execution-history-info {
+  font-size: 13px;
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
+.llm-hub-workflow-preview-execution-history-info.is-hidden {
+  display: none;
+}
+
+   Execution History Select Modal Styles
+   =============================================== */
+
+.llm-hub-workflow-history-select-modal {
+  min-width: 700px;
+  max-width: 900px;
+}
+
+.llm-hub-workflow-history-select-modal .modal-drag-handle {
+  cursor: move;
+  padding: 8px 0;
+  margin: -16px -16px 16px -16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-history-select-modal .modal-drag-handle h2 {
+  margin: 0;
+}
+
+.execution-history-select-content {
+  display: flex;
+  gap: 16px;
+  min-height: 300px;
+  max-height: 50vh;
+}
+
+.execution-history-runs-column {
+  flex: 0 0 240px;
+  display: flex;
+  flex-direction: column;
+}
+
+.execution-history-runs-column h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.execution-history-runs-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.execution-history-steps-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.execution-history-steps-column h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.execution-history-steps-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.execution-history-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.execution-history-run-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.execution-history-run-item:last-child {
+  border-bottom: none;
+}
+
+.execution-history-run-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.execution-history-run-item.is-selected {
+  background: var(--interactive-accent);
+}
+
+.execution-history-run-item.is-selected .execution-history-run-time,
+.execution-history-run-item.is-selected .execution-history-run-status {
+  color: var(--text-on-accent);
+}
+
+.execution-history-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.execution-history-status-indicator.status-completed {
+  background: var(--color-green);
+}
+
+.execution-history-status-indicator.status-error {
+  background: var(--color-red);
+}
+
+.execution-history-status-indicator.status-running {
+  background: var(--color-yellow);
+}
+
+.execution-history-status-indicator.status-cancelled {
+  background: var(--text-muted);
+}
+
+.execution-history-run-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.execution-history-run-time {
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.execution-history-run-status {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.execution-history-run-status.status-error {
+  color: var(--color-red);
+}
+
+.execution-history-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.execution-history-step-item:last-child {
+  border-bottom: none;
+}
+
+.execution-history-step-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.execution-history-step-item.is-selected {
+  background: var(--background-secondary-alt);
+}
+
+.execution-history-step-checkbox {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.execution-history-step-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.execution-history-step-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.execution-history-step-type {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 3px;
+}
+
+.execution-history-step-id {
+  font-size: 12px;
+  font-family: var(--font-monospace);
+  color: var(--text-muted);
+}
+
+.execution-history-step-status {
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--background-modifier-hover);
+}
+
+.execution-history-step-status.status-success {
+  background: var(--color-green);
+  color: white;
+}
+
+.execution-history-step-status.status-error {
+  background: var(--color-red);
+  color: white;
+}
+
+.execution-history-step-status.status-skipped {
+  background: var(--text-muted);
+  color: white;
+}
+
+.execution-history-step-preview {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.execution-history-step-preview .label {
+  color: var(--text-faint);
+}
+
+.execution-history-step-preview.error {
+  color: var(--color-red);
+}
+
+.execution-history-select-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.execution-history-select-buttons button {
+  padding: 8px 16px;
+}
+
+/* Mobile styles for execution history select modal */
+.is-mobile .llm-hub-workflow-history-select-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-width: auto;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  transform: none !important;
+}
+
+.is-mobile .llm-hub-workflow-history-select-modal .modal-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.is-mobile .llm-hub-workflow-history-select-modal .modal-drag-handle {
+  flex-shrink: 0;
+  cursor: default;
+  margin: -12px -12px 12px -12px;
+  padding: 12px;
+}
+
+.is-mobile .execution-history-select-content {
+  flex: 1;
+  flex-direction: column;
+  max-height: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.is-mobile .execution-history-runs-column {
+  flex: 0 0 auto;
+  max-height: 120px;
+  margin-bottom: 12px;
+}
+
+.is-mobile .execution-history-runs-column h3 {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.is-mobile .execution-history-steps-column {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.is-mobile .execution-history-steps-column h3 {
+  font-size: 13px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.is-mobile .execution-history-steps-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.is-mobile .execution-history-select-buttons {
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.is-mobile .execution-history-select-buttons button {
+  width: 100%;
+  padding: 12px;
+}
+   Workflow Execution Modal Styles
+   =============================================== */
+
+.llm-hub-workflow-execution-modal {
+  min-width: 400px;
+  max-width: 600px;
+}
+
+.llm-hub-workflow-execution-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+
+.llm-hub-workflow-execution-header {
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-execution-header h2 {
+  margin: 0 0 8px 0;
+}
+
+.llm-hub-workflow-execution-name {
+  padding: 6px 10px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-block;
+}
+
+.llm-hub-workflow-execution-flow {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  max-height: 400px;
+}
+
+.llm-hub-workflow-execution-node {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--background-primary);
+  border: 2px solid var(--background-modifier-border);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.llm-hub-workflow-execution-node-pending {
+  opacity: 0.6;
+}
+
+.llm-hub-workflow-execution-node-running {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+  box-shadow: 0 0 8px rgba(var(--interactive-accent-rgb), 0.3);
+}
+
+.llm-hub-workflow-execution-node-completed {
+  border-color: var(--color-green);
+  opacity: 0.8;
+}
+
+.llm-hub-workflow-execution-node-error {
+  border-color: var(--color-red);
+  background: rgba(var(--color-red-rgb), 0.1);
+}
+
+.llm-hub-workflow-execution-node-type {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  background: var(--background-modifier-border);
+  border-radius: 3px;
+  color: var(--text-muted);
+}
+
+.llm-hub-workflow-execution-node-id {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.llm-hub-workflow-execution-node-label {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 4px;
+}
+
+.llm-hub-workflow-execution-node-status {
+  margin-left: auto;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.llm-hub-workflow-execution-node-status.status-running {
+  color: var(--interactive-accent);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.llm-hub-workflow-execution-node-status.status-completed {
+  color: var(--color-green);
+}
+
+.llm-hub-workflow-execution-node-status.status-error {
+  color: var(--color-red);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.llm-hub-workflow-execution-node-connections {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.llm-hub-workflow-execution-node-connections .conn-true {
+  color: var(--color-green);
+  margin-right: 8px;
+}
+
+.llm-hub-workflow-execution-node-connections .conn-false {
+  color: var(--color-red);
+}
+
+/* Node wrapper */
+.llm-hub-workflow-execution-node-wrapper {
+  margin-bottom: 8px;
+}
+
+.llm-hub-workflow-execution-node-wrapper:last-child {
+  margin-bottom: 0;
+}
+
+/* Clickable nodes */
+.llm-hub-workflow-execution-node.clickable {
+  cursor: pointer;
+}
+
+.llm-hub-workflow-execution-node.clickable:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Node header row */
+.llm-hub-workflow-execution-node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Expand indicator */
+.llm-hub-workflow-execution-node-expand {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  width: 16px;
+  text-align: center;
+}
+
+/* Node detail section */
+.llm-hub-workflow-execution-node-detail {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--background-primary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-workflow-execution-node-detail.llm-hub-workflow-step-success {
+  border-left: 3px solid var(--color-green);
+}
+
+.llm-hub-workflow-execution-node-detail.llm-hub-workflow-step-error {
+  border-left: 3px solid var(--color-red);
+}
+
+.llm-hub-workflow-execution-node-detail.llm-hub-workflow-step-running {
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.llm-hub-workflow-execution-node-detail.llm-hub-workflow-step-pending {
+  border-left: 3px solid var(--text-muted);
+}
+
+.llm-hub-workflow-execution-detail-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 12px;
+}
+
+.llm-hub-workflow-execution-detail-message {
+  font-size: 12px;
+  color: var(--text-normal);
+  white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-workflow-execution-status {
+  padding: 8px 12px;
+  background: var(--background-modifier-hover);
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.llm-hub-workflow-execution-status.status-success {
+  color: var(--color-green);
+  background: rgba(var(--color-green-rgb), 0.1);
+}
+
+.llm-hub-workflow-execution-status.status-error {
+  color: var(--color-red);
+  background: rgba(var(--color-red-rgb), 0.1);
+}
+
+.llm-hub-workflow-execution-status.status-stopped {
+  color: var(--text-warning);
+  background: rgba(var(--color-orange-rgb), 0.1);
+}
+
+.llm-hub-workflow-execution-buttons {
+  display: flex;
+  justify-content: center;
+}
+
+.llm-hub-workflow-execution-buttons button {
+  min-width: 120px;
+}
+
+/* Mobile styles */
+.is-mobile .llm-hub-workflow-execution-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  transform: none !important;
+}
+
+.is-mobile .llm-hub-workflow-execution-modal-content {
+  height: 100%;
+  max-height: 100%;
+}
+
+.is-mobile .llm-hub-workflow-execution-flow {
+  max-height: none;
+  flex: 1;
+}
+
+.is-mobile .llm-hub-workflow-execution-buttons button {
+  width: 100%;
+  padding: 12px;
+}
+
+/* MCP test connection status */
+.llm-hub-mcp-test-status {
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.llm-hub-mcp-status--success {

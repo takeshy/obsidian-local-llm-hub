@@ -4,6 +4,12 @@ import { Notice, type App } from "obsidian";
 import type { Attachment } from "src/types";
 import { t } from "src/i18n";
 
+interface SlashCommandItem {
+  name: string;
+  description: string;
+  promptTemplate: string;
+}
+
 interface InputAreaProps {
   onSend: (content: string, attachments?: Attachment[]) => void | Promise<void>;
   onStop?: () => void;
@@ -17,6 +23,7 @@ interface InputAreaProps {
   vaultFiles: string[];
   hasSelection: boolean;
   app: App;
+  slashCommands?: SlashCommandItem[];
 }
 
 export interface InputAreaHandle {
@@ -53,6 +60,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   vaultFiles,
   hasSelection,
   app,
+  slashCommands,
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -61,6 +69,10 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   const [mentionIndex, setMentionIndex] = useState(0);
   const [filteredMentions, setFilteredMentions] = useState<MentionItem[]>([]);
   const [mentionStartPos, setMentionStartPos] = useState(0);
+  // Slash command autocomplete state
+  const [showSlashAutocomplete, setShowSlashAutocomplete] = useState(false);
+  const [slashIndex, setSlashIndex] = useState(0);
+  const [filteredSlashCommands, setFilteredSlashCommands] = useState<SlashCommandItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mentionAutocompleteRef = useRef<HTMLDivElement>(null);
@@ -121,6 +133,23 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     const cursorPos = e.target.selectionStart;
     setInput(value);
 
+    // Check for / slash command trigger (only at start of input)
+    if (slashCommands && slashCommands.length > 0) {
+      const slashMatch = value.match(/^\/([^\s]*)$/);
+      if (slashMatch) {
+        const query = slashMatch[1].toLowerCase();
+        const filtered = slashCommands.filter(
+          (cmd) => cmd.name.toLowerCase().includes(query)
+        );
+        setFilteredSlashCommands(filtered);
+        setShowSlashAutocomplete(filtered.length > 0);
+        setSlashIndex(0);
+        setShowMentionAutocomplete(false);
+        return;
+      }
+    }
+    setShowSlashAutocomplete(false);
+
     // Check for @ mention trigger
     const textBeforeCursor = value.substring(0, cursorPos);
     const atMatch = textBeforeCursor.match(/@([^\s@]*)$/);
@@ -151,7 +180,38 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     }, 0);
   };
 
+  const selectSlashCommand = (cmd: SlashCommandItem) => {
+    setInput(cmd.promptTemplate);
+    setShowSlashAutocomplete(false);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // Slash command autocomplete
+    if (showSlashAutocomplete) {
+      if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+        e.preventDefault();
+        setSlashIndex((prev) => Math.min(prev + 1, filteredSlashCommands.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+        e.preventDefault();
+        setSlashIndex((prev) => Math.max(prev - 1, 0));
+        return;
+      }
+      if (e.key === "Enter" && !e.nativeEvent.isComposing && filteredSlashCommands.length > 0) {
+        e.preventDefault();
+        selectSlashCommand(filteredSlashCommands[slashIndex]);
+        return;
+      }
+      if (e.key === "Escape") {
+        setShowSlashAutocomplete(false);
+        return;
+      }
+    }
+
     // Mention autocomplete
     if (showMentionAutocomplete) {
       if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
@@ -270,6 +330,29 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       )}
 
       <div className="llm-hub-input-area">
+        {/* Slash command autocomplete */}
+        {showSlashAutocomplete && (
+          <div className="llm-hub-autocomplete">
+            {filteredSlashCommands.map((cmd, index) => (
+              <div
+                key={cmd.name}
+                className={`llm-hub-autocomplete-item ${
+                  index === slashIndex ? "active" : ""
+                }`}
+                onClick={() => selectSlashCommand(cmd)}
+                onMouseEnter={() => setSlashIndex(index)}
+              >
+                <span className="llm-hub-autocomplete-name">
+                  /{cmd.name}
+                </span>
+                <span className="llm-hub-autocomplete-desc">
+                  {cmd.description || cmd.promptTemplate.slice(0, 40)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Mention autocomplete */}
         {showMentionAutocomplete && (
           <div className="llm-hub-autocomplete" ref={mentionAutocompleteRef}>
