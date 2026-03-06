@@ -1,6 +1,5 @@
 import { App, Component, MarkdownRenderer, Modal, Setting } from "obsidian";
 import type { DialogResult } from "src/workflow/types";
-import { t } from "src/i18n";
 
 export class DialogPromptModal extends Modal {
   private title: string;

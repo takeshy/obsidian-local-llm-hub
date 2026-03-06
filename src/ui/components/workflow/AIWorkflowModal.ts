@@ -1,4 +1,4 @@
-import { App, Modal, Notice, Platform, parseYaml, TFile } from "obsidian";
+import { App, Modal, Notice, parseYaml, TFile } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { localLlmChatStream } from "src/core/localLlmProvider";
 import type { LocalLlmConfig, StreamChunkUsage, Message } from "src/types";

@@ -9,7 +9,7 @@ import { formatError } from "src/utils/error";
 import { EncryptionManager } from "src/plugin/encryptionManager";
 import { WorkflowManager } from "src/plugin/workflowManager";
 import { initEditHistoryManager, getEditHistoryManager } from "src/core/editHistory";
-import { isEncryptedFile } from "src/core/crypto";
+
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
 // Simple event emitter for settings updates

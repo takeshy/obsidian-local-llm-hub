@@ -1,6 +1,6 @@
 import { App, Modal, Notice } from "obsidian";
 import type { ExecutionRecord } from "src/workflow/types";
-import type { StreamChunkUsage } from "src/types";
+
 import { ExecutionHistoryManager, formatDuration, EncryptionConfig } from "src/workflow/history";
 import { cryptoCache } from "src/core/cryptoCache";
 import { decryptPrivateKey } from "src/core/crypto";

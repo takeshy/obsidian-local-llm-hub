@@ -142,8 +142,8 @@ export const en = {
 
   // Settings - Encryption
   "settings.encryption": "Encryption",
-  "settings.encryptChatHistory": "Encrypt AI chat history", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
-  "settings.encryptChatHistory.desc": "Encrypt AI chat history files. Requires password to view content.", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "settings.encryptChatHistory": "Encrypt AI chat history",  
+  "settings.encryptChatHistory.desc": "Encrypt AI chat history files. Requires password to view content.",  
   "settings.encryptWorkflowHistory": "Encrypt workflow execution logs",
   "settings.encryptWorkflowHistory.desc": "Encrypt workflow execution log files. Requires password to view content.",
   "settings.encryptionSetup": "Setup encryption",
@@ -190,7 +190,7 @@ export const en = {
   // Settings - Edit History
   "settings.editHistory": "Edit history",
   "settings.editHistoryEnabled": "Enable edit history",
-  "settings.editHistoryEnabled.desc": "Track changes made by AI to your notes (unified diff format)", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "settings.editHistoryEnabled.desc": "Track changes made by AI to your notes (unified diff format)",  
   "settings.editHistoryContextLines": "Context lines",
   "settings.editHistoryContextLines.desc": "Number of context lines in diff",
   "settings.editHistoryViewStats": "View stats",
@@ -295,8 +295,8 @@ export const en = {
   "workflow.nodeType.if": "If",
   "workflow.nodeType.while": "While",
   "workflow.nodeType.command": "LLM command", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "workflow.nodeType.http": "HTTP", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- HTTP is an acronym
-  "workflow.nodeType.json": "JSON", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- JSON is an acronym
+  "workflow.nodeType.http": "HTTP",  
+  "workflow.nodeType.json": "JSON",  
   "workflow.nodeType.note": "Note",
   "workflow.nodeType.noteRead": "Note read",
   "workflow.nodeType.noteSearch": "Note search",
@@ -385,7 +385,7 @@ export const en = {
 
   // Workflow preview
   "workflow.preview.title": "Preview workflow",
-  "workflow.preview.showYaml": "Show YAML", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- YAML is an acronym
+  "workflow.preview.showYaml": "Show YAML",  
   "workflow.preview.additionalRequest": "Additional request:",
   "workflow.preview.additionalPlaceholder": "Describe changes you want...",
   "workflow.preview.cancel": "Cancel",
@@ -413,19 +413,19 @@ export const en = {
   "nodeEditor.condition": "Condition",
   "nodeEditor.condition.placeholder": "{{var}} == value",
   "nodeEditor.prompt": "Prompt",
-  "nodeEditor.prompt.placeholder": "Enter prompt for AI...", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "nodeEditor.prompt.placeholder": "Enter prompt for AI...",  
   "nodeEditor.enableThinking": "Enable thinking",
   "nodeEditor.enableThinking.desc": "Allow model to use thinking/reasoning",
   "nodeEditor.saveTo": "Save to variable",
-  "nodeEditor.saveTo.placeholder": "result",
-  "nodeEditor.saveTo.httpResponse": "Save HTTP response to...", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- HTTP is an acronym
+  "nodeEditor.saveTo.placeholder": "result", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.saveTo.httpResponse": "Save HTTP response to...",  
   "nodeEditor.saveTo.noteContent": "Save note content to...",
   "nodeEditor.saveTo.searchResults": "Save search results to...",
   "nodeEditor.saveTo.noteList": "Save note list to...",
   "nodeEditor.saveTo.folderList": "Save folder list to...",
   "nodeEditor.saveTo.dialogResult": "Save dialog result to...",
   "nodeEditor.saveTo.commandResult": "Save command result to...",
-  "nodeEditor.url": "URL", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- URL is an acronym
+  "nodeEditor.url": "URL",  
   "nodeEditor.url.placeholder": "https://api.example.com/endpoint",
   "nodeEditor.method": "Method",
   "nodeEditor.contentType": "Content type",
@@ -439,19 +439,19 @@ export const en = {
   "nodeEditor.saveStatus": "Save status code to",
   "nodeEditor.saveStatus.placeholder": "statusCode",
   "nodeEditor.throwOnError": "Throw on error",
-  "nodeEditor.throwOnError.desc": "Throw error on HTTP 4xx/5xx", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- HTTP is an acronym
+  "nodeEditor.throwOnError.desc": "Throw error on HTTP 4xx/5xx",  
   "nodeEditor.sourceVariable": "Source variable",
   "nodeEditor.sourceVariable.placeholder": "variableName",
   "nodeEditor.notePath": "Note path",
-  "nodeEditor.notePath.placeholder": "path/to/note",
+  "nodeEditor.notePath.placeholder": "path/to/note", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.content": "Content",
   "nodeEditor.content.placeholder": "Note content or {{variable}}",
   "nodeEditor.mode": "Write mode",
-  "nodeEditor.mode.desc": "overwrite, append, or create (skip if exists)",
+  "nodeEditor.mode.desc": "overwrite, append, or create (skip if exists)", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- listing option values
   "nodeEditor.confirm": "Confirm before write",
   "nodeEditor.confirm.desc": "Show confirmation dialog",
   "nodeEditor.notePathRead": "Note path to read",
-  "nodeEditor.notePathRead.placeholder": "path/to/note",
+  "nodeEditor.notePathRead.placeholder": "path/to/note", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.searchQuery": "Search query",
   "nodeEditor.searchQuery.placeholder": "Search term...",
   "nodeEditor.searchType": "Search content",
@@ -460,7 +460,7 @@ export const en = {
   "nodeEditor.limit.placeholder": "10",
   "nodeEditor.limit.notes": "50",
   "nodeEditor.folder": "Folder",
-  "nodeEditor.folder.placeholder": "path/to/folder",
+  "nodeEditor.folder.placeholder": "path/to/folder", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.recursive": "Recursive",
   "nodeEditor.recursive.desc": "Include subfolders",
   "nodeEditor.tags": "Tags filter",
@@ -468,9 +468,9 @@ export const en = {
   "nodeEditor.tagMatch": "Tag match mode",
   "nodeEditor.tagMatch.desc": "Match any or all tags",
   "nodeEditor.createdWithin": "Created within",
-  "nodeEditor.createdWithin.placeholder": "e.g. 7d, 24h, 30m",
+  "nodeEditor.createdWithin.placeholder": "e.g. 7d, 24h, 30m", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.modifiedWithin": "Modified within",
-  "nodeEditor.modifiedWithin.placeholder": "e.g. 7d, 24h, 30m",
+  "nodeEditor.modifiedWithin.placeholder": "e.g. 7d, 24h, 30m", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.sortBy": "Sort by",
   "nodeEditor.sortBy.desc": "Sort results by field",
   "nodeEditor.sortOrder": "Sort order",
@@ -478,15 +478,15 @@ export const en = {
   "nodeEditor.parentFolder": "Parent folder",
   "nodeEditor.parentFolder.placeholder": "Leave empty for all folders",
   "nodeEditor.filePath": "File path",
-  "nodeEditor.filePath.placeholder": "path/to/file",
+  "nodeEditor.filePath.placeholder": "path/to/file", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.title": "Title",
   "nodeEditor.title.placeholder": "Dialog title",
   "nodeEditor.message": "Message",
   "nodeEditor.message.placeholder": "Dialog message...",
-  "nodeEditor.renderMarkdown": "Render markdown",
-  "nodeEditor.renderMarkdown.desc": "Render message as markdown",
+  "nodeEditor.renderMarkdown": "Render markdown", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
+  "nodeEditor.renderMarkdown.desc": "Render message as markdown", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
   "nodeEditor.options": "Options",
-  "nodeEditor.options.placeholder": "option1, option2, option3",
+  "nodeEditor.options.placeholder": "option1, option2, option3", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.selectionMode": "Multi-select",
   "nodeEditor.selectionMode.desc": "Allow selecting multiple options",
   "nodeEditor.inputTitle": "Input title",
@@ -513,9 +513,9 @@ export const en = {
   "nodeEditor.fileExplorerMode": "Mode",
   "nodeEditor.fileExplorerMode.desc": "Select existing or create new",
   "nodeEditor.extensions": "File extensions",
-  "nodeEditor.extensions.placeholder": "md, txt, json",
+  "nodeEditor.extensions.placeholder": "md, txt, json", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.defaultPath": "Default path",
-  "nodeEditor.defaultPath.placeholder": "default/path",
+  "nodeEditor.defaultPath.placeholder": "default/path", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.saveDataTo": "Save data to",
   "nodeEditor.saveDataTo.placeholder": "fileData",
   "nodeEditor.savePathTo": "Save path to",
@@ -529,23 +529,23 @@ export const en = {
   "nodeEditor.outputVariables": "Output variables",
   "nodeEditor.outputVariables.placeholder": "JSON: {\"parentVar\": \"subVar\"}",
   "nodeEditor.prefix": "Variable prefix",
-  "nodeEditor.prefix.placeholder": "sub_",
+  "nodeEditor.prefix.placeholder": "sub_", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.ragNotePath": "Note path",
-  "nodeEditor.ragNotePath.placeholder": "path/to/note",
+  "nodeEditor.ragNotePath.placeholder": "path/to/note", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.ragOldPath": "Old path (for renames)",
-  "nodeEditor.ragOldPath.placeholder": "old/path",
+  "nodeEditor.ragOldPath.placeholder": "old/path", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.ragSetting": "RAG setting", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
   "nodeEditor.ragSetting.select": "Select...",
   "nodeEditor.fileSaveSource": "Source variable",
   "nodeEditor.fileSaveSource.placeholder": "fileData",
   "nodeEditor.fileSavePath": "Save path",
-  "nodeEditor.fileSavePath.placeholder": "path/to/save",
+  "nodeEditor.fileSavePath.placeholder": "path/to/save", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.fileSavePathTo": "Save actual path to",
   "nodeEditor.fileSavePathTo.placeholder": "savedPath",
-  "nodeEditor.commandId": "Command ID", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- ID is an abbreviation
-  "nodeEditor.commandId.placeholder": "app:command-id",
+  "nodeEditor.commandId": "Command ID",  
+  "nodeEditor.commandId.placeholder": "app:command-id", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.commandFilePath": "File path (optional)",
-  "nodeEditor.commandFilePath.placeholder": "path/to/file",
+  "nodeEditor.commandFilePath.placeholder": "path/to/file", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "nodeEditor.duration": "Duration (ms)",
   "nodeEditor.duration.placeholder": "1000",
   "nodeEditor.comment": "Comment",
@@ -570,10 +570,10 @@ export const en = {
   "common.delete": "Delete",
 
   // Workflow panel
-  "workflow.openMarkdownFile": "Open a markdown file to view or create workflows",
-  "workflow.createWithAI": "Create with AI", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "workflow.openMarkdownFile": "Open a markdown file to view or create workflows", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
+  "workflow.createWithAI": "Create with AI",  
   "workflow.addNode": "Add node",
-  "workflow.modifyWithAI": "Modify with AI", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "workflow.modifyWithAI": "Modify with AI",  
   "workflow.noWorkflowToModify": "No workflow to modify",
   "workflow.modifiedSuccessfully": "Workflow modified successfully",
   "workflow.noWorkflowToRun": "No workflow to run",
@@ -598,7 +598,7 @@ export const en = {
   "workflow.filePatternDesc": "Glob pattern to filter files (e.g. **/*.md). Leave empty for all files.",
   "workflow.removeAllTriggers": "Remove all triggers",
   "workflow.browseAllWorkflows": "Browse all workflows...",
-  "workflow.newAI": "New (AI)...", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "workflow.newAI": "New (AI)...",  
   "workflow.reloadFromFile": "Reload from file",
   "workflow.noWorkflows": "No workflows",
   "workflow.reloaded": "Workflow reloaded from file",
@@ -610,16 +610,16 @@ export const en = {
   "workflowSelector.listButton": "Browse workflows",
 
   // AI workflow modal
-  "aiWorkflow.createTitle": "Create workflow with AI", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
-  "aiWorkflow.modifyTitle": "Modify workflow with AI", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "aiWorkflow.createTitle": "Create workflow with AI",  
+  "aiWorkflow.modifyTitle": "Modify workflow with AI",  
   "aiWorkflow.describeCreate": "Describe the workflow you want to create",
   "aiWorkflow.describeModify": "Describe how you want to modify this workflow",
   "aiWorkflow.enterDescription": "Enter description",
-  "aiWorkflow.placeholderCreate": "e.g. Create a workflow that summarizes the current note and saves to a summary file",
-  "aiWorkflow.placeholderModify": "e.g. Add error handling and a confirmation step before saving",
+  "aiWorkflow.placeholderCreate": "e.g. Create a workflow that summarizes the current note and saves to a summary file", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "aiWorkflow.placeholderModify": "e.g. Add error handling and a confirmation step before saving", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "aiWorkflow.workflowName": "Workflow name",
   "aiWorkflow.enterName": "Enter workflow name",
-  "aiWorkflow.namePlaceholder": "my-workflow",
+  "aiWorkflow.namePlaceholder": "my-workflow", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
   "aiWorkflow.outputPath": "Output path",
   "aiWorkflow.pathHint": "Path where the workflow file will be saved (without .md)",
   "aiWorkflow.generate": "Generate",
@@ -628,7 +628,7 @@ export const en = {
   "aiWorkflow.currentWorkflow": "Current workflow",
   "aiWorkflow.confirmChanges": "Confirm changes",
   "aiWorkflow.confirmCheckbox": "I have reviewed the changes",
-  "aiWorkflow.aiExplanation": "AI explanation", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "aiWorkflow.aiExplanation": "AI explanation",  
 
   // Workflow generation modal
   "workflow.generation.title": "Generating workflow...",
@@ -644,7 +644,7 @@ export const en = {
 
   // Workflow commands
   "command.runWorkflow": "Run workflow",
-  "command.generateWorkflow": "Generate workflow with AI", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- AI is an acronym
+  "command.generateWorkflow": "Generate workflow with AI",  
 
   // Settings - Workflow
   "settings.workflow": "Workflow",
