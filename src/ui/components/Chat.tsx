@@ -10,8 +10,12 @@ import type { LocalLlmHubPlugin } from "src/plugin";
 import {
   type Message,
   type Attachment,
+  type VaultToolMode,
+  type ToolCall,
 } from "src/types";
 import { localLlmChatStream } from "src/core/localLlmProvider";
+import { getVaultTools } from "src/core/tools";
+import { executeToolCall } from "src/core/toolExecutor";
 import { getRagStore } from "src/core/ragStore";
 import { buildErrorMessage, type ChatHistory } from "./chat/chatUtils";
 import {
@@ -36,8 +40,8 @@ export default function Chat({ plugin }: ChatProps) {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
-  const [thinkingEnabled, setThinkingEnabled] = useState(false);
-  const [ragEnabled, setRagEnabled] = useState(false);
+
+  const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>("all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
 
@@ -48,7 +52,6 @@ export default function Chat({ plugin }: ChatProps) {
 
   const llmConfig = plugin.settings.llmConfig;
   const ragConfig = plugin.settings.ragConfig;
-  const thinkingAvailable = llmConfig.framework === "vllm";
   const ragAvailable = ragConfig.enabled;
 
   // Auto-scroll to bottom
@@ -245,6 +248,8 @@ export default function Chat({ plugin }: ChatProps) {
     abortControllerRef.current?.abort();
   }, []);
 
+  const MAX_TOOL_ROUNDS = 20;
+
   // Send message
   const sendMessage = useCallback(async (content: string, attachments?: Attachment[]) => {
     if (!plugin.settings.llmVerified) {
@@ -271,8 +276,6 @@ export default function Chat({ plugin }: ChatProps) {
     const startTime = Date.now();
 
     try {
-      const allMessages = [...messages, userMessage];
-
       // Build system prompt
       let systemPrompt = "You are a helpful AI assistant integrated with Obsidian.";
 
@@ -282,7 +285,7 @@ export default function Chat({ plugin }: ChatProps) {
 
       // RAG context injection
       let ragSources: string[] | undefined;
-      if (ragEnabled && ragAvailable) {
+      if (vaultToolMode === "all" && ragAvailable) {
         try {
           const store = getRagStore();
           const results = await store.search(
@@ -304,40 +307,102 @@ export default function Chat({ plugin }: ChatProps) {
         }
       }
 
+      // Get vault tools based on mode
+      const tools = getVaultTools(vaultToolMode);
+
+      // Conversation messages for the API (includes tool call/result messages)
+      const conversationMessages: Message[] = [...messages, userMessage];
       let fullContent = "";
       let thinkingContent = "";
       let stopped = false;
       let usage: Message["usage"] | undefined;
+      let toolRound = 0;
 
-      for await (const chunk of localLlmChatStream(
-        llmConfig,
-        allMessages,
-        systemPrompt,
-        abortController.signal,
-        thinkingAvailable && thinkingEnabled ? true : undefined,
-      )) {
-        if (abortController.signal.aborted) {
-          stopped = true;
-          break;
+      // Stream one round from the LLM, returns collected tool calls
+      const streamOneRound = async (useTools: boolean): Promise<ToolCall[]> => {
+        const pendingToolCalls: ToolCall[] = [];
+        fullContent = "";
+        thinkingContent = "";
+
+        for await (const chunk of localLlmChatStream(
+          llmConfig,
+          conversationMessages,
+          systemPrompt,
+          abortController.signal,
+          useTools && tools.length > 0 ? tools : undefined,
+        )) {
+          if (abortController.signal.aborted) {
+            stopped = true;
+            break;
+          }
+
+          switch (chunk.type) {
+            case "text":
+              fullContent += chunk.content || "";
+              setStreamingContent(fullContent);
+              break;
+            case "thinking":
+              thinkingContent += chunk.content || "";
+              setStreamingThinking(thinkingContent);
+              break;
+            case "tool_call":
+              if (chunk.toolCall) {
+                pendingToolCalls.push(chunk.toolCall);
+                setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.arguments).join(", ")})...`);
+              }
+              break;
+            case "error":
+              throw new Error(chunk.error || "Unknown error");
+            case "done":
+              if (chunk.usage) usage = chunk.usage;
+              break;
+          }
+        }
+        return pendingToolCalls;
+      };
+
+      // First round - try with tools
+      let pendingToolCalls: ToolCall[];
+      try {
+        pendingToolCalls = await streamOneRound(tools.length > 0);
+      } catch (firstError) {
+        if (tools.length > 0) {
+          // Tools not supported by this model - set mode to none and show notice
+          new Notice(t("chat.toolsNotSupported"));
+          setVaultToolMode("none");
+        }
+        throw firstError;
+      }
+
+      // Tool call loop: execute tools → send results → stream again
+      while (!stopped && pendingToolCalls.length > 0 && toolRound < MAX_TOOL_ROUNDS) {
+        const assistantMsg: Message = {
+          role: "assistant",
+          content: fullContent,
+          timestamp: Date.now(),
+          toolCalls: pendingToolCalls,
+        };
+        conversationMessages.push(assistantMsg);
+
+        for (const tc of pendingToolCalls) {
+          setStreamingContent(fullContent + `\n\n🔧 ${tc.name}...`);
+
+          const result = await executeToolCall(tc, { app: plugin.app });
+          const toolResultMsg: Message = {
+            role: "tool",
+            content: result.result,
+            timestamp: Date.now(),
+            toolCallId: tc.id,
+            toolName: tc.name,
+          };
+          conversationMessages.push(toolResultMsg);
         }
 
-        switch (chunk.type) {
-          case "text":
-            fullContent += chunk.content || "";
-            setStreamingContent(fullContent);
-            break;
-          case "thinking":
-            thinkingContent += chunk.content || "";
-            setStreamingThinking(thinkingContent);
-            break;
-          case "error":
-            throw new Error(chunk.error || "Unknown error");
-          case "done":
-            if (chunk.usage) {
-              usage = chunk.usage;
-            }
-            break;
-        }
+        toolRound++;
+        setStreamingContent("");
+        setStreamingThinking("");
+
+        pendingToolCalls = await streamOneRound(true);
       }
 
       if (stopped && fullContent) {
@@ -358,12 +423,14 @@ export default function Chat({ plugin }: ChatProps) {
         elapsedMs,
       };
 
-      const newMessages = [...messages, userMessage, assistantMessage];
-      setMessages(newMessages);
+      // Display messages: original history + user message + final assistant message
+      // (tool call/result messages are internal, not shown in UI)
+      const displayMessages = [...messages, userMessage, assistantMessage];
+      setMessages(displayMessages);
       setStreamingContent("");
       setStreamingThinking("");
 
-      await saveCurrentChat(newMessages, undefined);
+      await saveCurrentChat(displayMessages, undefined);
     } catch (error) {
       const errorMessage = buildErrorMessage(error);
 
@@ -381,7 +448,7 @@ export default function Chat({ plugin }: ChatProps) {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, ragConfig, ragEnabled, ragAvailable, thinkingEnabled, thinkingAvailable, resolveMessageVariables, saveCurrentChat]);
+  }, [messages, plugin, llmConfig, ragConfig, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat]);
 
   return (
     <div className="llm-hub-chat">
@@ -458,12 +525,9 @@ export default function Chat({ plugin }: ChatProps) {
         onSend={sendMessage}
         onStop={handleStop}
         isLoading={isLoading}
-        thinkingEnabled={thinkingEnabled}
-        thinkingAvailable={thinkingAvailable}
-        onThinkingChange={setThinkingEnabled}
-        ragEnabled={ragEnabled}
+        vaultToolMode={vaultToolMode}
         ragAvailable={ragAvailable}
-        onRagChange={setRagEnabled}
+        onVaultToolModeChange={setVaultToolMode}
         vaultFiles={vaultFiles}
         hasSelection={hasSelection}
         app={plugin.app}

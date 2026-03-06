@@ -1,5 +1,11 @@
 /* Local LLM Hub Plugin Styles */
 
+/* Utility */
+.llm-hub-offscreen {
+  position: fixed;
+  opacity: 0;
+}
+
 /* Chat Container */
 .llm-hub-chat-container {
   height: 100%;
@@ -151,6 +157,9 @@
   margin-bottom: 12px;
   padding: 8px 12px;
   border-radius: 8px;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
 }
 
 .llm-hub-message-user {
@@ -387,6 +396,66 @@
   color: var(--text-normal);
 }
 
+/* Vault tool button & menu */
+.llm-hub-vault-tool-container {
+  position: relative;
+}
+
+.llm-hub-vault-tool-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.llm-hub-vault-tool-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.llm-hub-vault-tool-btn.active {
+  color: var(--interactive-accent);
+}
+
+.llm-hub-vault-tool-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.llm-hub-vault-tool-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+  min-width: 150px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-s);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.llm-hub-vault-tool-item {
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.llm-hub-vault-tool-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-vault-tool-item.selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
 .llm-hub-hidden-input {
   display: none !important;
 }
@@ -443,26 +512,6 @@
 .llm-hub-send-btn:hover:not(:disabled),
 .llm-hub-stop-btn:hover {
   background: var(--background-modifier-hover);
-}
-
-/* Toggle bar */
-.llm-hub-toggle-bar {
-  display: flex;
-  gap: 12px;
-  padding-top: 6px;
-}
-
-.llm-hub-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.llm-hub-toggle input[type="checkbox"] {
-  margin: 0;
 }
 
 /* Autocomplete */

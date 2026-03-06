@@ -150,7 +150,7 @@ export class LocalLlmHubPlugin extends Plugin {
     );
 
     // Ribbon icon
-    this.addRibbonIcon("message-square", "Open chat", () => {
+    this.addRibbonIcon("bot", "Open chat", () => {
       void this.activateChatView();
     });
 

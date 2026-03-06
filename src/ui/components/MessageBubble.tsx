@@ -79,11 +79,18 @@ export default function MessageBubble({
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(message.content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Failed to copy
+      // Fallback for Electron/Obsidian environment
+      const textarea = document.createElement("textarea");
+      textarea.value = message.content;
+      textarea.addClass("llm-hub-offscreen");
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -152,7 +159,7 @@ export default function MessageBubble({
 
       {/* Thinking content (collapsible) */}
       {message.thinking && (
-        <details className="llm-hub-thinking">
+        <details className="llm-hub-thinking" open={isStreaming || !message.content}>
           <summary className="llm-hub-thinking-summary">
             {t("message.thinking")}
           </summary>

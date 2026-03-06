@@ -8,7 +8,7 @@ export const ja: Record<string, string> = {
 
   // Settings
   "settings.llm": "LLM接続",
-  "settings.llmDesc": "OpenAI互換API（Ollama、LM Studio、llama.cpp、vLLM等）",
+  "settings.llmDesc": "OllamaまたはLM Studioに接続",
   "settings.llmConfigure": "LLM設定",
   "settings.llmVerifying": "接続確認中...",
   "settings.llmVerified": "LLM認証済み",
@@ -22,10 +22,9 @@ export const ja: Record<string, string> = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "LLM設定",
-  "settings.llmModal.desc": "OpenAI互換APIのローカルLLMサーバーを設定します。Ollama、LM Studio、vLLM等に対応。",
+  "settings.llmModal.desc": "OllamaまたはLM Studioの接続を設定します。",
   "settings.llmModal.framework": "フレームワーク",
   "settings.llmModal.frameworkDesc": "使用するLLMサーバーを選択",
-  "settings.llmModal.frameworkOther": "その他",
   "settings.llmModal.baseUrl": "ベースURL",
   "settings.llmModal.baseUrlDesc": "サーバーのエンドポイントURL",
   "settings.llmModal.baseUrlRequired": "ベースURLは必須です",
@@ -65,7 +64,7 @@ export const ja: Record<string, string> = {
   "settings.ragEnable": "RAG有効化",
   "settings.ragEnableDesc": "Vaultのノートをインデックスし、チャットのコンテキストとして使用",
   "settings.ragEmbeddingModel": "Embeddingモデル",
-  "settings.ragEmbeddingModelDesc": "Embedding生成用のモデル名（例: nomic-embed-text）",
+  "settings.ragEmbeddingModelDesc": "RAGにはEmbeddingモデルが必要です（例: nomic-embed-text）。Ollama: ollama pull nomic-embed-text",
   "settings.ragEmbeddingBaseUrl": "EmbeddingサーバーURL",
   "settings.ragEmbeddingBaseUrlDesc": "空欄の場合はLLMサーバーと同じURLを使用",
   "settings.ragTargetFolders": "対象フォルダ",
@@ -101,6 +100,7 @@ export const ja: Record<string, string> = {
   "chat.noChats": "チャット履歴なし",
   "chat.newChat": "新しいチャット",
   "chat.history": "チャット履歴",
+  "chat.toolsNotSupported": "このモデルはツールに対応していません。Vaultツールなしで続行します。",
 
   // Messages
   "message.you": "あなた",
@@ -118,8 +118,10 @@ export const ja: Record<string, string> = {
   "input.attach": "ファイル添付（画像、PDF、テキスト）",
   "input.fileTooLarge": "ファイルが大きすぎます（最大20MB）: {{name}}",
   "input.removeAttachment": "添付ファイルを削除",
-  "input.thinkingToggle": "思考",
-  "input.ragToggle": "RAG",
+  "input.vaultToolTitle": "Vaultツール設定",
+  "input.vaultTool_all": "Vault: all",
+  "input.vaultTool_noSearch": "Vault: no search",
+  "input.vaultTool_none": "Vault: off",
   "input.selectionVariable": "エディタの選択テキスト",
   "input.contentVariable": "アクティブノートの内容",
   "input.openFile": "ファイルを開く（Ctrl+Shift+O）",

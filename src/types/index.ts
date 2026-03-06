@@ -1,5 +1,8 @@
 // Supported LLM frameworks
-export type LlmFramework = "ollama" | "lm-studio" | "vllm" | "other";
+export type LlmFramework = "ollama" | "lm-studio";
+
+// Vault tool mode for RAG
+export type VaultToolMode = "all" | "noSearch" | "none";
 
 // Local LLM configuration (OpenAI-compatible API)
 export interface LocalLlmConfig {
@@ -38,6 +41,33 @@ export const DEFAULT_RAG_CONFIG: RagConfig = {
   topK: 5,
 };
 
+// Tool definitions (OpenAI-compatible format, shared by Ollama and LM Studio)
+export interface ToolDefinition {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, ToolParameter>;
+      required?: string[];
+    };
+  };
+}
+
+export interface ToolParameter {
+  type: string;
+  description: string;
+  enum?: string[];
+}
+
+// Tool call from LLM response
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
 // Chat message types
 export interface Attachment {
   name: string;
@@ -47,7 +77,7 @@ export interface Attachment {
 }
 
 export interface Message {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "tool";
   content: string;
   timestamp: number;
   model?: string;               // model name (assistant only)
@@ -55,6 +85,9 @@ export interface Message {
   thinking?: string;            // thinking content (thinking models)
   ragUsed?: boolean;            // whether RAG was used
   ragSources?: string[];        // source files from RAG
+  toolCalls?: ToolCall[];       // tool calls made by assistant
+  toolCallId?: string;          // tool call ID (for tool role messages, LM Studio)
+  toolName?: string;            // tool name (for tool role messages, Ollama)
   usage?: StreamChunkUsage;
   elapsedMs?: number;
 }
@@ -69,8 +102,9 @@ export interface StreamChunkUsage {
 
 // Streaming chunk types
 export interface StreamChunk {
-  type: "text" | "thinking" | "error" | "done";
+  type: "text" | "thinking" | "tool_call" | "error" | "done";
   content?: string;
+  toolCall?: ToolCall;
   error?: string;
   usage?: StreamChunkUsage;
 }

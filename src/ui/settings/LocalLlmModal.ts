@@ -30,8 +30,6 @@ export class LocalLlmModal extends Modal {
     const frameworkDefaults: Record<LlmFramework, string> = {
       ollama: "http://localhost:11434",
       "lm-studio": "http://localhost:1234",
-      vllm: "http://localhost:8000",
-      other: "http://localhost:8080",
     };
 
     const baseUrlInput = { el: null as HTMLInputElement | null };
@@ -43,8 +41,6 @@ export class LocalLlmModal extends Modal {
         dropdown
           .addOption("ollama", "Ollama")
           .addOption("lm-studio", "LM Studio") // eslint-disable-line obsidianmd/ui/sentence-case -- proper noun
-          .addOption("vllm", "vLLM")  
-          .addOption("other", t("settings.llmModal.frameworkOther"))
           .setValue(this.config.framework)
           .onChange((value) => {
             const fw = value as LlmFramework;

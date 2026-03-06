@@ -45,7 +45,6 @@ Please revise the output based on the user's feedback above.`;
   }
 
   const llmConfig = plugin.settings.llmConfig;
-  const enableThinking = node.properties["enableThinking"] !== "false";
 
   // Parse attachments property (comma-separated variable names containing FileExplorerData)
   const attachmentsStr = node.properties["attachments"] || "";
@@ -106,7 +105,6 @@ Please revise the output based on the user's feedback above.`;
     messages,
     systemPrompt,
     undefined, // No abort signal from workflow executor (handled externally)
-    enableThinking ? true : undefined,
   )) {
     if (chunk.type === "text") {
       fullResponse += chunk.content || "";

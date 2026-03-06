@@ -36,8 +36,6 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
     .setName(t("settings.ragEmbeddingModel"))
     .setDesc(t("settings.ragEmbeddingModelDesc"));
 
-  const embeddingBaseUrl = plugin.settings.llmConfig.baseUrl;
-
   let embeddingDropdown: HTMLSelectElement | null = null;
   embeddingModelSetting.controlEl.createEl("select", {}, (select) => {
     embeddingDropdown = select;
@@ -59,7 +57,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
         btn.setButtonText(t("settings.llmModal.fetching"));
         btn.setDisabled(true);
         try {
-          const models = await fetchEmbeddingModels(embeddingBaseUrl);
+          const models = await fetchEmbeddingModels(plugin.settings.llmConfig);
           if (models.length === 0) {
             new Notice(t("settings.llmModal.noModelsFound"));
             return;

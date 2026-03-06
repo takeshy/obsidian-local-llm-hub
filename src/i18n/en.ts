@@ -8,7 +8,7 @@ export const en = {
 
   // Settings - LLM
   "settings.llm": "LLM connection", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "settings.llmDesc": "OpenAI-compatible API (Ollama, LM Studio, llama.cpp, vLLM, etc.)", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
+  "settings.llmDesc": "Connect to Ollama or LM Studio", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
   "settings.llmConfigure": "Configure LLM", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
   "settings.llmVerifying": "Verifying connection...",
   "settings.llmVerified": "LLM verified", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
@@ -22,10 +22,9 @@ export const en = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "LLM settings", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "settings.llmModal.desc": "Configure a local LLM server with OpenAI-compatible API. Supports Ollama, LM Studio, vLLM, and more.", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
+  "settings.llmModal.desc": "Configure Ollama or LM Studio connection.", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
   "settings.llmModal.framework": "Framework",
   "settings.llmModal.frameworkDesc": "Select your LLM server framework", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "settings.llmModal.frameworkOther": "Other",
   "settings.llmModal.baseUrl": "Base URL",
   "settings.llmModal.baseUrlDesc": "Server endpoint URL",
   "settings.llmModal.baseUrlRequired": "Base URL is required",
@@ -65,7 +64,7 @@ export const en = {
   "settings.ragEnable": "Enable RAG", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
   "settings.ragEnableDesc": "Index vault notes and use them as context for chat",
   "settings.ragEmbeddingModel": "Embedding model",
-  "settings.ragEmbeddingModelDesc": "Model name for generating embeddings (e.g. nomic-embed-text)", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- model name
+  "settings.ragEmbeddingModelDesc": "Embedding model is required for RAG (e.g. nomic-embed-text). Ollama: ollama pull nomic-embed-text", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- model name
   "settings.ragEmbeddingBaseUrl": "Embedding server URL",
   "settings.ragEmbeddingBaseUrlDesc": "Leave empty to use the same server as LLM", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
   "settings.ragTargetFolders": "Target folders",
@@ -101,6 +100,7 @@ export const en = {
   "chat.noChats": "No chat history",
   "chat.newChat": "New chat",
   "chat.history": "Chat history",
+  "chat.toolsNotSupported": "This model does not support tools. Continuing without vault tools.",
 
   // Messages
   "message.you": "You",
@@ -118,8 +118,10 @@ export const en = {
   "input.attach": "Attach file (images, PDF, text)",
   "input.fileTooLarge": "File is too large (max 20MB): {{name}}",
   "input.removeAttachment": "Remove attachment",
-  "input.thinkingToggle": "Thinking",
-  "input.ragToggle": "RAG",
+  "input.vaultToolTitle": "Vault tool settings",
+  "input.vaultTool_all": "Vault: all",
+  "input.vaultTool_noSearch": "Vault: no search",
+  "input.vaultTool_none": "Vault: off",
   "input.selectionVariable": "Selected text in editor",
   "input.contentVariable": "Active note content",
   "input.openFile": "Open file (Ctrl+Shift+O)",

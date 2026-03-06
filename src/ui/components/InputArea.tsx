@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
-import { Send, Paperclip, StopCircle } from "lucide-react";
+import { Send, Paperclip, StopCircle, Database } from "lucide-react";
 import { Notice, type App } from "obsidian";
-import type { Attachment } from "src/types";
+import type { Attachment, VaultToolMode } from "src/types";
 import { t } from "src/i18n";
 
 interface SlashCommandItem {
@@ -14,12 +14,9 @@ interface InputAreaProps {
   onSend: (content: string, attachments?: Attachment[]) => void | Promise<void>;
   onStop?: () => void;
   isLoading: boolean;
-  thinkingEnabled: boolean;
-  thinkingAvailable: boolean;
-  onThinkingChange: (value: boolean) => void;
-  ragEnabled: boolean;
+  vaultToolMode: VaultToolMode;
   ragAvailable: boolean;
-  onRagChange: (value: boolean) => void;
+  onVaultToolModeChange: (mode: VaultToolMode) => void;
   vaultFiles: string[];
   hasSelection: boolean;
   app: App;
@@ -51,12 +48,9 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   onSend,
   onStop,
   isLoading,
-  thinkingEnabled,
-  thinkingAvailable,
-  onThinkingChange,
-  ragEnabled,
+  vaultToolMode,
   ragAvailable,
-  onRagChange,
+  onVaultToolModeChange,
   vaultFiles,
   hasSelection,
   app,
@@ -64,6 +58,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [showVaultToolMenu, setShowVaultToolMenu] = useState(false);
   // Mention autocomplete state
   const [showMentionAutocomplete, setShowMentionAutocomplete] = useState(false);
   const [mentionIndex, setMentionIndex] = useState(0);
@@ -76,6 +71,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mentionAutocompleteRef = useRef<HTMLDivElement>(null);
+  const vaultToolMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (showMentionAutocomplete && mentionAutocompleteRef.current) {
@@ -86,6 +82,18 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       }
     }
   }, [mentionIndex, showMentionAutocomplete]);
+
+  // Close vault tool menu on click outside
+  useEffect(() => {
+    if (!showVaultToolMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (vaultToolMenuRef.current && !vaultToolMenuRef.current.contains(e.target as Node)) {
+        setShowVaultToolMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showVaultToolMenu]);
 
   useImperativeHandle(ref, () => ({
     setInputValue: (value: string) => setInput(value),
@@ -398,6 +406,34 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           >
             <Paperclip size={18} />
           </button>
+          {ragAvailable && (
+            <div className="llm-hub-vault-tool-container" ref={vaultToolMenuRef}>
+              <button
+                className={`llm-hub-vault-tool-btn ${vaultToolMode !== "all" ? "active" : ""}`}
+                onClick={() => setShowVaultToolMenu(!showVaultToolMenu)}
+                disabled={isLoading}
+                title={t("input.vaultToolTitle")}
+              >
+                <Database size={18} />
+              </button>
+              {showVaultToolMenu && (
+                <div className="llm-hub-vault-tool-menu">
+                  {(["all", "noSearch", "none"] as const).map((mode) => (
+                    <div
+                      key={mode}
+                      className={`llm-hub-vault-tool-item ${vaultToolMode === mode ? "selected" : ""}`}
+                      onClick={() => {
+                        onVaultToolModeChange(mode);
+                        setShowVaultToolMenu(false);
+                      }}
+                    >
+                      {t(`input.vaultTool_${mode}` as Parameters<typeof t>[0])}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <textarea
@@ -431,29 +467,6 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
         </div>
       </div>
 
-      {/* Toggle bar */}
-      <div className="llm-hub-toggle-bar">
-        {thinkingAvailable && (
-          <label className="llm-hub-toggle">
-            <input
-              type="checkbox"
-              checked={thinkingEnabled}
-              onChange={(e) => onThinkingChange(e.target.checked)}
-            />
-            <span>{t("input.thinkingToggle")}</span>
-          </label>
-        )}
-        {ragAvailable && (
-          <label className="llm-hub-toggle">
-            <input
-              type="checkbox"
-              checked={ragEnabled}
-              onChange={(e) => onRagChange(e.target.checked)}
-            />
-            <span>{t("input.ragToggle")}</span>
-          </label>
-        )}
-      </div>
     </div>
   );
 });
