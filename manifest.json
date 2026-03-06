@@ -1,0 +1,10 @@
+{
+	"id": "local-llm-hub",
+	"name": "Local LLM Hub",
+	"minAppVersion": "1.10.0",
+	"description": "Chat with local LLMs via OpenAI-compatible API (Ollama, LM Studio, etc.) with local embeddings RAG and text processing commands.",
+	"author": "takeshy",
+	"authorUrl": "https://github.com/takeshy",
+	"isDesktopOnly": true,
+	"version": "0.1.0"
+}
