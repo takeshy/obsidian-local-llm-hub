@@ -1,9 +1,13 @@
 import { App } from "obsidian";
 import type { LocalLlmHubPlugin } from "../../plugin";
-import type { StreamChunkUsage, Message } from "../../types";
+import type { StreamChunkUsage, Message, ToolCall, ToolDefinition } from "../../types";
 import { localLlmChatStream } from "../../core/localLlmProvider";
+import { getVaultTools } from "../../core/tools";
+import { executeToolCall } from "../../core/toolExecutor";
 import { WorkflowNode, ExecutionContext, FileExplorerData, PromptCallbacks } from "../types";
 import { replaceVariables } from "./utils";
+
+const MAX_TOOL_ROUNDS = 20;
 
 // Result type for command node execution
 export interface CommandNodeResult {
@@ -16,7 +20,7 @@ export interface CommandNodeResult {
 export async function handleCommandNode(
   node: WorkflowNode,
   context: ExecutionContext,
-  _app: App,
+  app: App,
   plugin: LocalLlmHubPlugin,
   promptCallbacks?: PromptCallbacks,
 ): Promise<CommandNodeResult> {
@@ -82,8 +86,18 @@ Please revise the output based on the user's feedback above.`;
     }
   }
 
+  // Build tools: vault tools + MCP tools
+  const useTools = node.properties["enableTools"] !== "false";
+  let tools: ToolDefinition[] | undefined;
+  if (useTools) {
+    const vaultTools = getVaultTools("noSearch");
+    const mcpTools = plugin.mcpManager.getAllTools();
+    const combined = [...vaultTools, ...mcpTools];
+    tools = combined.length > 0 ? combined : undefined;
+  }
+
   // Build messages for the LLM
-  const messages: Message[] = [
+  const conversationMessages: Message[] = [
     {
       role: "user",
       content: prompt,
@@ -92,7 +106,7 @@ Please revise the output based on the user's feedback above.`;
     },
   ];
 
-  // Execute LLM call via local provider
+  // Execute LLM call via local provider with tool loop
   let fullResponse = "";
   let thinkingContent = "";
   let streamUsage: StreamChunkUsage | undefined;
@@ -100,24 +114,77 @@ Please revise the output based on the user's feedback above.`;
 
   const systemPrompt = plugin.settings.systemPrompt || "You are a helpful AI assistant integrated with Obsidian.";
 
-  for await (const chunk of localLlmChatStream(
-    llmConfig,
-    messages,
-    systemPrompt,
-    undefined, // No abort signal from workflow executor (handled externally)
-  )) {
-    if (chunk.type === "text") {
-      fullResponse += chunk.content || "";
-    } else if (chunk.type === "thinking") {
-      thinkingContent += chunk.content || "";
-      // Stream thinking content to the progress modal
-      promptCallbacks?.onThinking?.(node.id, thinkingContent);
-    } else if (chunk.type === "error") {
-      throw new Error(chunk.error || "Unknown API error");
-    } else if (chunk.type === "done") {
-      streamUsage = chunk.usage;
-      break;
+  const streamOneRound = async (useToolsThisRound: boolean): Promise<ToolCall[]> => {
+    const pendingToolCalls: ToolCall[] = [];
+    fullResponse = "";
+
+    for await (const chunk of localLlmChatStream(
+      llmConfig,
+      conversationMessages,
+      systemPrompt,
+      undefined,
+      useToolsThisRound ? tools : undefined,
+    )) {
+      if (chunk.type === "text") {
+        fullResponse += chunk.content || "";
+      } else if (chunk.type === "thinking") {
+        thinkingContent += chunk.content || "";
+        promptCallbacks?.onThinking?.(node.id, thinkingContent);
+      } else if (chunk.type === "tool_call") {
+        if (chunk.toolCall) {
+          pendingToolCalls.push(chunk.toolCall);
+        }
+      } else if (chunk.type === "error") {
+        throw new Error(chunk.error || "Unknown API error");
+      } else if (chunk.type === "done") {
+        streamUsage = chunk.usage;
+        break;
+      }
     }
+    return pendingToolCalls;
+  };
+
+  // First round
+  let pendingToolCalls: ToolCall[];
+  try {
+    pendingToolCalls = await streamOneRound(!!tools);
+  } catch {
+    // If tools fail, retry without tools
+    if (tools) {
+      pendingToolCalls = await streamOneRound(false);
+    } else {
+      throw new Error("LLM call failed");
+    }
+  }
+
+  // Tool call loop
+  let toolRound = 0;
+  while (pendingToolCalls.length > 0 && toolRound < MAX_TOOL_ROUNDS) {
+    const assistantMsg: Message = {
+      role: "assistant",
+      content: fullResponse,
+      timestamp: Date.now(),
+      toolCalls: pendingToolCalls,
+    };
+    conversationMessages.push(assistantMsg);
+
+    for (const tc of pendingToolCalls) {
+      const result = await executeToolCall(tc, {
+        app,
+        mcpManager: plugin.mcpManager,
+      });
+      const toolResultMsg: Message = {
+        role: "tool",
+        content: result.result,
+        timestamp: Date.now(),
+        toolCallId: tc.id,
+        toolName: tc.name,
+      };
+      conversationMessages.push(toolResultMsg);
+    }
+
+    toolRound++;
+    pendingToolCalls = await streamOneRound(true);
   }
 
   // Save response to variable if specified
