@@ -136,7 +136,11 @@ export function buildSkillSystemPrompt(skills: LoadedSkill[]): string {
     return section;
   });
 
-  return `\n\nThe following agent skills are active:\n\n${parts.join("\n\n---\n\n")}`;
+  return `\n\nThe following agent skills are active:\n\n${parts.join("\n\n---\n\n")}
+
+Proactively use the skill's instructions and workflows to assist the user. When the user's request aligns with an active skill, apply the skill's guidelines without requiring explicit direction.
+
+When you encounter \`{{variableName}}\` placeholders in skill instructions, these are template variables. Replace them with appropriate values based on the user's request context.`;
 }
 
 /**

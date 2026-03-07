@@ -10,10 +10,11 @@ interface SlashCommandItem {
   description: string;
   promptTemplate: string;
   vaultToolMode?: VaultToolMode | null;
+  skillPath?: string;
 }
 
 interface InputAreaProps {
-  onSend: (content: string, attachments?: Attachment[]) => void | Promise<void>;
+  onSend: (content: string, attachments?: Attachment[], skillPath?: string) => void | Promise<void>;
   onStop?: () => void;
   onCompact?: () => void;
   isLoading: boolean;
@@ -142,7 +143,26 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   };
 
   const handleSubmit = () => {
-    if ((input.trim() || pendingAttachments.length > 0) && !isLoading) {
+    if (isLoading) return;
+
+    // Check for /skillName [message] pattern on submit
+    const skillSlashMatch = input.match(/^\/(\S+)(\s+.*)?$/);
+    if (skillSlashMatch) {
+      const cmdName = skillSlashMatch[1].toLowerCase();
+      const allCommands = slashCommands || [];
+      const skillCmd = allCommands.find(
+        (cmd) => cmd.skillPath && cmd.name.toLowerCase() === cmdName
+      );
+      if (skillCmd?.skillPath) {
+        const message = skillSlashMatch[2]?.trim() || "";
+        setInput("");
+        setPendingAttachments([]);
+        void onSend(message, undefined, skillCmd.skillPath);
+        return;
+      }
+    }
+
+    if (input.trim() || pendingAttachments.length > 0) {
       void onSend(input, pendingAttachments.length > 0 ? pendingAttachments : undefined);
       setInput("");
       setPendingAttachments([]);
@@ -155,20 +175,22 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     setInput(value);
 
     // Check for / slash command trigger (only at start of input)
-    const slashMatch = value.match(/^\/([^\s]*)$/);
+    const slashMatch = value.match(/^\/(\S*)(\s.*)?$/);
     if (slashMatch) {
       const query = slashMatch[1].toLowerCase();
+      const hasTrailingContent = !!slashMatch[2];
       // Built-in commands
       const builtIn: SlashCommandItem[] = [];
       if (onCompact && (messageCount ?? 0) >= 2) {
         builtIn.push({ name: "compact", description: t("command.compact"), promptTemplate: "" });
       }
       const allCommands = [...builtIn, ...(slashCommands || [])];
+
       const filtered = allCommands.filter(
         (cmd) => cmd.name.toLowerCase().includes(query)
       );
       setFilteredSlashCommands(filtered);
-      setShowSlashAutocomplete(filtered.length > 0);
+      setShowSlashAutocomplete(filtered.length > 0 && !hasTrailingContent);
       setSlashIndex(0);
       setShowMentionAutocomplete(false);
       return;
@@ -210,6 +232,13 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       setInput("");
       setShowSlashAutocomplete(false);
       onCompact?.();
+      return;
+    }
+    // Skill slash commands: send immediately with skill path
+    if (cmd.skillPath) {
+      setInput("");
+      setShowSlashAutocomplete(false);
+      void onSend("", undefined, cmd.skillPath);
       return;
     }
     setInput(cmd.promptTemplate);

@@ -121,6 +121,7 @@ export const ja: Record<string, string> = {
   // Input
   "skills.add": "スキル追加",
   "skills.noSkills": "スキルが見つかりません",
+  "skills.skill": "スキル",
 
   "input.placeholder": "メッセージを入力...（Enter で送信、Shift+Enter で改行）",
   "input.send": "メッセージ送信",

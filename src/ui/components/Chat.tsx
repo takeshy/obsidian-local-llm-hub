@@ -360,17 +360,34 @@ export default function Chat({ plugin }: ChatProps) {
   const MAX_TOOL_ROUNDS = 20;
 
   // Send message
-  const sendMessage = useCallback(async (content: string, attachments?: Attachment[]) => {
+  const sendMessage = useCallback(async (content: string, attachments?: Attachment[], skillPath?: string) => {
     if (!plugin.settings.llmVerified) {
       new Notice(t("chat.llmNotVerified"));
       return;
     }
 
-    const resolvedContent = await resolveMessageVariables(content);
+    // Activate skill if specified via slash command
+    if (skillPath) {
+      setActiveSkillPaths(prev =>
+        prev.includes(skillPath) ? prev : [...prev, skillPath]
+      );
+    }
+
+    const resolvedContent = content ? await resolveMessageVariables(content) : "";
+
+    // Determine display content for the user message
+    let displayContent = resolvedContent.trim();
+    if (!displayContent && skillPath) {
+      const skill = availableSkills.find(s => s.folderPath === skillPath);
+      displayContent = skill ? `/${skill.name}` : `/${skillPath}`;
+    }
+    if (!displayContent && attachments) {
+      displayContent = `[${attachments.length} file(s) attached]`;
+    }
 
     const userMessage: Message = {
       role: "user",
-      content: resolvedContent.trim() || (attachments ? `[${attachments.length} file(s) attached]` : ""),
+      content: displayContent,
       timestamp: Date.now(),
       attachments,
     };
@@ -416,11 +433,14 @@ export default function Chat({ plugin }: ChatProps) {
         }
       }
 
-      // Skill instructions injection
+      // Skill instructions injection (include skillPath from slash command even if state hasn't updated yet)
       let skillsUsedNames: string[] | undefined;
       let loadedSkillsList: LoadedSkill[] = [];
-      if (activeSkillPaths.length > 0) {
-        const activeMetadata = availableSkills.filter(s => activeSkillPaths.includes(s.folderPath));
+      const effectiveSkillPaths = skillPath && !activeSkillPaths.includes(skillPath)
+        ? [...activeSkillPaths, skillPath]
+        : activeSkillPaths;
+      if (effectiveSkillPaths.length > 0) {
+        const activeMetadata = availableSkills.filter(s => effectiveSkillPaths.includes(s.folderPath));
         loadedSkillsList = await Promise.all(
           activeMetadata.map(m => loadSkill(plugin.app, m))
         );
@@ -695,12 +715,20 @@ export default function Chat({ plugin }: ChatProps) {
         mcpServerInfos={mcpServerInfos}
         enabledMcpServerIds={enabledMcpServerIds}
         onMcpServerToggle={handleMcpServerToggle}
-        slashCommands={plugin.settings.slashCommands.map(cmd => ({
-          name: cmd.name,
-          description: cmd.description || "",
-          promptTemplate: cmd.promptTemplate,
-          vaultToolMode: cmd.vaultToolMode,
-        }))}
+        slashCommands={[
+          ...plugin.settings.slashCommands.map(cmd => ({
+            name: cmd.name,
+            description: cmd.description || "",
+            promptTemplate: cmd.promptTemplate,
+            vaultToolMode: cmd.vaultToolMode,
+          })),
+          ...availableSkills.map(skill => ({
+            name: skill.name,
+            description: skill.description || t("skills.skill"),
+            promptTemplate: "",
+            skillPath: skill.folderPath,
+          })),
+        ]}
       />
     </div>
   );
