@@ -149,6 +149,7 @@ export interface SlashCommand {
   name: string;
   promptTemplate: string;
   description?: string;
+  vaultToolMode?: VaultToolMode | null; // null = use current setting
 }
 
 // Obsidian event types for workflow triggers

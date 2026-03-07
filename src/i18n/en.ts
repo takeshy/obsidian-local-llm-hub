@@ -101,6 +101,9 @@ export const en = {
   "chat.newChat": "New chat",
   "chat.history": "Chat history",
   "chat.toolsNotSupported": "This model does not support tools. Continuing without vault tools.",
+  "chat.compacted": "Conversation compressed: {{before}} messages → {{after}}",
+  "chat.compactedContext": "Compacted conversation context",
+  "chat.compactFailed": "Failed to compress conversation",
 
   // Messages
   "message.you": "You",
@@ -269,6 +272,9 @@ export const en = {
   "settings.promptTemplate.desc": "Use {selection} for selected text, {content} for active note",
   "settings.promptTemplate.placeholder": "Translate the following to english:\\n\\n{selection}",
   "settings.promptTemplate.required": "Prompt template is required",
+  "settings.commandVaultToolMode": "Vault tool mode",
+  "settings.commandVaultToolMode.desc": "Override vault tool mode when this command is used",
+  "settings.commandVaultToolModeCurrent": "Use current setting",
 
   // Slash command input
   "input.slashCommand": "Slash command",
@@ -647,6 +653,7 @@ export const en = {
 
   // Workflow commands
   "command.runWorkflow": "Run workflow",
+  "command.compact": "Compress conversation history",
   "command.generateWorkflow": "Generate workflow with AI",
 } as const;
 

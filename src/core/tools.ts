@@ -92,6 +92,54 @@ const getActiveNote: ToolDefinition = {
   },
 };
 
+const updateNote: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "update_note",
+    description: "Update the content of an existing note. Supports replace, append, or prepend modes.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "File path of the note to update" },
+        content: { type: "string", description: "The new content" },
+        mode: { type: "string", description: "Update mode", enum: ["replace", "append", "prepend"] },
+      },
+      required: ["path", "content"],
+    },
+  },
+};
+
+const renameNote: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "rename_note",
+    description: "Rename or move a note to a new path.",
+    parameters: {
+      type: "object",
+      properties: {
+        oldPath: { type: "string", description: "Current file path" },
+        newPath: { type: "string", description: "New file path" },
+      },
+      required: ["oldPath", "newPath"],
+    },
+  },
+};
+
+const createFolder: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "create_folder",
+    description: "Create a new folder in the vault.",
+    parameters: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "Folder path to create" },
+      },
+      required: ["path"],
+    },
+  },
+};
+
 const proposeEdit: ToolDefinition = {
   type: "function",
   function: {
@@ -113,7 +161,8 @@ const searchToolNames = new Set(["search_notes", "list_notes"]);
 
 // All vault tools
 const allVaultTools: ToolDefinition[] = [
-  readNote, createNote, searchNotes, listNotes, listFolders, getActiveNote, proposeEdit,
+  readNote, createNote, updateNote, renameNote, createFolder,
+  searchNotes, listNotes, listFolders, getActiveNote, proposeEdit,
 ];
 
 /**

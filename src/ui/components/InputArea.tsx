@@ -8,12 +8,16 @@ interface SlashCommandItem {
   name: string;
   description: string;
   promptTemplate: string;
+  vaultToolMode?: VaultToolMode | null;
 }
 
 interface InputAreaProps {
   onSend: (content: string, attachments?: Attachment[]) => void | Promise<void>;
   onStop?: () => void;
+  onCompact?: () => void;
   isLoading: boolean;
+  isCompacting?: boolean;
+  messageCount?: number;
   vaultToolMode: VaultToolMode;
   ragAvailable: boolean;
   onVaultToolModeChange: (mode: VaultToolMode) => void;
@@ -47,7 +51,9 @@ const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20MB
 const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea({
   onSend,
   onStop,
+  onCompact,
   isLoading,
+  messageCount,
   vaultToolMode,
   ragAvailable,
   onVaultToolModeChange,
@@ -142,19 +148,23 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     setInput(value);
 
     // Check for / slash command trigger (only at start of input)
-    if (slashCommands && slashCommands.length > 0) {
-      const slashMatch = value.match(/^\/([^\s]*)$/);
-      if (slashMatch) {
-        const query = slashMatch[1].toLowerCase();
-        const filtered = slashCommands.filter(
-          (cmd) => cmd.name.toLowerCase().includes(query)
-        );
-        setFilteredSlashCommands(filtered);
-        setShowSlashAutocomplete(filtered.length > 0);
-        setSlashIndex(0);
-        setShowMentionAutocomplete(false);
-        return;
+    const slashMatch = value.match(/^\/([^\s]*)$/);
+    if (slashMatch) {
+      const query = slashMatch[1].toLowerCase();
+      // Built-in commands
+      const builtIn: SlashCommandItem[] = [];
+      if (onCompact && (messageCount ?? 0) >= 2) {
+        builtIn.push({ name: "compact", description: t("command.compact"), promptTemplate: "" });
       }
+      const allCommands = [...builtIn, ...(slashCommands || [])];
+      const filtered = allCommands.filter(
+        (cmd) => cmd.name.toLowerCase().includes(query)
+      );
+      setFilteredSlashCommands(filtered);
+      setShowSlashAutocomplete(filtered.length > 0);
+      setSlashIndex(0);
+      setShowMentionAutocomplete(false);
+      return;
     }
     setShowSlashAutocomplete(false);
 
@@ -189,8 +199,18 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   };
 
   const selectSlashCommand = (cmd: SlashCommandItem) => {
+    if (cmd.name === "compact") {
+      setInput("");
+      setShowSlashAutocomplete(false);
+      onCompact?.();
+      return;
+    }
     setInput(cmd.promptTemplate);
     setShowSlashAutocomplete(false);
+    // Apply vault tool mode override if set
+    if (cmd.vaultToolMode !== null && cmd.vaultToolMode !== undefined) {
+      onVaultToolModeChange(cmd.vaultToolMode);
+    }
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 0);

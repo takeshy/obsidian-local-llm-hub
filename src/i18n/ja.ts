@@ -101,6 +101,9 @@ export const ja: Record<string, string> = {
   "chat.newChat": "新しいチャット",
   "chat.history": "チャット履歴",
   "chat.toolsNotSupported": "このモデルはツールに対応していません。Vaultツールなしで続行します。",
+  "chat.compacted": "会話を圧縮しました: {{before}}メッセージ → {{after}}",
+  "chat.compactedContext": "圧縮された会話コンテキスト",
+  "chat.compactFailed": "会話の圧縮に失敗しました",
 
   // Messages
   "message.you": "あなた",
@@ -269,6 +272,9 @@ export const ja: Record<string, string> = {
   "settings.promptTemplate.desc": "{selection}で選択テキスト、{content}でアクティブノートを使用",
   "settings.promptTemplate.placeholder": "以下を英語に翻訳してください:\n\n{selection}",
   "settings.promptTemplate.required": "プロンプトテンプレートは必須です",
+  "settings.commandVaultToolMode": "Vaultツールモード",
+  "settings.commandVaultToolMode.desc": "このコマンド使用時にVaultツールモードを上書き",
+  "settings.commandVaultToolModeCurrent": "現在の設定を使用",
 
   // Slash command input
   "input.slashCommand": "スラッシュコマンド",
@@ -613,6 +619,7 @@ export const ja: Record<string, string> = {
   "nodeEditor.saveTo.ragResult": "結果を保存する変数名（任意）",
 
   // Workflow commands
+  "command.compact": "会話履歴を圧縮",
   "command.runWorkflow": "ワークフローを実行",
   "command.generateWorkflow": "AIでワークフローを生成",
 

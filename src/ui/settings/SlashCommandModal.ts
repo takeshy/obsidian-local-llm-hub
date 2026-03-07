@@ -1,5 +1,5 @@
 import { Modal, App, Setting, Notice } from "obsidian";
-import type { SlashCommand } from "src/types";
+import type { SlashCommand, VaultToolMode } from "src/types";
 import { t } from "src/i18n";
 
 export class SlashCommandModal extends Modal {
@@ -79,6 +79,22 @@ export class SlashCommandModal extends Modal {
       text.inputEl.rows = 6;
       text.inputEl.addClass("llm-hub-settings-textarea");
     });
+
+    // Vault tool mode override
+    new Setting(contentEl)
+      .setName(t("settings.commandVaultToolMode"))
+      .setDesc(t("settings.commandVaultToolMode.desc"))
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption("current", t("settings.commandVaultToolModeCurrent"))
+          .addOption("all", t("input.vaultTool_all"))
+          .addOption("noSearch", t("input.vaultTool_noSearch"))
+          .addOption("none", t("input.vaultTool_none"))
+          .setValue(this.command.vaultToolMode ?? "current")
+          .onChange((value) => {
+            this.command.vaultToolMode = value === "current" ? null : value as VaultToolMode;
+          });
+      });
 
     // Action buttons
     new Setting(contentEl)

@@ -127,6 +127,53 @@ export async function executeToolCall(
         };
       }
 
+      case "update_note": {
+        const path = args.path as string;
+        const content = args.content as string;
+        const mode = (args.mode as string) || "replace";
+        const file = app.vault.getAbstractFileByPath(path);
+        if (!(file instanceof TFile)) {
+          return { success: false, result: `File not found: ${path}` };
+        }
+        const existing = await app.vault.cachedRead(file);
+        let newContent: string;
+        if (mode === "append") {
+          newContent = `${existing}\n${content}`;
+        } else if (mode === "prepend") {
+          newContent = `${content}\n${existing}`;
+        } else {
+          newContent = content;
+        }
+        await app.vault.modify(file, newContent);
+        return { success: true, result: `Updated ${path} (${mode})` };
+      }
+
+      case "rename_note": {
+        const oldPath = args.oldPath as string;
+        let newPath = args.newPath as string;
+        const file = app.vault.getAbstractFileByPath(oldPath);
+        if (!(file instanceof TFile)) {
+          return { success: false, result: `File not found: ${oldPath}` };
+        }
+        if (!newPath.endsWith(".md")) {
+          newPath += ".md";
+        }
+        if (app.vault.getAbstractFileByPath(newPath)) {
+          return { success: false, result: `File already exists: ${newPath}` };
+        }
+        await app.fileManager.renameFile(file, newPath);
+        return { success: true, result: `Renamed ${oldPath} → ${newPath}` };
+      }
+
+      case "create_folder": {
+        const path = args.path as string;
+        if (app.vault.getAbstractFileByPath(path)) {
+          return { success: false, result: `Folder already exists: ${path}` };
+        }
+        await app.vault.createFolder(path);
+        return { success: true, result: `Created folder: ${path}` };
+      }
+
       case "propose_edit": {
         const path = args.path as string;
         const newContent = args.content as string;

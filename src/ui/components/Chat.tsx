@@ -248,6 +248,72 @@ export default function Chat({ plugin }: ChatProps) {
     abortControllerRef.current?.abort();
   }, []);
 
+  // Compact conversation
+  const [isCompacting, setIsCompacting] = useState(false);
+
+  const handleCompact = useCallback(async () => {
+    if (messages.length < 2 || isLoading || isCompacting) return;
+    if (!plugin.settings.llmVerified) {
+      new Notice(t("chat.toolsNotSupported"));
+      return;
+    }
+
+    setIsCompacting(true);
+    try {
+      // Save current chat first
+      await saveCurrentChat(messages, undefined);
+
+      const conversationText = messages.map(msg => {
+        const role = msg.role === "user" ? "User" : "Assistant";
+        return `${role}: ${msg.content}`;
+      }).join("\n\n");
+
+      const summaryPrompt: Message = {
+        role: "user",
+        content: `Summarize the following conversation concisely. Preserve key information, decisions, file paths, and context that would be needed to continue the conversation. Output the summary in the same language as the conversation.\n\n---\n${conversationText}\n---`,
+        timestamp: Date.now(),
+      };
+
+      const systemPrompt = "You are a conversation summarizer. Output only the summary without any preamble.";
+      let summary = "";
+
+      for await (const chunk of localLlmChatStream(llmConfig, [summaryPrompt], systemPrompt)) {
+        if (chunk.type === "text") {
+          summary += chunk.content || "";
+        } else if (chunk.type === "error") {
+          throw new Error(chunk.error);
+        } else if (chunk.type === "done") {
+          break;
+        }
+      }
+
+      if (!summary.trim()) {
+        new Notice(t("chat.compactFailed"));
+        return;
+      }
+
+      const now = Date.now();
+      const beforeCount = messages.length;
+      const newMessages: Message[] = [
+        { role: "user", content: "/compact", timestamp: now },
+        { role: "assistant", content: `[${t("chat.compactedContext")}]\n\n${summary}`, timestamp: now + 1 },
+      ];
+
+      const newChatId = `chat-${Date.now()}`;
+      setCurrentChatId(newChatId);
+      setMessages(newMessages);
+      chatCreatedAt.current = now;
+
+      await saveCurrentChat(newMessages, undefined);
+      new Notice(t("chat.compacted", { before: String(beforeCount), after: "2" }));
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : t("chat.unknownError");
+      new Notice(t("chat.compactFailed") + ": " + msg);
+    } finally {
+      setIsCompacting(false);
+    }
+  }, [messages, isLoading, isCompacting, plugin, llmConfig, saveCurrentChat]);
+
   const MAX_TOOL_ROUNDS = 20;
 
   // Send message
@@ -524,7 +590,10 @@ export default function Chat({ plugin }: ChatProps) {
         ref={inputAreaRef}
         onSend={sendMessage}
         onStop={handleStop}
-        isLoading={isLoading}
+        onCompact={() => { void handleCompact(); }}
+        isLoading={isLoading || isCompacting}
+        isCompacting={isCompacting}
+        messageCount={messages.length}
         vaultToolMode={vaultToolMode}
         ragAvailable={ragAvailable}
         onVaultToolModeChange={setVaultToolMode}
@@ -535,6 +604,7 @@ export default function Chat({ plugin }: ChatProps) {
           name: cmd.name,
           description: cmd.description || "",
           promptTemplate: cmd.promptTemplate,
+          vaultToolMode: cmd.vaultToolMode,
         }))}
       />
     </div>
