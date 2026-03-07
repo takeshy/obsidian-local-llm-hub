@@ -40,7 +40,7 @@ Then:
 
 - **Streaming responses** with real-time display
 - **Thinking display** for models that support it
-- **File attachments** (images, PDFs, audio, video)
+- **File attachments** (images, PDFs, text files)
 - **@ mentions** to reference vault notes as context
 - **Multiple chat sessions** with conversation history
 
@@ -150,8 +150,8 @@ See [docs/WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node refer
 All data stays local:
 
 - **Chat history** - stored as markdown in the workspace folder
-- **RAG index** - stored locally in the plugin directory
+- **RAG index** - stored locally in the workspace folder
 - **Encrypted files** - encrypted/decrypted locally
-- **Edit history** - stored locally in the plugin directory
+- **Edit history** - stored in memory (cleared on Obsidian restart)
 - **LLM requests** - sent only to your local Ollama or LM Studio server
 - **MCP servers** - run as local child processes via stdio

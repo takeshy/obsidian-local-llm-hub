@@ -103,6 +103,51 @@ The following agent skills are active:
 
 The assistant message metadata shows which skills were used (displayed as "Skills used: ...").
 
+## Skill Workflows
+
+Skills can expose workflows that the AI can invoke during chat via the `run_skill_workflow` tool. Workflows are discovered in two ways:
+
+### 1. Frontmatter Declaration
+
+Declare workflows in the `workflows` array in SKILL.md frontmatter:
+
+```markdown
+---
+name: Data Pipeline
+description: Processes and transforms data
+workflows:
+  - path: workflows/extract.md
+    name: Extractor
+    description: Extract structured data from text
+  - path: workflows/transform.md
+    description: Transform data format
+---
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `path` | Yes | Relative path from the skill folder to the workflow file |
+| `name` | No | Workflow name (for files with multiple workflows) |
+| `description` | No | Description shown to the AI (defaults to path) |
+
+### 2. Auto-Discovery
+
+Place workflow files in a `workflows/` subfolder and they are automatically discovered:
+
+```
+my-skill/
+  SKILL.md
+  workflows/
+    extract.md      # Auto-discovered
+    transform.md    # Auto-discovered
+  references/
+    schema.md
+```
+
+Workflows declared in frontmatter take precedence — if the same path appears in both, the frontmatter version is used.
+
+When a skill with workflows is active, the `run_skill_workflow` tool is automatically added to the available tools, allowing the AI to execute these workflows during chat.
+
 ## Configuration
 
 In plugin settings under **Workspace**:
