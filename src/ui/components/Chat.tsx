@@ -766,49 +766,74 @@ async function executeSkillWorkflow(
   const entry = skillWorkflowMap.get(workflowId);
   if (!entry) {
     const available = [...skillWorkflowMap.keys()].join(", ");
-    throw new Error(`Unknown workflow ID: ${workflowId}. Available: ${available}`);
+    return JSON.stringify({ error: `Unknown workflow ID: ${workflowId}. Available: ${available}` });
   }
 
   const { vaultPath, workflowRef } = entry;
 
   const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
   if (!(file instanceof TFile)) {
-    throw new Error(`Workflow file not found: ${vaultPath}`);
+    return JSON.stringify({ error: `Workflow file not found: ${vaultPath}` });
   }
 
   const content = await plugin.app.vault.read(file);
-  const workflow = parseWorkflowFromMarkdown(content, workflowRef.name);
+
+  let workflow;
+  try {
+    workflow = parseWorkflowFromMarkdown(content, workflowRef.name);
+  } catch (e) {
+    return JSON.stringify({ error: `Failed to parse workflow: ${e instanceof Error ? e.message : String(e)}` });
+  }
 
   // Build input variables
   const variables = new Map<string, string | number>();
   if (variablesJson) {
-    const parsed = JSON.parse(variablesJson) as Record<string, string | number>;
-    for (const [key, value] of Object.entries(parsed)) {
-      variables.set(key, value);
+    try {
+      const parsed = JSON.parse(variablesJson) as Record<string, string | number>;
+      for (const [key, value] of Object.entries(parsed)) {
+        variables.set(key, value);
+      }
+    } catch {
+      return JSON.stringify({ error: `Invalid variables JSON: ${variablesJson}` });
     }
   }
 
+  // Execute workflow headlessly (no interactive prompts, auto-confirm edits)
   const executor = new WorkflowExecutor(plugin.app, plugin);
-  const result = await executor.execute(
-    workflow,
-    { variables },
-    undefined,
-    { workflowPath: vaultPath, workflowName: workflowRef.name },
-  );
 
-  // Collect output variables
-  const outputVars: Record<string, string | number> = {};
-  result.context.variables.forEach((value, key) => {
-    if (!key.startsWith("__")) {
-      outputVars[key] = value;
-    }
-  });
+  const headlessCallbacks = {
+    promptForFile: () => Promise.resolve(null),
+    promptForSelection: () => Promise.resolve(null),
+    promptForValue: () => Promise.resolve(null),
+    promptForConfirmation: () =>
+      Promise.resolve({ action: "save" as const }),
+  };
 
-  const logs = result.context.logs.map(log => ({
-    node: log.nodeType,
-    status: log.status,
-    message: log.message,
-  }));
+  try {
+    const result = await executor.execute(
+      workflow,
+      { variables },
+      undefined,
+      { workflowPath: vaultPath, workflowName: workflowRef.name },
+      headlessCallbacks,
+    );
 
-  return JSON.stringify({ success: true, workflowId, variables: outputVars, logs });
+    // Collect output variables
+    const outputVars: Record<string, string | number> = {};
+    result.context.variables.forEach((value, key) => {
+      if (!key.startsWith("__")) {
+        outputVars[key] = value;
+      }
+    });
+
+    const logs = result.context.logs.map(log => ({
+      node: log.nodeType,
+      status: log.status,
+      message: log.message,
+    }));
+
+    return JSON.stringify({ success: true, workflowId, variables: outputVars, logs });
+  } catch (e) {
+    return JSON.stringify({ error: `Workflow execution failed: ${e instanceof Error ? e.message : String(e)}`, workflowId });
+  }
 }

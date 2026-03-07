@@ -55,6 +55,24 @@ export async function discoverSkills(app: App, skillsFolderPath: string): Promis
         }
       }
 
+      // Auto-discover workflows/ directory
+      const workflowsDirPath = `${child.path}/workflows`;
+      const workflowsDir = app.vault.getAbstractFileByPath(workflowsDirPath);
+      if (workflowsDir instanceof TFolder) {
+        for (const wfChild of workflowsDir.children) {
+          if (wfChild instanceof TFile && wfChild.extension === "md") {
+            const relativePath = `workflows/${wfChild.name}`;
+            // Skip if already declared in frontmatter
+            if (!workflows.some(w => w.path === relativePath)) {
+              workflows.push({
+                path: relativePath,
+                description: wfChild.basename,
+              });
+            }
+          }
+        }
+      }
+
       skills.push({
         name: (frontmatter.name as string) || child.name,
         description: (frontmatter.description as string) || "",
