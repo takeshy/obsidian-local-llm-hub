@@ -144,7 +144,7 @@ export class LocalLlmHubPlugin extends Plugin {
       })
     );
 
-    // File menu: encrypt/decrypt
+    // File menu: encrypt/decrypt, snapshot, history
     this.registerEvent(
       this.app.workspace.on("file-menu", (menu, file) => {
         if (!(file instanceof TFile) || !file.path.endsWith(".md")) return;
@@ -155,6 +155,22 @@ export class LocalLlmHubPlugin extends Plugin {
             .setIcon("lock")
             .onClick(() => {
               void this.encryptionManager.encryptFile(file);
+            });
+        });
+        menu.addItem((item) => {
+          item
+            .setTitle(t("editHistory.saveSnapshot"))
+            .setIcon("camera")
+            .onClick(() => {
+              void this.saveSnapshotForFile(file);
+            });
+        });
+        menu.addItem((item) => {
+          item
+            .setTitle(t("editHistory.showHistory"))
+            .setIcon("history")
+            .onClick(() => {
+              new EditHistoryModal(this.app, file.path).open();
             });
         });
       })
@@ -282,6 +298,27 @@ export class LocalLlmHubPlugin extends Plugin {
         new EditHistoryModal(this.app, file.path).open();
       },
     });
+  }
+
+  private async saveSnapshotForFile(file: TFile): Promise<void> {
+    const historyManager = getEditHistoryManager();
+    if (!historyManager) {
+      new Notice(t("editHistory.notInitialized"));
+      return;
+    }
+
+    await historyManager.ensureSnapshot(file.path);
+    const entry = historyManager.saveEdit({
+      path: file.path,
+      modifiedContent: await this.app.vault.read(file),
+      source: "manual",
+    });
+
+    if (entry) {
+      new Notice(t("editHistory.saved"));
+    } else {
+      new Notice(t("editHistory.noChanges"));
+    }
   }
 
   onunload(): void {

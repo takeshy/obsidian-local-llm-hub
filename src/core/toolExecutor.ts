@@ -1,6 +1,7 @@
 import { TFile, TFolder, type App } from "obsidian";
 import type { ToolCall } from "../types";
 import type { McpManager } from "./mcpManager";
+import { getEditHistoryManager } from "./editHistory";
 
 export interface ToolExecutionResult {
   success: boolean;
@@ -150,6 +151,11 @@ export async function executeToolCall(
         } else {
           newContent = content;
         }
+        const historyManager = getEditHistoryManager();
+        if (historyManager) {
+          await historyManager.ensureSnapshot(path);
+          historyManager.saveEdit({ path, modifiedContent: newContent, source: "propose_edit" });
+        }
         await app.vault.modify(file, newContent);
         return { success: true, result: `Updated ${path} (${mode})` };
       }
@@ -189,9 +195,18 @@ export async function executeToolCall(
         }
         const oldContent = await app.vault.cachedRead(file);
 
+        const saveEditHistory = async () => {
+          const historyManager = getEditHistoryManager();
+          if (historyManager) {
+            await historyManager.ensureSnapshot(path);
+            historyManager.saveEdit({ path, modifiedContent: newContent, source: "propose_edit" });
+          }
+        };
+
         if (options.onProposeEdit) {
           const accepted = await options.onProposeEdit(path, oldContent, newContent);
           if (accepted) {
+            await saveEditHistory();
             await app.vault.modify(file, newContent);
             return { success: true, result: `Edit applied to ${path}` };
           }
@@ -199,6 +214,7 @@ export async function executeToolCall(
         }
 
         // No callback - apply directly
+        await saveEditHistory();
         await app.vault.modify(file, newContent);
         return { success: true, result: `Edit applied to ${path}` };
       }
