@@ -169,6 +169,18 @@ export default function MessageBubble({
         </div>
       )}
 
+      {/* Tool calls indicator */}
+      {message.toolCalls && message.toolCalls.length > 0 && (
+        <div className="llm-hub-tools-used">
+          <span className="llm-hub-tools-used-label">
+            {t("message.toolsUsed")}:
+          </span>
+          {[...new Set(message.toolCalls.map(tc => tc.name))].map((name, index) => (
+            <span key={index} className="llm-hub-tool-name">{name}</span>
+          ))}
+        </div>
+      )}
+
       {/* Thinking content (collapsible) */}
       {message.thinking && (
         <details className="llm-hub-thinking" open={isStreaming || !message.content}>

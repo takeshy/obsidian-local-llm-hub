@@ -4360,3 +4360,25 @@
   background: var(--background-modifier-hover);
   border-radius: 3px;
 }
+
+/* Tools Used indicator (in message bubble) */
+.llm-hub-tools-used {
+  margin-bottom: 4px;
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.llm-hub-tools-used-label {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
+.llm-hub-tool-name {
+  font-size: 11px;
+  padding: 1px 6px;
+  background: var(--background-modifier-hover);
+  border-radius: 3px;
+}

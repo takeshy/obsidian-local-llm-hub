@@ -117,6 +117,7 @@ export const en = {
   "message.thinkingTokens": "Thinking",
   "message.ragUsed": "Rag context used",
   "message.skillsUsed": "Skills used",
+  "message.toolsUsed": "Tools used",
 
   // Input
   "skills.add": "Add skill",

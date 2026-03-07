@@ -117,6 +117,7 @@ export const ja: Record<string, string> = {
   "message.thinkingTokens": "思考",
   "message.ragUsed": "RAGコンテキスト使用",
   "message.skillsUsed": "使用スキル",
+  "message.toolsUsed": "使用ツール",
 
   // Input
   "skills.add": "スキル追加",

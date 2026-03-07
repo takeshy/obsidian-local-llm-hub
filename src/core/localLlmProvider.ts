@@ -234,6 +234,7 @@ async function* ollamaChatStream(
 
   let inThinkTag = false;
   let tagBuffer = "";
+  let hasNativeThinking = false;
 
   const req = httpModule.request(
     {
@@ -290,6 +291,7 @@ async function* ollamaChatStream(
 
             // Thinking via separate field (newer Ollama)
             if (parsed.message?.thinking) {
+              hasNativeThinking = true;
               chunks.push({ type: "thinking", content: parsed.message.thinking });
             }
 
@@ -305,19 +307,30 @@ async function* ollamaChatStream(
               }
             }
 
-            // Parse content (may contain <think> tags in older Ollama)
+            // Parse content
             const content = parsed.message?.content;
             if (content) {
-              const thinkParsed = parseThinkTags(content, inThinkTag, tagBuffer);
-              inThinkTag = thinkParsed.inThinkTag;
-              tagBuffer = thinkParsed.tagBuffer;
-              for (const item of thinkParsed.items) {
-                chunks.push(item);
+              if (hasNativeThinking) {
+                // Native thinking handles the split; treat content as plain text
+                chunks.push({ type: "text", content });
+              } else {
+                // Old Ollama: content may contain <think> tags
+                const thinkParsed = parseThinkTags(content, inThinkTag, tagBuffer);
+                inThinkTag = thinkParsed.inThinkTag;
+                tagBuffer = thinkParsed.tagBuffer;
+                for (const item of thinkParsed.items) {
+                  chunks.push(item);
+                }
               }
             }
 
             // Final message with done=true
             if (parsed.done) {
+              // Flush any remaining tagBuffer
+              if (tagBuffer) {
+                chunks.push({ type: inThinkTag ? "thinking" : "text", content: tagBuffer });
+                tagBuffer = "";
+              }
               const usage = (parsed.prompt_eval_count || parsed.eval_count)
                 ? {
                     inputTokens: parsed.prompt_eval_count,
@@ -339,6 +352,10 @@ async function* ollamaChatStream(
 
       res.on("end", () => {
         if (!streamDone) {
+          if (tagBuffer) {
+            chunks.push({ type: inThinkTag ? "thinking" : "text", content: tagBuffer });
+            tagBuffer = "";
+          }
           chunks.push({ type: "done" });
           streamDone = true;
         }
@@ -504,6 +521,10 @@ async function* openaiChatStream(
               }
             }
             pendingToolCalls.clear();
+            if (tagBuffer) {
+              chunks.push({ type: inThinkTag ? "thinking" : "text", content: tagBuffer });
+              tagBuffer = "";
+            }
             chunks.push({ type: "done" });
             streamDone = true;
             streamResolve?.();
@@ -594,6 +615,10 @@ async function* openaiChatStream(
 
       res.on("end", () => {
         if (!streamDone) {
+          if (tagBuffer) {
+            chunks.push({ type: inThinkTag ? "thinking" : "text", content: tagBuffer });
+            tagBuffer = "";
+          }
           chunks.push({ type: "done" });
           streamDone = true;
         }

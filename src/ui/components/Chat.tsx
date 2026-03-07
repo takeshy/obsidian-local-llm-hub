@@ -484,6 +484,7 @@ export default function Chat({ plugin }: ChatProps) {
       let thinkingContent = "";
       let stopped = false;
       let usage: Message["usage"] | undefined;
+      const allToolCalls: ToolCall[] = [];
       // Stream one round from the LLM, returns collected tool calls
       const streamOneRound = async (useTools: boolean): Promise<ToolCall[]> => {
         const pendingToolCalls: ToolCall[] = [];
@@ -542,6 +543,7 @@ export default function Chat({ plugin }: ChatProps) {
 
       // Tool call loop: execute tools → send results → stream again
       while (!stopped && pendingToolCalls.length > 0) {
+        allToolCalls.push(...pendingToolCalls);
         const assistantMsg: Message = {
           role: "assistant",
           content: fullContent,
@@ -596,6 +598,7 @@ export default function Chat({ plugin }: ChatProps) {
         ragUsed: !!ragSources,
         ragSources,
         skillsUsed: skillsUsedNames,
+        toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
         usage,
         elapsedMs,
       };

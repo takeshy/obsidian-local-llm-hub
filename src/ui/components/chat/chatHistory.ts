@@ -30,6 +30,10 @@ export function messagesToMarkdown(
     if (msg.thinking) metadata.thinking = msg.thinking;
     if (msg.ragUsed) metadata.ragUsed = msg.ragUsed;
     if (msg.ragSources) metadata.ragSources = msg.ragSources;
+    if (msg.skillsUsed) metadata.skillsUsed = msg.skillsUsed;
+    if (msg.toolCalls && msg.toolCalls.length > 0) {
+      metadata.toolCallNames = [...new Set(msg.toolCalls.map(tc => tc.name))];
+    }
     if (msg.usage) metadata.usage = msg.usage;
     if (msg.elapsedMs) metadata.elapsedMs = msg.elapsedMs;
     metadata.timestamp = msg.timestamp;
@@ -97,6 +101,12 @@ export function parseMarkdownToMessages(content: string): { messages: Message[];
             if (meta.thinking) message.thinking = meta.thinking as string;
             if (meta.ragUsed) message.ragUsed = meta.ragUsed as boolean;
             if (meta.ragSources) message.ragSources = meta.ragSources as string[];
+            if (meta.skillsUsed) message.skillsUsed = meta.skillsUsed as string[];
+            if (meta.toolCallNames) {
+              message.toolCalls = (meta.toolCallNames as string[]).map(name => ({
+                id: "", name, arguments: {},
+              }));
+            }
             if (meta.usage) message.usage = meta.usage as Message["usage"];
             if (meta.elapsedMs) message.elapsedMs = meta.elapsedMs as number;
             if (meta.timestamp) message.timestamp = meta.timestamp as number;
