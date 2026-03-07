@@ -163,6 +163,16 @@ export interface WorkflowEventTrigger {
   filePattern?: string;
 }
 
+// MCP server configuration (stdio transport)
+export interface McpServerConfig {
+  id: string;
+  name: string;
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+  enabled: boolean;
+}
+
 // Plugin settings
 export interface LocalLlmHubSettings {
   llmConfig: LocalLlmConfig;
@@ -178,6 +188,7 @@ export interface LocalLlmHubSettings {
   enabledWorkflowEventTriggers: WorkflowEventTrigger[];
   skillsFolderPath: string;
   lastSelectedWorkflowPath?: string;
+  mcpServers: McpServerConfig[];
 }
 
 export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
@@ -193,4 +204,5 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   enabledWorkflowHotkeys: [],
   enabledWorkflowEventTriggers: [],
   skillsFolderPath: "skills",
+  mcpServers: [],
 };

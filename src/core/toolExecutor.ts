@@ -1,5 +1,6 @@
 import { TFile, TFolder, type App } from "obsidian";
 import type { ToolCall } from "../types";
+import type { McpManager } from "./mcpManager";
 
 export interface ToolExecutionResult {
   success: boolean;
@@ -12,6 +13,7 @@ export type ProposeEditCallback = (path: string, oldContent: string, newContent:
 export interface ToolExecutorOptions {
   app: App;
   onProposeEdit?: ProposeEditCallback;
+  mcpManager?: McpManager;
 }
 
 export async function executeToolCall(
@@ -197,8 +199,19 @@ export async function executeToolCall(
         return { success: true, result: `Edit applied to ${path}` };
       }
 
-      default:
+      default: {
+        // Try MCP tools
+        if (options.mcpManager?.hasTool(toolCall.name)) {
+          try {
+            const result = await options.mcpManager.callTool(toolCall.name, args);
+            return { success: true, result };
+          } catch (err) {
+            console.error("[MCP tool error]", toolCall.name, err);
+            return { success: false, result: `MCP error: ${err instanceof Error ? err.message : String(err)}` };
+          }
+        }
         return { success: false, result: `Unknown tool: ${toolCall.name}` };
+      }
     }
   } catch (err) {
     return { success: false, result: `Error: ${err instanceof Error ? err.message : String(err)}` };

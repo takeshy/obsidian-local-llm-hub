@@ -1,6 +1,6 @@
 # Local LLM Hub
 
-Chat with local LLMs (Ollama, LM Studio) with vault tools via function calling, local embeddings RAG, file encryption, edit history, slash commands, and workflow automation.
+Chat with local LLMs (Ollama, LM Studio) with vault tools via function calling, MCP server integration, local embeddings RAG, agent skills, file encryption, edit history, slash commands, and workflow automation.
 
 ## Requirements
 
@@ -73,6 +73,30 @@ Click the database icon in the chat input area to select a mode:
 
 **Fallback:** If a model doesn't support function calling, the plugin automatically switches to "Off" mode and shows a notification. You can continue chatting without tools.
 
+### MCP Servers
+
+Connect to local [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers to extend the AI's capabilities with external tools. MCP tools are automatically merged with vault tools and made available to the LLM via function calling.
+
+**Setup:**
+
+1. Open plugin settings → **MCP servers** → **Add server**
+2. Configure the server:
+   - **Name**: Display name (e.g. "filesystem")
+   - **Command**: Executable to run (e.g. `npx`, `node`, `python`)
+   - **Arguments**: Command arguments (e.g. `-y @modelcontextprotocol/server-filesystem /path/to/dir`)
+   - **Environment variables**: Optional `KEY=VALUE` pairs
+3. Toggle the server on — it connects automatically via stdio
+
+MCP tools are available regardless of vault tool mode. Each MCP server can be individually toggled on/off from the tool settings menu in the chat input area. Tool names are namespaced (e.g. `mcp__filesystem__read_file`) to avoid conflicts with vault tools.
+
+**Example MCP servers:**
+
+| Server | Command | Arguments |
+|--------|---------|-----------|
+| Filesystem | `npx` | `-y @modelcontextprotocol/server-filesystem /home/user/docs` |
+| SQLite | `npx` | `-y @modelcontextprotocol/server-sqlite /path/to/db.sqlite` |
+| GitHub | `npx` | `-y @modelcontextprotocol/server-github` |
+
 ### Compact History
 
 Use the `/compact` slash command (available when there are 2+ messages) to compress your conversation history. The LLM summarizes the conversation, and a new chat session is created with the summary as context. This helps manage long conversations without losing important context.
@@ -94,6 +118,12 @@ Encrypt sensitive notes using the command palette. Encrypted files are stored se
 ### Edit History
 
 Automatic tracking of file changes with the ability to view and restore previous versions.
+
+### Agent Skills
+
+Inject reusable instructions and reference materials into the AI's system prompt. Create a `SKILL.md` file in a subfolder of your skills directory to define a skill. Activate skills from the chat UI to customize the AI's behavior per conversation.
+
+See [docs/SKILLS.md](docs/SKILLS.md) for details on creating and using skills.
 
 ### Workflow Automation
 
@@ -119,8 +149,9 @@ See [docs/WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node refer
 
 All data stays local:
 
-- **Chat history** - stored in `.obsidian/plugins/local-llm-hub/`
+- **Chat history** - stored as markdown in the workspace folder
 - **RAG index** - stored locally in the plugin directory
 - **Encrypted files** - encrypted/decrypted locally
 - **Edit history** - stored locally in the plugin directory
 - **LLM requests** - sent only to your local Ollama or LM Studio server
+- **MCP servers** - run as local child processes via stdio

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, us
 import { Send, Paperclip, StopCircle, Database } from "lucide-react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
+import type { McpServerInfo } from "src/core/mcpManager";
 import { t } from "src/i18n";
 
 interface SlashCommandItem {
@@ -21,6 +22,9 @@ interface InputAreaProps {
   vaultToolMode: VaultToolMode;
   ragAvailable: boolean;
   onVaultToolModeChange: (mode: VaultToolMode) => void;
+  mcpServerInfos: McpServerInfo[];
+  enabledMcpServerIds: Set<string>;
+  onMcpServerToggle: (serverId: string, enabled: boolean) => void;
   vaultFiles: string[];
   hasSelection: boolean;
   app: App;
@@ -57,6 +61,9 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   vaultToolMode,
   ragAvailable,
   onVaultToolModeChange,
+  mcpServerInfos,
+  enabledMcpServerIds,
+  onMcpServerToggle,
   vaultFiles,
   hasSelection,
   app,
@@ -450,6 +457,36 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                       {t(`input.vaultTool_${mode}` as Parameters<typeof t>[0])}
                     </div>
                   ))}
+                  {mcpServerInfos.length > 0 && (
+                    <>
+                      <div className="llm-hub-vault-tool-divider" />
+                      <div className="llm-hub-vault-tool-section-label">
+                        {t("input.mcpServersLabel")}
+                      </div>
+                      {mcpServerInfos.map((server) => {
+                        const toolHint = server.toolCount > 0
+                          ? `${server.toolCount} ${server.toolCount === 1 ? "tool" : "tools"}`
+                          : "";
+                        return (
+                          <label
+                            key={server.id}
+                            className="llm-hub-mcp-server-item"
+                            title={server.toolNames.join(", ")}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={enabledMcpServerIds.has(server.id)}
+                              onChange={(e) => onMcpServerToggle(server.id, e.target.checked)}
+                            />
+                            <span className="llm-hub-mcp-server-name">{server.name}</span>
+                            {toolHint && (
+                              <span className="llm-hub-mcp-tool-hint">{toolHint}</span>
+                            )}
+                          </label>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               )}
             </div>

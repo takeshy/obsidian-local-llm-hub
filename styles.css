@@ -456,6 +456,48 @@
   color: var(--text-on-accent);
 }
 
+.llm-hub-vault-tool-divider {
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin: 4px 0;
+}
+
+.llm-hub-vault-tool-section-label {
+  padding: 4px 12px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.llm-hub-mcp-server-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.llm-hub-mcp-server-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-mcp-server-item input[type="checkbox"] {
+  margin: 0;
+}
+
+.llm-hub-mcp-server-name {
+  flex: 1;
+}
+
+.llm-hub-mcp-tool-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
 .llm-hub-hidden-input {
   display: none !important;
 }

@@ -18,6 +18,8 @@ import { getVaultTools } from "src/core/tools";
 import { executeToolCall } from "src/core/toolExecutor";
 import { getRagStore } from "src/core/ragStore";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, type SkillMetadata } from "src/core/skillsLoader";
+import type { McpServerInfo } from "src/core/mcpManager";
+import { EditConfirmationModal } from "./workflow/EditConfirmationModal";
 import { buildErrorMessage, type ChatHistory } from "./chat/chatUtils";
 import {
   messagesToMarkdown,
@@ -48,6 +50,8 @@ export default function Chat({ plugin }: ChatProps) {
   const [hasSelection, setHasSelection] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<SkillMetadata[]>([]);
   const [activeSkillPaths, setActiveSkillPaths] = useState<string[]>([]);
+  const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
+  const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -100,12 +104,31 @@ export default function Chat({ plugin }: ChatProps) {
     void discoverSkills(plugin.app, skillsFolderPath).then(setAvailableSkills);
   }, [plugin]);
 
+  // Load MCP server infos
+  useEffect(() => {
+    const infos = plugin.mcpManager.getServerInfos();
+    setMcpServerInfos(infos);
+    setEnabledMcpServerIds(new Set(infos.map((s) => s.id)));
+  }, [plugin]);
+
   const handleToggleSkill = useCallback((folderPath: string) => {
     setActiveSkillPaths(prev =>
       prev.includes(folderPath)
         ? prev.filter(p => p !== folderPath)
         : [...prev, folderPath]
     );
+  }, []);
+
+  const handleMcpServerToggle = useCallback((serverId: string, enabled: boolean) => {
+    setEnabledMcpServerIds(prev => {
+      const next = new Set(prev);
+      if (enabled) {
+        next.add(serverId);
+      } else {
+        next.delete(serverId);
+      }
+      return next;
+    });
   }, []);
 
   // Check for selection
@@ -405,8 +428,12 @@ export default function Chat({ plugin }: ChatProps) {
         }
       }
 
-      // Get vault tools based on mode
-      const tools = getVaultTools(vaultToolMode);
+      // Get vault tools based on mode + MCP tools (MCP always available if servers enabled)
+      const vaultTools = getVaultTools(vaultToolMode);
+      const mcpTools = plugin.mcpManager.getAllTools(
+        enabledMcpServerIds.size > 0 ? Array.from(enabledMcpServerIds) : undefined,
+      );
+      const tools = [...vaultTools, ...mcpTools];
 
       // Conversation messages for the API (includes tool call/result messages)
       const conversationMessages: Message[] = [...messages, userMessage];
@@ -485,7 +512,15 @@ export default function Chat({ plugin }: ChatProps) {
         for (const tc of pendingToolCalls) {
           setStreamingContent(fullContent + `\n\n🔧 ${tc.name}...`);
 
-          const result = await executeToolCall(tc, { app: plugin.app });
+          const result = await executeToolCall(tc, {
+            app: plugin.app,
+            mcpManager: plugin.mcpManager,
+            onProposeEdit: async (path, oldContent, newContent) => {
+              const modal = new EditConfirmationModal(plugin.app, path, newContent, "overwrite", oldContent);
+              const response = await modal.openAndWait();
+              return response.action === "save";
+            },
+          });
           const toolResultMsg: Message = {
             role: "tool",
             content: result.result,
@@ -547,7 +582,7 @@ export default function Chat({ plugin }: ChatProps) {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, ragConfig, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills]);
+  }, [messages, plugin, llmConfig, ragConfig, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds]);
 
   return (
     <div className="llm-hub-chat">
@@ -643,6 +678,9 @@ export default function Chat({ plugin }: ChatProps) {
         vaultFiles={vaultFiles}
         hasSelection={hasSelection}
         app={plugin.app}
+        mcpServerInfos={mcpServerInfos}
+        enabledMcpServerIds={enabledMcpServerIds}
+        onMcpServerToggle={handleMcpServerToggle}
         slashCommands={plugin.settings.slashCommands.map(cmd => ({
           name: cmd.name,
           description: cmd.description || "",

@@ -8,6 +8,7 @@ import { initLocale, t } from "src/i18n";
 import { formatError } from "src/utils/error";
 import { EncryptionManager } from "src/plugin/encryptionManager";
 import { WorkflowManager } from "src/plugin/workflowManager";
+import { McpManager } from "src/core/mcpManager";
 import { initEditHistoryManager, getEditHistoryManager } from "src/core/editHistory";
 import { cryptoCache } from "src/core/cryptoCache";
 
@@ -43,6 +44,7 @@ export class LocalLlmHubPlugin extends Plugin {
   settingsEmitter = new SettingsEmitter();
   encryptionManager!: EncryptionManager;
   workflowManager!: WorkflowManager;
+  mcpManager = new McpManager();
   private lastActiveMarkdownView: MarkdownView | null = null;
 
   onload(): void {
@@ -53,6 +55,11 @@ export class LocalLlmHubPlugin extends Plugin {
 
       // Initialize edit history manager
       initEditHistoryManager(this.app, this.settings.editHistory);
+
+      // Connect enabled MCP servers
+      void this.mcpManager.connectAll(this.settings.mcpServers).catch((e) => {
+        console.error("Local LLM Hub: Failed to connect MCP servers:", formatError(e));
+      });
     }).catch((e) => {
       console.error("Local LLM Hub: Failed to load settings:", formatError(e));
     });
@@ -277,6 +284,7 @@ export class LocalLlmHubPlugin extends Plugin {
   onunload(): void {
     this.workflowManager.cleanup();
     cryptoCache.clear();
+    void this.mcpManager.disconnectAll();
   }
 
   async loadSettings(): Promise<void> {
@@ -306,6 +314,9 @@ export class LocalLlmHubPlugin extends Plugin {
     }
     if (!this.settings.skillsFolderPath) {
       this.settings.skillsFolderPath = "skills";
+    }
+    if (!this.settings.mcpServers) {
+      this.settings.mcpServers = [];
     }
   }
 
