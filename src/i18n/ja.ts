@@ -95,6 +95,7 @@ export const ja: Record<string, string> = {
   "chat.welcomeNewChat": "トピック変更時は+をクリックして新しいチャットを開始",
   "chat.errorOccurred": "エラーが発生しました: {{message}}",
   "chat.unknownError": "不明なエラー",
+  "chat.llmNotVerified": "設定でLLM接続を構成・検証してください。",
   "chat.generationStopped": "_(生成停止)_",
   "chat.yesterday": "昨日",
   "chat.compacting": "圧縮中...",

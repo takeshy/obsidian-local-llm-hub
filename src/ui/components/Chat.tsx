@@ -337,7 +337,7 @@ export default function Chat({ plugin }: ChatProps) {
   // Send message
   const sendMessage = useCallback(async (content: string, attachments?: Attachment[]) => {
     if (!plugin.settings.llmVerified) {
-      new Notice("Please configure and verify LLM connection in settings first."); // eslint-disable-line obsidianmd/ui/sentence-case -- LLM is an acronym
+      new Notice(t("chat.llmNotVerified"));
       return;
     }
 

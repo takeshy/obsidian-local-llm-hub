@@ -236,7 +236,9 @@ function getTargetFiles(app: App, ragConfig: RagConfig, workspaceFolder: string)
   const files = app.vault.getMarkdownFiles();
   const excludeRegexes = ragConfig.excludePatterns
     .filter(Boolean)
-    .map(p => new RegExp(p));
+    .flatMap(p => {
+      try { return [new RegExp(p)]; } catch { return []; }
+    });
 
   return files.filter(file => {
     // Skip workspace folder

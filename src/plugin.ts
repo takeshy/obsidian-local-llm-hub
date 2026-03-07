@@ -9,6 +9,7 @@ import { formatError } from "src/utils/error";
 import { EncryptionManager } from "src/plugin/encryptionManager";
 import { WorkflowManager } from "src/plugin/workflowManager";
 import { initEditHistoryManager, getEditHistoryManager } from "src/core/editHistory";
+import { cryptoCache } from "src/core/cryptoCache";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -275,6 +276,7 @@ export class LocalLlmHubPlugin extends Plugin {
 
   onunload(): void {
     this.workflowManager.cleanup();
+    cryptoCache.clear();
   }
 
   async loadSettings(): Promise<void> {

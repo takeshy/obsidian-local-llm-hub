@@ -47,7 +47,7 @@ function evaluateExpression(
       case "/":
         return right !== 0 ? left / right : 0;
       case "%":
-        return left % right;
+        return right !== 0 ? left % right : 0;
     }
   }
 

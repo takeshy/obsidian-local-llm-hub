@@ -284,7 +284,7 @@ async function* ollamaChatStream(
 
             // Log first few chunks to debug format
             if (!loggedFirst) {
-              console.warn("[llm-hub] Ollama first chunk:", trimmed.slice(0, 500));
+              console.debug("[llm-hub] Ollama first chunk:", trimmed.slice(0, 500));
               loggedFirst = true;
             }
 

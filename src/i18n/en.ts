@@ -95,6 +95,7 @@ export const en = {
   "chat.welcomeNewChat": "Click + to start a new chat when changing topics",
   "chat.errorOccurred": "Sorry, an error occurred: {{message}}",
   "chat.unknownError": "Unknown error",
+  "chat.llmNotVerified": "Please configure and verify LLM connection in settings first.",
   "chat.generationStopped": "_(generation stopped)_",
   "chat.yesterday": "Yesterday",
   "chat.compacting": "Compacting...",
