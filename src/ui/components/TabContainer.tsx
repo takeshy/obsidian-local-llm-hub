@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import Chat from "./Chat";
 import WorkflowPanel from "./workflow/WorkflowPanel";
