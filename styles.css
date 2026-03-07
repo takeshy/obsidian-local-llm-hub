@@ -1,5 +1,15 @@
 /* Local LLM Hub Plugin Styles */
 
+/* Selection Highlight (CodeMirror decoration for captured selection) */
+.llm-hub-selection-highlight {
+  background-color: rgba(255, 213, 79, 0.4);
+  border-radius: 2px;
+}
+
+.theme-dark .llm-hub-selection-highlight {
+  background-color: rgba(255, 193, 7, 0.3);
+}
+
 /* Utility */
 .llm-hub-offscreen {
   position: fixed;

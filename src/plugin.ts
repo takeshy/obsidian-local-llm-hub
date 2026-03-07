@@ -7,6 +7,8 @@ import { initLocale, t } from "src/i18n";
 import { formatError } from "src/utils/error";
 import { EncryptionManager } from "src/plugin/encryptionManager";
 import { WorkflowManager } from "src/plugin/workflowManager";
+import { SelectionManager } from "src/plugin/selectionManager";
+import type { SelectionLocationInfo } from "src/ui/selectionHighlight";
 import { McpManager } from "src/core/mcpManager";
 import { initEditHistoryManager, getEditHistoryManager } from "src/core/editHistory";
 import { cryptoCache } from "src/core/cryptoCache";
@@ -44,6 +46,7 @@ export class LocalLlmHubPlugin extends Plugin {
   encryptionManager!: EncryptionManager;
   workflowManager!: WorkflowManager;
   mcpManager = new McpManager();
+  selectionManager!: SelectionManager;
   private lastActiveMarkdownView: MarkdownView | null = null;
 
   onload(): void {
@@ -69,6 +72,9 @@ export class LocalLlmHubPlugin extends Plugin {
     // Initialize workflow manager
     this.workflowManager = new WorkflowManager(this);
 
+    // Initialize selection manager
+    this.selectionManager = new SelectionManager(this);
+
     // Settings tab
     this.addSettingTab(new SettingsTab(this.app, this));
 
@@ -91,11 +97,16 @@ export class LocalLlmHubPlugin extends Plugin {
       this.workflowManager.registerEventListeners();
     });
 
-    // Track active markdown view for selection capture
+    // Track active markdown view and capture selection when switching to chat
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", (leaf) => {
-        if (leaf?.view instanceof MarkdownView) {
-          this.lastActiveMarkdownView = leaf.view;
+        if (leaf?.view?.getViewType() === VIEW_TYPE_LLM_CHAT) {
+          this.selectionManager.captureSelectionFromView(this.lastActiveMarkdownView);
+        } else {
+          this.selectionManager.clearSelectionHighlight();
+          if (leaf?.view instanceof MarkdownView) {
+            this.lastActiveMarkdownView = leaf.view;
+          }
         }
       })
     );
@@ -334,6 +345,9 @@ export class LocalLlmHubPlugin extends Plugin {
   }
 
   async activateChatView(tab?: "chat" | "workflow"): Promise<void> {
+    // Capture selection before switching focus
+    this.selectionManager.captureSelection();
+
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_LLM_CHAT);
     let leaf: WorkspaceLeaf;
 
@@ -359,22 +373,35 @@ export class LocalLlmHubPlugin extends Plugin {
 
     if (activeLeaf) {
       // Currently in chat, go back to last editor
+      this.selectionManager.clearSelectionHighlight();
       if (this.lastActiveMarkdownView) {
         const editorLeaf = this.lastActiveMarkdownView.leaf;
         void this.app.workspace.revealLeaf(editorLeaf);
       }
-    } else if (chatLeaves.length > 0) {
-      void this.app.workspace.revealLeaf(chatLeaves[0]);
     } else {
-      void this.activateChatView();
+      // Not in chat, capture selection and open/activate chat
+      this.selectionManager.captureSelectionFromView(this.lastActiveMarkdownView);
+      if (chatLeaves.length > 0) {
+        void this.app.workspace.revealLeaf(chatLeaves[0]);
+      } else {
+        void this.activateChatView();
+      }
     }
   }
 
   getSelection(): string | null {
+    // First try live selection from active editor
     const view = this.lastActiveMarkdownView || this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (!view) return null;
-    const editor = view.editor;
-    return editor.getSelection() || null;
+    if (view) {
+      const sel = view.editor.getSelection();
+      if (sel) return sel;
+    }
+    // Fallback to cached selection (captured before focus switched to chat)
+    return this.selectionManager.getLastSelection() || null;
+  }
+
+  getSelectionLocation(): SelectionLocationInfo | null {
+    return this.selectionManager.getSelectionLocation();
   }
 
   getActiveNoteContent(): string | null {

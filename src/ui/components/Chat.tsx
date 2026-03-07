@@ -155,10 +155,24 @@ export default function Chat({ plugin }: ChatProps) {
   const resolveMessageVariables = useCallback(async (content: string): Promise<string> => {
     let resolved = content;
 
-    // Resolve {selection}
+    // Resolve {selection} with location info
     if (resolved.includes("{selection}")) {
+      let selectionText: string;
       const selection = plugin.getSelection();
-      resolved = resolved.replace(/\{selection\}/g, selection || "(no selection)");
+      const locationInfo = plugin.getSelectionLocation();
+
+      if (selection && locationInfo) {
+        const lineInfo = locationInfo.startLine === locationInfo.endLine
+          ? `Line ${locationInfo.startLine}`
+          : `Lines ${locationInfo.startLine}-${locationInfo.endLine}`;
+        const quotedSelection = selection.split("\n").map(line => `> ${line}`).join("\n");
+        selectionText = `From "${locationInfo.filePath}" (${lineInfo}):\n${quotedSelection}`;
+      } else if (selection) {
+        selectionText = selection;
+      } else {
+        selectionText = "(no selection)";
+      }
+      resolved = resolved.replace(/\{selection\}/g, selectionText);
     }
 
     // Resolve {content}
