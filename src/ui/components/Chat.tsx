@@ -371,8 +371,6 @@ export default function Chat({ plugin }: ChatProps) {
     }
   }, [messages, isLoading, isCompacting, plugin, llmConfig, saveCurrentChat]);
 
-  const MAX_TOOL_ROUNDS = 20;
-
   // Send message
   const sendMessage = useCallback(async (content: string, attachments?: Attachment[], skillPath?: string) => {
     if (!plugin.settings.llmVerified) {
@@ -486,8 +484,6 @@ export default function Chat({ plugin }: ChatProps) {
       let thinkingContent = "";
       let stopped = false;
       let usage: Message["usage"] | undefined;
-      let toolRound = 0;
-
       // Stream one round from the LLM, returns collected tool calls
       const streamOneRound = async (useTools: boolean): Promise<ToolCall[]> => {
         const pendingToolCalls: ToolCall[] = [];
@@ -545,7 +541,7 @@ export default function Chat({ plugin }: ChatProps) {
       }
 
       // Tool call loop: execute tools → send results → stream again
-      while (!stopped && pendingToolCalls.length > 0 && toolRound < MAX_TOOL_ROUNDS) {
+      while (!stopped && pendingToolCalls.length > 0) {
         const assistantMsg: Message = {
           role: "assistant",
           content: fullContent,
@@ -579,7 +575,6 @@ export default function Chat({ plugin }: ChatProps) {
           conversationMessages.push(toolResultMsg);
         }
 
-        toolRound++;
         setStreamingContent("");
         setStreamingThinking("");
 
