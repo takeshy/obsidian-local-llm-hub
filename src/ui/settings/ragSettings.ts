@@ -88,7 +88,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
 
   embeddingModelSetting.addText((text) => {
     text
-      .setPlaceholder("nomic-embed-text") // eslint-disable-line obsidianmd/ui/sentence-case -- model name
+      .setPlaceholder("Nomic-embed-text")
       .setValue(ragConfig.embeddingModel)
       .onChange(async (value) => {
         plugin.settings.ragConfig = { ...ragConfig, embeddingModel: value };

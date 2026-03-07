@@ -10,10 +10,14 @@ export interface ToolExecutionResult {
 // Callback for propose_edit confirmation
 export type ProposeEditCallback = (path: string, oldContent: string, newContent: string) => Promise<boolean>;
 
+// Callback for skill workflow execution
+export type SkillWorkflowExecutor = (workflowId: string, variablesJson?: string) => Promise<string>;
+
 export interface ToolExecutorOptions {
   app: App;
   onProposeEdit?: ProposeEditCallback;
   mcpManager?: McpManager;
+  onRunSkillWorkflow?: SkillWorkflowExecutor;
 }
 
 export async function executeToolCall(
@@ -197,6 +201,21 @@ export async function executeToolCall(
         // No callback - apply directly
         await app.vault.modify(file, newContent);
         return { success: true, result: `Edit applied to ${path}` };
+      }
+
+      case "run_skill_workflow": {
+        if (!options.onRunSkillWorkflow) {
+          return { success: false, result: "Skill workflow execution is not available" };
+        }
+        try {
+          const result = await options.onRunSkillWorkflow(
+            args.workflowId as string,
+            args.variables as string | undefined,
+          );
+          return { success: true, result };
+        } catch (err) {
+          return { success: false, result: `Workflow error: ${err instanceof Error ? err.message : String(err)}` };
+        }
       }
 
       default: {

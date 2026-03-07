@@ -14,10 +14,12 @@ import {
   type ToolCall,
 } from "src/types";
 import { localLlmChatStream } from "src/core/localLlmProvider";
-import { getVaultTools } from "src/core/tools";
+import { getVaultTools, skillWorkflowTool } from "src/core/tools";
 import { executeToolCall } from "src/core/toolExecutor";
 import { getRagStore } from "src/core/ragStore";
-import { discoverSkills, loadSkill, buildSkillSystemPrompt, type SkillMetadata } from "src/core/skillsLoader";
+import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
+import { parseWorkflowFromMarkdown } from "src/workflow/parser";
+import { WorkflowExecutor } from "src/workflow/executor";
 import type { McpServerInfo } from "src/core/mcpManager";
 import { EditConfirmationModal } from "./workflow/EditConfirmationModal";
 import { buildErrorMessage, type ChatHistory } from "./chat/chatUtils";
@@ -416,15 +418,16 @@ export default function Chat({ plugin }: ChatProps) {
 
       // Skill instructions injection
       let skillsUsedNames: string[] | undefined;
+      let loadedSkillsList: LoadedSkill[] = [];
       if (activeSkillPaths.length > 0) {
         const activeMetadata = availableSkills.filter(s => activeSkillPaths.includes(s.folderPath));
-        const loadedSkills = await Promise.all(
+        loadedSkillsList = await Promise.all(
           activeMetadata.map(m => loadSkill(plugin.app, m))
         );
-        const skillPrompt = buildSkillSystemPrompt(loadedSkills);
+        const skillPrompt = buildSkillSystemPrompt(loadedSkillsList);
         if (skillPrompt) {
           systemPrompt += skillPrompt;
-          skillsUsedNames = loadedSkills.map(s => s.name);
+          skillsUsedNames = loadedSkillsList.map(s => s.name);
         }
       }
 
@@ -434,6 +437,14 @@ export default function Chat({ plugin }: ChatProps) {
         enabledMcpServerIds.size > 0 ? Array.from(enabledMcpServerIds) : undefined,
       );
       const tools = [...vaultTools, ...mcpTools];
+
+      // Add skill workflow tool if any active skill has workflows
+      const skillWorkflowMap = loadedSkillsList.length > 0
+        ? collectSkillWorkflows(loadedSkillsList)
+        : new Map();
+      if (skillWorkflowMap.size > 0) {
+        tools.push(skillWorkflowTool);
+      }
 
       // Conversation messages for the API (includes tool call/result messages)
       const conversationMessages: Message[] = [...messages, userMessage];
@@ -520,6 +531,9 @@ export default function Chat({ plugin }: ChatProps) {
               const response = await modal.openAndWait();
               return response.action === "save";
             },
+            onRunSkillWorkflow: skillWorkflowMap.size > 0
+              ? (workflowId, variablesJson) => executeSkillWorkflow(plugin, workflowId, variablesJson, skillWorkflowMap)
+              : undefined,
           });
           const toolResultMsg: Message = {
             role: "tool",
@@ -697,4 +711,67 @@ function generateChatTitle(messages: Message[]): string {
   if (!firstUserMsg) return "Chat";
   const title = firstUserMsg.content.slice(0, 50).replace(/\n/g, " ").trim();
   return title || "Chat";
+}
+
+/**
+ * Execute a skill workflow headlessly and return results.
+ */
+async function executeSkillWorkflow(
+  plugin: LocalLlmHubPlugin,
+  workflowId: string,
+  variablesJson: string | undefined,
+  skillWorkflowMap: Map<string, {
+    skill: LoadedSkill;
+    workflowRef: SkillWorkflowRef;
+    vaultPath: string;
+  }>,
+): Promise<string> {
+  const entry = skillWorkflowMap.get(workflowId);
+  if (!entry) {
+    const available = [...skillWorkflowMap.keys()].join(", ");
+    throw new Error(`Unknown workflow ID: ${workflowId}. Available: ${available}`);
+  }
+
+  const { vaultPath, workflowRef } = entry;
+
+  const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
+  if (!(file instanceof TFile)) {
+    throw new Error(`Workflow file not found: ${vaultPath}`);
+  }
+
+  const content = await plugin.app.vault.read(file);
+  const workflow = parseWorkflowFromMarkdown(content, workflowRef.name);
+
+  // Build input variables
+  const variables = new Map<string, string | number>();
+  if (variablesJson) {
+    const parsed = JSON.parse(variablesJson) as Record<string, string | number>;
+    for (const [key, value] of Object.entries(parsed)) {
+      variables.set(key, value);
+    }
+  }
+
+  const executor = new WorkflowExecutor(plugin.app, plugin);
+  const result = await executor.execute(
+    workflow,
+    { variables },
+    undefined,
+    { workflowPath: vaultPath, workflowName: workflowRef.name },
+  );
+
+  // Collect output variables
+  const outputVars: Record<string, string | number> = {};
+  result.context.variables.forEach((value, key) => {
+    if (!key.startsWith("__")) {
+      outputVars[key] = value;
+    }
+  });
+
+  const logs = result.context.logs.map(log => ({
+    node: log.nodeType,
+    status: log.status,
+    message: log.message,
+  }));
+
+  return JSON.stringify({ success: true, workflowId, variables: outputVars, logs });
 }

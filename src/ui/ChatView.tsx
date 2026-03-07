@@ -19,7 +19,7 @@ export class ChatView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Local LLM"; // eslint-disable-line obsidianmd/ui/sentence-case -- LLM is an acronym
+    return "Local llm";
   }
 
   getIcon(): IconName {

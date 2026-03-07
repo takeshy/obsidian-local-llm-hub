@@ -30,7 +30,7 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
     .setDesc(t("settings.skillsFolderDesc"))
     .addText((text) => {
       text
-        .setPlaceholder("skills")
+        .setPlaceholder("Skills")
         .setValue(plugin.settings.skillsFolderPath)
         .onChange(async (value) => {
           plugin.settings.skillsFolderPath = value || "skills";

@@ -1,10 +1,17 @@
 import { type App, TFile, TFolder, parseYaml } from "obsidian";
 
+export interface SkillWorkflowRef {
+  path: string;            // relative path from skill folder (e.g. "workflows/lint.md")
+  name?: string;           // workflow name within the file (if multiple)
+  description: string;     // description for function calling tool
+}
+
 export interface SkillMetadata {
   name: string;
   description: string;
   folderPath: string;      // e.g. "LocalLlmHub/skills/code-review"
   skillFilePath: string;   // e.g. "LocalLlmHub/skills/code-review/SKILL.md"
+  workflows: SkillWorkflowRef[];  // workflow references from frontmatter
 }
 
 export interface LoadedSkill extends SkillMetadata {
@@ -33,11 +40,27 @@ export async function discoverSkills(app: App, skillsFolderPath: string): Promis
       const content = await app.vault.cachedRead(skillFile);
       const { frontmatter } = parseFrontmatter(content);
 
+      // Parse workflow references from frontmatter
+      const rawWorkflows = frontmatter.workflows as Array<Record<string, unknown>> | undefined;
+      const workflows: SkillWorkflowRef[] = [];
+      if (Array.isArray(rawWorkflows)) {
+        for (const wf of rawWorkflows) {
+          if (typeof wf.path === "string" && wf.path) {
+            workflows.push({
+              path: wf.path,
+              name: typeof wf.name === "string" ? wf.name : undefined,
+              description: typeof wf.description === "string" ? wf.description : wf.path,
+            });
+          }
+        }
+      }
+
       skills.push({
         name: (frontmatter.name as string) || child.name,
         description: (frontmatter.description as string) || "",
         folderPath: child.path,
         skillFilePath,
+        workflows,
       });
     } catch {
       // Skip unreadable skill files
@@ -85,6 +108,14 @@ export async function loadSkill(app: App, metadata: SkillMetadata): Promise<Load
 }
 
 /**
+ * Build a stable workflow tool ID from skill name and workflow ref.
+ */
+function buildWorkflowToolId(skillName: string, wf: SkillWorkflowRef): string {
+  const base = wf.name || wf.path.replace(/\.md$/, "").replace(/\//g, "_");
+  return `${skillName}/${base}`;
+}
+
+/**
  * Build a system prompt section from loaded skills.
  */
 export function buildSkillSystemPrompt(skills: LoadedSkill[]): string {
@@ -95,10 +126,43 @@ export function buildSkillSystemPrompt(skills: LoadedSkill[]): string {
     if (skill.references.length > 0) {
       section += `\n\n### References\n\n${skill.references.join("\n\n")}`;
     }
+    if (skill.workflows.length > 0) {
+      section += `\n\n### Available Workflows\nUse the run_skill_workflow tool to execute these workflows:`;
+      for (const wf of skill.workflows) {
+        const id = buildWorkflowToolId(skill.name, wf);
+        section += `\n- \`${id}\`: ${wf.description}`;
+      }
+    }
     return section;
   });
 
   return `\n\nThe following agent skills are active:\n\n${parts.join("\n\n---\n\n")}`;
+}
+
+/**
+ * Collect all workflow references from loaded skills for tool registration.
+ * Returns a map of workflowId -> { skill, workflow ref, absolute vault path }.
+ */
+export function collectSkillWorkflows(skills: LoadedSkill[]): Map<string, {
+  skill: LoadedSkill;
+  workflowRef: SkillWorkflowRef;
+  vaultPath: string;
+}> {
+  const map = new Map<string, {
+    skill: LoadedSkill;
+    workflowRef: SkillWorkflowRef;
+    vaultPath: string;
+  }>();
+
+  for (const skill of skills) {
+    for (const wf of skill.workflows) {
+      const id = buildWorkflowToolId(skill.name, wf);
+      const vaultPath = `${skill.folderPath}/${wf.path}`;
+      map.set(id, { skill, workflowRef: wf, vaultPath });
+    }
+  }
+
+  return map;
 }
 
 /**

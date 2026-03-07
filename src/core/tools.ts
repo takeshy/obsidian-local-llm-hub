@@ -156,6 +156,30 @@ const proposeEdit: ToolDefinition = {
   },
 };
 
+// Skill workflow tool (dynamically added when skills with workflows are active)
+export const skillWorkflowTool: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "run_skill_workflow",
+    description:
+      "Run a workflow provided by an active agent skill. Workflows can execute commands, HTTP requests, file operations, and more. Specify the workflow ID from the active skills and optional input variables.",
+    parameters: {
+      type: "object",
+      properties: {
+        workflowId: {
+          type: "string",
+          description: "The workflow ID to run (format: skillName/workflowName, listed in skill description)",
+        },
+        variables: {
+          type: "string",
+          description: 'JSON object of input variables to pass to the workflow (e.g. {"filePath": "notes/todo.md"})',
+        },
+      },
+      required: ["workflowId"],
+    },
+  },
+};
+
 // Search tools (excluded in "noSearch" mode)
 const searchToolNames = new Set(["search_notes", "list_notes"]);
 

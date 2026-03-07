@@ -28,6 +28,7 @@ export interface AIWorkflowResult {
   description?: string; // User's original request
   mode?: AIWorkflowMode; // "create" or "modify"
   resolvedMentions?: ResolvedMention[]; // File contents that were embedded
+  createAsSkill?: boolean; // If true, create as agent skill
 }
 
 // Result type for confirmation modal
@@ -248,6 +249,7 @@ export class AIWorkflowModal extends Modal {
 
   private nameInputEl: HTMLInputElement | null = null;
   private outputPathEl: HTMLInputElement | null = null;
+  private skillCheckbox: HTMLInputElement | null = null;
   private descriptionEl: HTMLTextAreaElement | null = null;
   private confirmCheckbox: HTMLInputElement | null = null;
   private generateBtn: HTMLButtonElement | null = null;
@@ -339,6 +341,28 @@ export class AIWorkflowModal extends Modal {
       pathContainer.createEl("div", {
         cls: "llm-hub-workflow-hint",
         text: t("aiWorkflow.pathHint"),
+      });
+
+      // Create as skill checkbox
+      const skillContainer = contentEl.createDiv({ cls: "llm-hub-workflow-confirm-row" });
+      this.skillCheckbox = skillContainer.createEl("input", {
+        type: "checkbox",
+        attr: { id: "ai-workflow-skill-checkbox" },
+      });
+      skillContainer.createEl("label", {
+        text: t("aiWorkflow.createAsSkill"),
+        attr: { for: "ai-workflow-skill-checkbox" },
+      });
+
+      this.skillCheckbox.addEventListener("change", () => {
+        if (!this.outputPathEl) return;
+        if (this.skillCheckbox?.checked) {
+          this.outputPathEl.value = `${this.plugin.settings.skillsFolderPath}/{{name}}`;
+          this.outputPathEl.disabled = true;
+        } else {
+          this.outputPathEl.value = this.defaultOutputPath || "workflows/{{name}}";
+          this.outputPathEl.disabled = false;
+        }
       });
     }
 
@@ -662,6 +686,9 @@ export class AIWorkflowModal extends Modal {
       result.description = currentRequest;
       result.mode = this.mode;
       result.resolvedMentions = resolvedMentions.length > 0 ? resolvedMentions : undefined;
+      if (this.skillCheckbox?.checked) {
+        result.createAsSkill = true;
+      }
 
       // Override name with user input for create mode
       if (this.mode === "create") {

@@ -276,8 +276,6 @@ export class McpClient {
   // Parse Content-Length framed messages from the MCP stdio stream
   private handleData(data: Buffer): void {
     this.readBuffer = Buffer.concat([this.readBuffer, data]);
-
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       // Look for the header/body separator
       const separator = "\r\n\r\n";

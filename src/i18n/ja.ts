@@ -671,6 +671,8 @@ export const ja: Record<string, string> = {
   "aiWorkflow.pathHint": "ワークフローファイルの保存先パス（.mdなし）",
   "aiWorkflow.generate": "生成",
   "aiWorkflow.mentionHint": "@ファイル名でファイル内容をコンテキストとして含める",
+  "aiWorkflow.createAsSkill": "エージェントスキルとして作成",
+  "aiWorkflow.skillCreated": "スキルを作成しました: {{name}}（{{path}}）",
   "aiWorkflow.modify": "修正",
   "aiWorkflow.currentWorkflow": "現在のワークフロー",
   "aiWorkflow.confirmChanges": "変更の確認",

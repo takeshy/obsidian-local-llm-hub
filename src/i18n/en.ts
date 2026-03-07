@@ -7,33 +7,33 @@ export const en = {
   "common.close": "Close",
 
   // Settings - LLM
-  "settings.llm": "LLM connection", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "settings.llmDesc": "Connect to Ollama or LM Studio", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
-  "settings.llmConfigure": "Configure LLM", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
+  "settings.llm": "Llm connection",
+  "settings.llmDesc": "Connect to ollama or lm studio",
+  "settings.llmConfigure": "Configure llm",
   "settings.llmVerifying": "Verifying connection...",
-  "settings.llmVerified": "LLM verified", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "settings.llmDisabled": "LLM disabled", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
+  "settings.llmVerified": "Llm verified",
+  "settings.llmDisabled": "Llm disabled",
   "settings.llmConnectionFailed": "Connection failed: ",
   "settings.llmNoModel": "Please configure a model name in settings first",
-  "settings.llmConfigSaved": "LLM settings saved", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
+  "settings.llmConfigSaved": "Llm settings saved",
   "settings.verified": "Verified",
   "settings.verify": "Verify",
   "settings.disable": "Disable",
 
   // Settings - LLM Modal
-  "settings.llmModal.title": "LLM settings", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
-  "settings.llmModal.desc": "Configure Ollama or LM Studio connection.", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- proper nouns
+  "settings.llmModal.title": "Llm settings",
+  "settings.llmModal.desc": "Configure ollama or lm studio connection.",
   "settings.llmModal.framework": "Framework",
-  "settings.llmModal.frameworkDesc": "Select your LLM server framework", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
+  "settings.llmModal.frameworkDesc": "Select your llm server framework",
   "settings.llmModal.baseUrl": "Base URL",
   "settings.llmModal.baseUrlDesc": "Server endpoint URL",
   "settings.llmModal.baseUrlRequired": "Base URL is required",
   "settings.llmModal.apiKey": "API key (optional)",
   "settings.llmModal.apiKeyDesc": "Required by some providers for authentication",
-  "settings.llmModal.apiKeyPlaceholder": "sk-...", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "settings.llmModal.apiKeyPlaceholder": "Sk-...",
   "settings.llmModal.model": "Model",
   "settings.llmModal.modelDesc": "Select from server or type manually",
-  "settings.llmModal.modelPlaceholder": "e.g. llama3, mistral, gemma2", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder with model names
+  "settings.llmModal.modelPlaceholder": "E.g. Llama3, mistral, gemma2",
   "settings.llmModal.fetchModels": "Fetch models",
   "settings.llmModal.fetching": "Fetching...",
   "settings.llmModal.noModelsFound": "No models found on the server",
@@ -51,24 +51,24 @@ export const en = {
   // Settings - Workspace
   "settings.workspace": "Workspace",
   "settings.workspaceFolder": "Workspace folder",
-  "settings.workspaceFolderDesc": "Folder for chat history and RAG data", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "settings.workspaceFolderDesc": "Folder for chat history and rag data",
   "settings.saveChatHistory": "Save chat history",
-  "settings.saveChatHistoryDesc": "Save chat conversations as markdown files", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
+  "settings.saveChatHistoryDesc": "Save chat conversations as Markdown files",
   "settings.systemPrompt": "System prompt",
   "settings.systemPromptDesc": "Custom instructions for the AI assistant",
   "settings.skillsFolder": "Skills folder",
   "settings.skillsFolderDesc": "Subfolder for agent skills (relative to workspace folder)",
-  "settings.systemPromptPlaceholder": "e.g. Always respond in Japanese", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder with example
+  "settings.systemPromptPlaceholder": "E.g. Always respond in japanese",
 
   // Settings - RAG
-  "settings.rag": "Local RAG", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "settings.rag": "Local rag",
   "settings.ragDesc": "Retrieval-augmented generation using local embeddings",
-  "settings.ragEnable": "Enable RAG", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "settings.ragEnable": "Enable rag",
   "settings.ragEnableDesc": "Index vault notes and use them as context for chat",
   "settings.ragEmbeddingModel": "Embedding model",
-  "settings.ragEmbeddingModelDesc": "Embedding model is required for RAG (e.g. nomic-embed-text). Ollama: ollama pull nomic-embed-text", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- model name
+  "settings.ragEmbeddingModelDesc": "Embedding model is required for rag (e.g. Nomic-embed-text). Ollama: ollama pull nomic-embed-text",
   "settings.ragEmbeddingBaseUrl": "Embedding server URL",
-  "settings.ragEmbeddingBaseUrlDesc": "Leave empty to use the same server as LLM", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
+  "settings.ragEmbeddingBaseUrlDesc": "Leave empty to use the same server as llm",
   "settings.ragTargetFolders": "Target folders",
   "settings.ragTargetFoldersDesc": "Comma-separated folder paths to index (empty = entire vault)",
   "settings.ragExcludePatterns": "Exclude patterns",
@@ -77,25 +77,25 @@ export const en = {
   "settings.ragChunkSizeDesc": "Characters per chunk (default: 1000)",
   "settings.ragChunkOverlap": "Chunk overlap",
   "settings.ragChunkOverlapDesc": "Overlap between chunks (default: 200)",
-  "settings.ragTopK": "Top K results", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- Top K is a technical term
+  "settings.ragTopK": "Top k results",
   "settings.ragTopKDesc": "Number of chunks to retrieve (default: 5)",
   "settings.ragSync": "Sync now",
   "settings.ragSyncing": "Syncing...",
   "settings.ragSynced": "Synced {{count}} chunks from {{files}} files",
   "settings.ragSyncFailed": "Sync failed: {{error}}",
   "settings.ragClear": "Clear index",
-  "settings.ragCleared": "RAG index cleared", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "settings.ragCleared": "Rag index cleared",
   "settings.ragStatus": "{{chunks}} chunks from {{files}} files indexed",
   "settings.ragNoIndex": "No index yet. Click sync to build.",
 
   // Chat
   "chat.welcomeTitle": "Start a conversation with local AI",
-  "chat.welcomeHint": "Ask questions, process text, or explore your notes with RAG.", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "chat.welcomeHint": "Ask questions, process text, or explore your notes with rag.",
   "chat.welcomeThinking": "Enable thinking mode for models that support reasoning",
   "chat.welcomeNewChat": "Click + to start a new chat when changing topics",
   "chat.errorOccurred": "Sorry, an error occurred: {{message}}",
   "chat.unknownError": "Unknown error",
-  "chat.llmNotVerified": "Please configure and verify LLM connection in settings first.",
+  "chat.llmNotVerified": "Please configure and verify llm connection in settings first.",
   "chat.generationStopped": "_(generation stopped)_",
   "chat.yesterday": "Yesterday",
   "chat.compacting": "Compacting...",
@@ -115,7 +115,7 @@ export const en = {
   "message.thinking": "Thinking",
   "message.tokens": "Tokens",
   "message.thinkingTokens": "Thinking",
-  "message.ragUsed": "RAG context used", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "message.ragUsed": "Rag context used",
   "message.skillsUsed": "Skills used",
 
   // Input
@@ -132,7 +132,7 @@ export const en = {
   "input.vaultTool_all": "Vault: all",
   "input.vaultTool_noSearch": "Vault: no search",
   "input.vaultTool_none": "Vault: off",
-  "input.mcpServersLabel": "MCP servers",
+  "input.mcpServersLabel": "Mcp servers",
   "input.selectionVariable": "Selected text in editor",
   "input.contentVariable": "Active note content",
   "input.openFile": "Open file (Ctrl+Shift+O)",
@@ -311,7 +311,7 @@ export const en = {
   "workflow.nodeType.set": "Set",
   "workflow.nodeType.if": "If",
   "workflow.nodeType.while": "While",
-  "workflow.nodeType.command": "LLM command", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- LLM is an acronym
+  "workflow.nodeType.command": "Llm command",
   "workflow.nodeType.http": "HTTP",  
   "workflow.nodeType.json": "JSON",  
   "workflow.nodeType.note": "Note",
@@ -326,7 +326,7 @@ export const en = {
   "workflow.nodeType.fileExplorer": "File explorer",
   "workflow.nodeType.fileSave": "File save",
   "workflow.nodeType.workflow": "Sub-workflow",
-  "workflow.nodeType.ragSync": "RAG sync", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "workflow.nodeType.ragSync": "Rag sync",
   "workflow.nodeType.obsidianCommand": "Obsidian command",
   "workflow.nodeType.sleep": "Sleep",
 
@@ -424,7 +424,7 @@ export const en = {
   "nodeEditor.editTitle": "Edit {{type}} node",
   "nodeEditor.nodeType": "Node type",
   "nodeEditor.variableName": "Variable name",
-  "nodeEditor.variableName.placeholder": "myVariable",
+  "nodeEditor.variableName.placeholder": "Myvariable",
   "nodeEditor.value": "Value",
   "nodeEditor.value.placeholder": "Enter value or {{variable}} reference",
   "nodeEditor.condition": "Condition",
@@ -434,7 +434,7 @@ export const en = {
   "nodeEditor.enableThinking": "Enable thinking",
   "nodeEditor.enableThinking.desc": "Allow model to use thinking/reasoning",
   "nodeEditor.saveTo": "Save to variable",
-  "nodeEditor.saveTo.placeholder": "result", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.saveTo.placeholder": "Result",
   "nodeEditor.saveTo.httpResponse": "Save HTTP response to...",  
   "nodeEditor.saveTo.noteContent": "Save note content to...",
   "nodeEditor.saveTo.searchResults": "Save search results to...",
@@ -454,21 +454,21 @@ export const en = {
   "nodeEditor.body": "Body",
   "nodeEditor.body.placeholder": "Request body",
   "nodeEditor.saveStatus": "Save status code to",
-  "nodeEditor.saveStatus.placeholder": "statusCode",
+  "nodeEditor.saveStatus.placeholder": "Statuscode",
   "nodeEditor.throwOnError": "Throw on error",
   "nodeEditor.throwOnError.desc": "Throw error on HTTP 4xx/5xx",  
   "nodeEditor.sourceVariable": "Source variable",
-  "nodeEditor.sourceVariable.placeholder": "variableName",
+  "nodeEditor.sourceVariable.placeholder": "Variablename",
   "nodeEditor.notePath": "Note path",
-  "nodeEditor.notePath.placeholder": "path/to/note", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.notePath.placeholder": "Path/to/note",
   "nodeEditor.content": "Content",
   "nodeEditor.content.placeholder": "Note content or {{variable}}",
   "nodeEditor.mode": "Write mode",
-  "nodeEditor.mode.desc": "overwrite, append, or create (skip if exists)", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- listing option values
+  "nodeEditor.mode.desc": "Overwrite, append, or create (skip if exists)",
   "nodeEditor.confirm": "Confirm before write",
   "nodeEditor.confirm.desc": "Show confirmation dialog",
   "nodeEditor.notePathRead": "Note path to read",
-  "nodeEditor.notePathRead.placeholder": "path/to/note", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.notePathRead.placeholder": "Path/to/note",
   "nodeEditor.searchQuery": "Search query",
   "nodeEditor.searchQuery.placeholder": "Search term...",
   "nodeEditor.searchType": "Search content",
@@ -477,7 +477,7 @@ export const en = {
   "nodeEditor.limit.placeholder": "10",
   "nodeEditor.limit.notes": "50",
   "nodeEditor.folder": "Folder",
-  "nodeEditor.folder.placeholder": "path/to/folder", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.folder.placeholder": "Path/to/folder",
   "nodeEditor.recursive": "Recursive",
   "nodeEditor.recursive.desc": "Include subfolders",
   "nodeEditor.tags": "Tags filter",
@@ -485,9 +485,9 @@ export const en = {
   "nodeEditor.tagMatch": "Tag match mode",
   "nodeEditor.tagMatch.desc": "Match any or all tags",
   "nodeEditor.createdWithin": "Created within",
-  "nodeEditor.createdWithin.placeholder": "e.g. 7d, 24h, 30m", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.createdWithin.placeholder": "E.g. 7d, 24h, 30m",
   "nodeEditor.modifiedWithin": "Modified within",
-  "nodeEditor.modifiedWithin.placeholder": "e.g. 7d, 24h, 30m", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.modifiedWithin.placeholder": "E.g. 7d, 24h, 30m",
   "nodeEditor.sortBy": "Sort by",
   "nodeEditor.sortBy.desc": "Sort results by field",
   "nodeEditor.sortOrder": "Sort order",
@@ -495,15 +495,15 @@ export const en = {
   "nodeEditor.parentFolder": "Parent folder",
   "nodeEditor.parentFolder.placeholder": "Leave empty for all folders",
   "nodeEditor.filePath": "File path",
-  "nodeEditor.filePath.placeholder": "path/to/file", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.filePath.placeholder": "Path/to/file",
   "nodeEditor.title": "Title",
   "nodeEditor.title.placeholder": "Dialog title",
   "nodeEditor.message": "Message",
   "nodeEditor.message.placeholder": "Dialog message...",
-  "nodeEditor.renderMarkdown": "Render markdown", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
-  "nodeEditor.renderMarkdown.desc": "Render message as markdown", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
+  "nodeEditor.renderMarkdown": "Render Markdown",
+  "nodeEditor.renderMarkdown.desc": "Render message as Markdown",
   "nodeEditor.options": "Options",
-  "nodeEditor.options.placeholder": "option1, option2, option3", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.options.placeholder": "Option1, option2, option3",
   "nodeEditor.selectionMode": "Multi-select",
   "nodeEditor.selectionMode.desc": "Allow selecting multiple options",
   "nodeEditor.inputTitle": "Input title",
@@ -520,23 +520,23 @@ export const en = {
   "nodeEditor.dialogTitle.file": "Select a file",
   "nodeEditor.dialogTitle.selection": "Select text",
   "nodeEditor.saveContentTo": "Save content to",
-  "nodeEditor.saveContentTo.placeholder": "fileContent",
+  "nodeEditor.saveContentTo.placeholder": "Filecontent",
   "nodeEditor.saveFileTo": "Save file info to",
-  "nodeEditor.saveFileTo.placeholder": "fileInfo",
+  "nodeEditor.saveFileTo.placeholder": "Fileinfo",
   "nodeEditor.saveTextTo": "Save text to",
-  "nodeEditor.saveTextTo.placeholder": "selectedText",
+  "nodeEditor.saveTextTo.placeholder": "Selectedtext",
   "nodeEditor.saveSelectionTo": "Save selection info to",
-  "nodeEditor.saveSelectionTo.placeholder": "selectionInfo",
+  "nodeEditor.saveSelectionTo.placeholder": "Selectioninfo",
   "nodeEditor.fileExplorerMode": "Mode",
   "nodeEditor.fileExplorerMode.desc": "Select existing or create new",
   "nodeEditor.extensions": "File extensions",
-  "nodeEditor.extensions.placeholder": "md, txt, json", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.extensions.placeholder": "Md, txt, JSON",
   "nodeEditor.defaultPath": "Default path",
-  "nodeEditor.defaultPath.placeholder": "default/path", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.defaultPath.placeholder": "Default/path",
   "nodeEditor.saveDataTo": "Save data to",
-  "nodeEditor.saveDataTo.placeholder": "fileData",
+  "nodeEditor.saveDataTo.placeholder": "Filedata",
   "nodeEditor.savePathTo": "Save path to",
-  "nodeEditor.savePathTo.placeholder": "filePath",
+  "nodeEditor.savePathTo.placeholder": "Filepath",
   "nodeEditor.workflowPath": "Workflow path",
   "nodeEditor.workflowPath.placeholder": "path/to/workflow.md",
   "nodeEditor.workflowName": "Workflow name",
@@ -546,38 +546,38 @@ export const en = {
   "nodeEditor.outputVariables": "Output variables",
   "nodeEditor.outputVariables.placeholder": "JSON: {\"parentVar\": \"subVar\"}",
   "nodeEditor.prefix": "Variable prefix",
-  "nodeEditor.prefix.placeholder": "sub_", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.prefix.placeholder": "Sub_",
   "nodeEditor.ragNotePath": "Note path",
-  "nodeEditor.ragNotePath.placeholder": "path/to/note", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.ragNotePath.placeholder": "Path/to/note",
   "nodeEditor.ragOldPath": "Old path (for renames)",
-  "nodeEditor.ragOldPath.placeholder": "old/path", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
-  "nodeEditor.ragSetting": "RAG setting", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "nodeEditor.ragOldPath.placeholder": "Old/path",
+  "nodeEditor.ragSetting": "Rag setting",
   "nodeEditor.ragSetting.select": "Select...",
   "nodeEditor.fileSaveSource": "Source variable",
-  "nodeEditor.fileSaveSource.placeholder": "fileData",
+  "nodeEditor.fileSaveSource.placeholder": "Filedata",
   "nodeEditor.fileSavePath": "Save path",
-  "nodeEditor.fileSavePath.placeholder": "path/to/save", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.fileSavePath.placeholder": "Path/to/save",
   "nodeEditor.fileSavePathTo": "Save actual path to",
-  "nodeEditor.fileSavePathTo.placeholder": "savedPath",
+  "nodeEditor.fileSavePathTo.placeholder": "Savedpath",
   "nodeEditor.commandId": "Command ID",  
-  "nodeEditor.commandId.placeholder": "app:command-id", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.commandId.placeholder": "App:command-ID",
   "nodeEditor.commandFilePath": "File path (optional)",
-  "nodeEditor.commandFilePath.placeholder": "path/to/file", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "nodeEditor.commandFilePath.placeholder": "Path/to/file",
   "nodeEditor.duration": "Duration (ms)",
   "nodeEditor.duration.placeholder": "1000",
   "nodeEditor.comment": "Comment",
   "nodeEditor.comment.placeholder": "Optional comment...",
   "nodeEditor.trueNext": "True branch (next node)",
-  "nodeEditor.trueNext.placeholder": "nodeId",
+  "nodeEditor.trueNext.placeholder": "Nodeid",
   "nodeEditor.falseNext": "False branch (next node)",
-  "nodeEditor.falseNext.placeholder": "nodeId",
+  "nodeEditor.falseNext.placeholder": "Nodeid",
   "nodeEditor.nextNode": "Next node",
-  "nodeEditor.nextNode.placeholder": "nodeId",
+  "nodeEditor.nextNode.placeholder": "Nodeid",
   "nodeEditor.save": "Save",
   "nodeEditor.attachments": "Attachments",
   "nodeEditor.attachments.placeholder": "{{variable}} references",
   "nodeEditor.saveImageTo": "Save image to",
-  "nodeEditor.saveImageTo.placeholder": "imagePath",
+  "nodeEditor.saveImageTo.placeholder": "Imagepath",
   "nodeEditor.model": "Model",
   "nodeEditor.useCurrentModel": "Use current model",
   "nodeEditor.saveTo.ragResult": "Variable name to store result (optional)",
@@ -587,7 +587,7 @@ export const en = {
   "common.delete": "Delete",
 
   // Workflow panel
-  "workflow.openMarkdownFile": "Open a markdown file to view or create workflows", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
+  "workflow.openMarkdownFile": "Open a Markdown file to view or create workflows",
   "workflow.createWithAI": "Create with AI",  
   "workflow.addNode": "Add node",
   "workflow.modifyWithAI": "Modify with AI",  
@@ -632,15 +632,17 @@ export const en = {
   "aiWorkflow.describeCreate": "Describe the workflow you want to create",
   "aiWorkflow.describeModify": "Describe how you want to modify this workflow",
   "aiWorkflow.enterDescription": "Enter description",
-  "aiWorkflow.placeholderCreate": "e.g. Create a workflow that summarizes the current note and saves to a summary file", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
-  "aiWorkflow.placeholderModify": "e.g. Add error handling and a confirmation step before saving", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "aiWorkflow.placeholderCreate": "E.g. Create a workflow that summarizes the current note and saves to a summary file",
+  "aiWorkflow.placeholderModify": "E.g. Add error handling and a confirmation step before saving",
   "aiWorkflow.workflowName": "Workflow name",
   "aiWorkflow.enterName": "Enter workflow name",
-  "aiWorkflow.namePlaceholder": "my-workflow", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder value
+  "aiWorkflow.namePlaceholder": "My-workflow",
   "aiWorkflow.outputPath": "Output path",
   "aiWorkflow.pathHint": "Path where the workflow file will be saved (without .md)",
   "aiWorkflow.generate": "Generate",
   "aiWorkflow.mentionHint": "Use @filename to include file contents as context",
+  "aiWorkflow.createAsSkill": "Create as agent skill",
+  "aiWorkflow.skillCreated": "Skill created: {{name}} ({{path}})",
   "aiWorkflow.modify": "Modify",
   "aiWorkflow.currentWorkflow": "Current workflow",
   "aiWorkflow.confirmChanges": "Confirm changes",
@@ -660,21 +662,21 @@ export const en = {
   "workflow.preview.stepsSelected": "{{count}} step(s) selected as context",
 
   // Settings - MCP
-  "settings.mcp": "MCP servers",
-  "settings.mcpDesc": "Connect to local MCP servers for additional tools",
+  "settings.mcp": "Mcp servers",
+  "settings.mcpDesc": "Connect to local mcp servers for additional tools",
   "settings.mcpAdd": "Add server",
   "settings.mcpEdit": "Edit server",
   "settings.mcpDelete": "Delete server",
-  "settings.mcpAddServer": "Add MCP server",
-  "settings.mcpEditServer": "Edit MCP server",
+  "settings.mcpAddServer": "Add mcp server",
+  "settings.mcpEditServer": "Edit mcp server",
   "settings.mcpServerName": "Server name",
   "settings.mcpServerNameDesc": "Display name for this server",
   "settings.mcpCommand": "Command",
-  "settings.mcpCommandDesc": "Executable to run (e.g. npx, node, python)",
+  "settings.mcpCommandDesc": "Executable to run (e.g. Npx, node, python)",
   "settings.mcpArgs": "Arguments",
   "settings.mcpArgsDesc": "Space-separated command arguments",
   "settings.mcpEnv": "Environment variables",
-  "settings.mcpEnvDesc": "KEY=VALUE pairs, one per line",
+  "settings.mcpEnvDesc": "Key=value pairs, one per line",
   "settings.mcpNameRequired": "Server name is required",
   "settings.mcpCommandRequired": "Command is required",
   "settings.mcpConnected": "MCP server connected: {{name}}",

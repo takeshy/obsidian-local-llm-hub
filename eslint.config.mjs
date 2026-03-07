@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['main.js', 'node_modules/**', '*.js', '*.mjs', 'src/**/*.test.ts'],
+    ignores: ['main.js', 'node_modules/**', '*.js', '*.mjs', 'src/**/*.test.ts', 'vitest.config.ts'],
   },
   ...tseslint.configs.recommendedTypeChecked,
   {

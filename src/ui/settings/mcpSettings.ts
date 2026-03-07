@@ -158,7 +158,7 @@ class McpServerModal extends Modal {
       .setDesc(t("settings.mcpServerNameDesc"))
       .addText((text) =>
         text
-          .setPlaceholder("e.g. filesystem")
+          .setPlaceholder("E.g. Filesystem")
           .setValue(this.config.name)
           .onChange((v) => { this.config.name = v; })
       );
@@ -168,7 +168,7 @@ class McpServerModal extends Modal {
       .setDesc(t("settings.mcpCommandDesc"))
       .addText((text) =>
         text
-          .setPlaceholder("e.g. npx")
+          .setPlaceholder("E.g. Npx")
           .setValue(this.config.command)
           .onChange((v) => { this.config.command = v; })
       );
@@ -190,7 +190,7 @@ class McpServerModal extends Modal {
       .setDesc(t("settings.mcpEnvDesc"))
       .addTextArea((text) => {
         text
-          .setPlaceholder("KEY=VALUE (one per line)")
+          .setPlaceholder("Key=value (one per line)")
           .setValue(
             this.config.env
               ? Object.entries(this.config.env)

@@ -40,7 +40,7 @@ export class LocalLlmModal extends Modal {
       .addDropdown((dropdown) => {
         dropdown
           .addOption("ollama", "Ollama")
-          .addOption("lm-studio", "LM Studio") // eslint-disable-line obsidianmd/ui/sentence-case -- proper noun
+          .addOption("lm-studio", "Lm studio")
           .setValue(this.config.framework)
           .onChange((value) => {
             const fw = value as LlmFramework;
