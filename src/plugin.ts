@@ -302,6 +302,9 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.enabledWorkflowEventTriggers) {
       this.settings.enabledWorkflowEventTriggers = [];
     }
+    if (!this.settings.skillsFolderPath) {
+      this.settings.skillsFolderPath = "skills";
+    }
   }
 
   async saveSettings(): Promise<void> {

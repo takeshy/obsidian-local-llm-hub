@@ -56,6 +56,8 @@ export const ja: Record<string, string> = {
   "settings.saveChatHistoryDesc": "チャット会話をマークダウンファイルとして保存",
   "settings.systemPrompt": "システムプロンプト",
   "settings.systemPromptDesc": "AIアシスタントへのカスタム指示",
+  "settings.skillsFolder": "スキルフォルダ",
+  "settings.skillsFolderDesc": "エージェントスキルのサブフォルダ（ワークスペースフォルダからの相対パス）",
   "settings.systemPromptPlaceholder": "例: 常に日本語で回答してください",
 
   // Settings - RAG
@@ -113,8 +115,12 @@ export const ja: Record<string, string> = {
   "message.tokens": "トークン",
   "message.thinkingTokens": "思考",
   "message.ragUsed": "RAGコンテキスト使用",
+  "message.skillsUsed": "使用スキル",
 
   // Input
+  "skills.add": "スキル追加",
+  "skills.noSkills": "スキルが見つかりません",
+
   "input.placeholder": "メッセージを入力...（Enter で送信、Shift+Enter で改行）",
   "input.send": "メッセージ送信",
   "input.stop": "生成停止",

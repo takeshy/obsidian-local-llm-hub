@@ -26,6 +26,19 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
     });
 
   new Setting(containerEl)
+    .setName(t("settings.skillsFolder"))
+    .setDesc(t("settings.skillsFolderDesc"))
+    .addText((text) => {
+      text
+        .setPlaceholder("skills")
+        .setValue(plugin.settings.skillsFolderPath)
+        .onChange(async (value) => {
+          plugin.settings.skillsFolderPath = value || "skills";
+          await plugin.saveSettings();
+        });
+    });
+
+  new Setting(containerEl)
     .setName(t("settings.saveChatHistory"))
     .setDesc(t("settings.saveChatHistoryDesc"))
     .addToggle((toggle) => {

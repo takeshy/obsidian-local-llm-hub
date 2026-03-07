@@ -56,6 +56,8 @@ export const en = {
   "settings.saveChatHistoryDesc": "Save chat conversations as markdown files", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- markdown is a proper noun
   "settings.systemPrompt": "System prompt",
   "settings.systemPromptDesc": "Custom instructions for the AI assistant",
+  "settings.skillsFolder": "Skills folder",
+  "settings.skillsFolderDesc": "Subfolder for agent skills (relative to workspace folder)",
   "settings.systemPromptPlaceholder": "e.g. Always respond in Japanese", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- placeholder with example
 
   // Settings - RAG
@@ -113,8 +115,12 @@ export const en = {
   "message.tokens": "Tokens",
   "message.thinkingTokens": "Thinking",
   "message.ragUsed": "RAG context used", // eslint-disable-line obsidianmd/ui/sentence-case-locale-module -- RAG is an acronym
+  "message.skillsUsed": "Skills used",
 
   // Input
+  "skills.add": "Add skill",
+  "skills.noSkills": "No skills found",
+
   "input.placeholder": "Type your message... (Enter to send, Shift+Enter for new line)",
   "input.send": "Send message",
   "input.stop": "Stop generation",

@@ -17,6 +17,7 @@ import { localLlmChatStream } from "src/core/localLlmProvider";
 import { getVaultTools } from "src/core/tools";
 import { executeToolCall } from "src/core/toolExecutor";
 import { getRagStore } from "src/core/ragStore";
+import { discoverSkills, loadSkill, buildSkillSystemPrompt, type SkillMetadata } from "src/core/skillsLoader";
 import { buildErrorMessage, type ChatHistory } from "./chat/chatUtils";
 import {
   messagesToMarkdown,
@@ -25,6 +26,7 @@ import {
 } from "./chat/chatHistory";
 import MessageList from "./MessageList";
 import InputArea, { type InputAreaHandle } from "./InputArea";
+import SkillSelector from "./SkillSelector";
 import { t } from "src/i18n";
 import { formatError } from "src/utils/error";
 
@@ -44,6 +46,8 @@ export default function Chat({ plugin }: ChatProps) {
   const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>("all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
+  const [availableSkills, setAvailableSkills] = useState<SkillMetadata[]>([]);
+  const [activeSkillPaths, setActiveSkillPaths] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -88,6 +92,20 @@ export default function Chat({ plugin }: ChatProps) {
   // Load vault files
   useEffect(() => {
     refreshVaultFiles();
+  }, []);
+
+  // Discover skills
+  useEffect(() => {
+    const skillsFolderPath = `${plugin.settings.workspaceFolder}/${plugin.settings.skillsFolderPath}`;
+    void discoverSkills(plugin.app, skillsFolderPath).then(setAvailableSkills);
+  }, [plugin]);
+
+  const handleToggleSkill = useCallback((folderPath: string) => {
+    setActiveSkillPaths(prev =>
+      prev.includes(folderPath)
+        ? prev.filter(p => p !== folderPath)
+        : [...prev, folderPath]
+    );
   }, []);
 
   // Check for selection
@@ -373,6 +391,20 @@ export default function Chat({ plugin }: ChatProps) {
         }
       }
 
+      // Skill instructions injection
+      let skillsUsedNames: string[] | undefined;
+      if (activeSkillPaths.length > 0) {
+        const activeMetadata = availableSkills.filter(s => activeSkillPaths.includes(s.folderPath));
+        const loadedSkills = await Promise.all(
+          activeMetadata.map(m => loadSkill(plugin.app, m))
+        );
+        const skillPrompt = buildSkillSystemPrompt(loadedSkills);
+        if (skillPrompt) {
+          systemPrompt += skillPrompt;
+          skillsUsedNames = loadedSkills.map(s => s.name);
+        }
+      }
+
       // Get vault tools based on mode
       const tools = getVaultTools(vaultToolMode);
 
@@ -485,6 +517,7 @@ export default function Chat({ plugin }: ChatProps) {
         thinking: thinkingContent || undefined,
         ragUsed: !!ragSources,
         ragSources,
+        skillsUsed: skillsUsedNames,
         usage,
         elapsedMs,
       };
@@ -514,7 +547,7 @@ export default function Chat({ plugin }: ChatProps) {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, ragConfig, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat]);
+  }, [messages, plugin, llmConfig, ragConfig, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills]);
 
   return (
     <div className="llm-hub-chat">
@@ -573,6 +606,16 @@ export default function Chat({ plugin }: ChatProps) {
             ))
           )}
         </div>
+      )}
+
+      {/* Skills selector */}
+      {availableSkills.length > 0 && (
+        <SkillSelector
+          skills={availableSkills}
+          activeSkillPaths={activeSkillPaths}
+          onToggleSkill={handleToggleSkill}
+          disabled={isLoading}
+        />
       )}
 
       {/* Messages */}

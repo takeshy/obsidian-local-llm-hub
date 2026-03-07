@@ -143,6 +143,18 @@ export default function MessageBubble({
         </div>
       )}
 
+      {/* Skills used indicator */}
+      {message.skillsUsed && message.skillsUsed.length > 0 && (
+        <div className="llm-hub-skills-used">
+          <span className="llm-hub-skills-used-label">
+            {t("message.skillsUsed")}:
+          </span>
+          {message.skillsUsed.map((name, index) => (
+            <span key={index} className="llm-hub-skill-name">{name}</span>
+          ))}
+        </div>
+      )}
+
       {/* Attachments display */}
       {message.attachments && message.attachments.length > 0 && (
         <div className="llm-hub-attachments">

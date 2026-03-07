@@ -85,6 +85,7 @@ export interface Message {
   thinking?: string;            // thinking content (thinking models)
   ragUsed?: boolean;            // whether RAG was used
   ragSources?: string[];        // source files from RAG
+  skillsUsed?: string[];        // names of skills used
   toolCalls?: ToolCall[];       // tool calls made by assistant
   toolCallId?: string;          // tool call ID (for tool role messages, LM Studio)
   toolName?: string;            // tool name (for tool role messages, Ollama)
@@ -175,6 +176,7 @@ export interface LocalLlmHubSettings {
   slashCommands: SlashCommand[];
   enabledWorkflowHotkeys: string[];
   enabledWorkflowEventTriggers: WorkflowEventTrigger[];
+  skillsFolderPath: string;
   lastSelectedWorkflowPath?: string;
 }
 
@@ -190,4 +192,5 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   slashCommands: [],
   enabledWorkflowHotkeys: [],
   enabledWorkflowEventTriggers: [],
+  skillsFolderPath: "skills",
 };
