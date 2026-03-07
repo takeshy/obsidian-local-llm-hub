@@ -1,6 +1,6 @@
 # Local LLM Hub
 
-Chat with local LLMs (Ollama, LM Studio) with local embeddings RAG, file encryption, edit history, slash commands, and workflow automation.
+Chat with local LLMs (Ollama, LM Studio) with vault tools via function calling, local embeddings RAG, file encryption, edit history, slash commands, and workflow automation.
 
 ## Requirements
 
@@ -36,16 +36,91 @@ Then:
 
 ## Features
 
-- **Chat** with local LLMs with streaming responses and thinking display
-- **RAG** with local embeddings for context-aware answers from your notes
-- **File encryption** for sensitive notes
-- **Edit history** with automatic tracking of file changes
-- **Slash commands** for custom prompt templates
-- **Workflow automation** with node-based execution engine, AI generation, event triggers, and hotkeys
+### AI Chat
+
+- **Streaming responses** with real-time display
+- **Thinking display** for models that support it
+- **File attachments** (images, PDFs, audio, video)
+- **@ mentions** to reference vault notes as context
+- **Multiple chat sessions** with conversation history
+
+### Vault Tools (Function Calling)
+
+Models that support function calling (e.g., Qwen, Llama 3.1+, Mistral) can directly interact with your vault through 10 built-in tools:
+
+| Tool | Description |
+|------|-------------|
+| `read_note` | Read content from a note |
+| `create_note` | Create a new note |
+| `update_note` | Update an existing note (replace/append/prepend) |
+| `rename_note` | Rename or move a note |
+| `create_folder` | Create a new folder |
+| `search_notes` | Search notes by content |
+| `list_notes` | List notes in a folder |
+| `list_folders` | List folders in the vault |
+| `get_active_note` | Get the currently active note |
+| `propose_edit` | Propose an edit to the user |
+
+**Vault Tool Modes:**
+
+Click the database icon in the chat input area to select a mode:
+
+| Mode | Description |
+|------|-------------|
+| **All** | All 10 vault tools enabled |
+| **No Search** | All tools except `search_notes` and `list_notes` |
+| **Off** | No vault tools (text-only chat) |
+
+**Fallback:** If a model doesn't support function calling, the plugin automatically switches to "Off" mode and shows a notification. You can continue chatting without tools.
+
+### Compact History
+
+Use the `/compact` slash command (available when there are 2+ messages) to compress your conversation history. The LLM summarizes the conversation, and a new chat session is created with the summary as context. This helps manage long conversations without losing important context.
+
+### Slash Commands
+
+Create custom prompt templates in settings. Type `/` in the chat input to see available commands.
+
+Each slash command can optionally override the vault tool mode, so you can create commands that always run with specific tool access regardless of the current setting.
+
+### RAG (Retrieval-Augmented Generation)
+
+When RAG is enabled and synced, relevant vault notes are automatically included as context for your chat messages.
+
+### File Encryption
+
+Encrypt sensitive notes using the command palette. Encrypted files are stored securely and can be decrypted on demand.
+
+### Edit History
+
+Automatic tracking of file changes with the ability to view and restore previous versions.
+
+### Workflow Automation
+
+Node-based workflow engine for automating tasks. Features include:
+
+- **22 node types** for variables, control flow, LLM prompts, HTTP requests, note operations, user dialogs, and more
+- **AI generation** - describe what you want and the AI creates the workflow
+- **Event triggers** - automatically run workflows on file create/modify/delete/rename/open
+- **Hotkey support** - assign keyboard shortcuts to any named workflow
+- **Sub-workflows** - compose complex workflows from reusable parts
+- **Execution history** - review past workflow runs with step-by-step details
+
+See [docs/WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node reference.
 
 ## Supported Frameworks
 
-| Framework | Chat Endpoint | Streaming | Thinking |
-|-----------|--------------|-----------|----------|
-| Ollama | `/api/chat` (native) | Real-time | `message.thinking` field |
-| LM Studio | `/v1/chat/completions` | SSE | `<think>` tags |
+| Framework | Chat Endpoint | Streaming | Thinking | Function Calling |
+|-----------|--------------|-----------|----------|-----------------|
+| Ollama | `/api/chat` (native) | Real-time | `message.thinking` field | `tools` parameter |
+| LM Studio | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
+
+## Privacy
+
+All data stays local:
+
+- **Chat history** - stored in `.obsidian/plugins/local-llm-hub/`
+- **RAG index** - stored locally in the plugin directory
+- **Encrypted files** - encrypted/decrypted locally
+- **Edit history** - stored locally in the plugin directory
+- **LLM requests** - sent only to your local Ollama or LM Studio server
