@@ -1,13 +1,14 @@
 import { createRoot, Root } from "react-dom/client";
 import { ItemView, WorkspaceLeaf, IconName } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import Chat from "./components/Chat";
+import TabContainer, { type TabContainerRef, type TabType } from "./components/TabContainer";
 
 export const VIEW_TYPE_LLM_CHAT = "local-llm-chat-view";
 
 export class ChatView extends ItemView {
   plugin: LocalLlmHubPlugin;
   reactRoot!: Root;
+  private tabContainerRef: TabContainerRef | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: LocalLlmHubPlugin) {
     super(leaf);
@@ -19,11 +20,15 @@ export class ChatView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Local llm";
+    return "Local LLM";
   }
 
   getIcon(): IconName {
-    return "message-square";
+    return "bot";
+  }
+
+  setActiveTab(tab: TabType): void {
+    this.tabContainerRef?.setActiveTab(tab);
   }
 
   async onOpen(): Promise<void> {
@@ -33,7 +38,14 @@ export class ChatView extends ItemView {
     container.addClass("llm-hub-chat-container");
 
     const root = createRoot(container);
-    root.render(<Chat plugin={this.plugin} />);
+    root.render(
+      <TabContainer
+        ref={(ref) => {
+          this.tabContainerRef = ref;
+        }}
+        plugin={this.plugin}
+      />
+    );
     this.reactRoot = root;
   }
 

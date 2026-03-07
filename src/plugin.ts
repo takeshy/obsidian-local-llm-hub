@@ -1,6 +1,5 @@
 import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Modal, TFile, type Editor } from "obsidian";
 import { ChatView, VIEW_TYPE_LLM_CHAT } from "src/ui/ChatView";
-import { WorkflowView, VIEW_TYPE_WORKFLOW } from "src/ui/WorkflowView";
 import { CryptView, CRYPT_VIEW_TYPE } from "src/ui/CryptView";
 import { SettingsTab } from "src/ui/SettingsTab";
 import { type LocalLlmHubSettings, DEFAULT_SETTINGS } from "src/types";
@@ -85,16 +84,9 @@ export class LocalLlmHubPlugin extends Plugin {
       (leaf) => new CryptView(leaf, this)
     );
 
-    // Workflow view
-    this.registerView(
-      VIEW_TYPE_WORKFLOW,
-      (leaf) => new WorkflowView(leaf, this)
-    );
-
     // Ensure views on layout ready and register workflow hotkeys/events
     this.app.workspace.onLayoutReady(() => {
       void this.ensureChatViewExists();
-      void this.ensureWorkflowViewExists();
       this.workflowManager.registerHotkeys();
       this.workflowManager.registerEventListeners();
     });
@@ -228,7 +220,7 @@ export class LocalLlmHubPlugin extends Plugin {
       id: "open-workflow",
       name: t("command.runWorkflow"),
       callback: () => {
-        void this.activateWorkflowView();
+        void this.activateChatView("workflow");
       },
     });
 
@@ -341,33 +333,7 @@ export class LocalLlmHubPlugin extends Plugin {
     }
   }
 
-  private async ensureWorkflowViewExists(): Promise<void> {
-    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_WORKFLOW);
-    if (existing.length === 0) {
-      const leaf = this.app.workspace.getRightLeaf(false);
-      if (leaf) {
-        await leaf.setViewState({ type: VIEW_TYPE_WORKFLOW, active: false });
-      }
-    }
-  }
-
-  async activateWorkflowView(): Promise<void> {
-    const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_WORKFLOW);
-    let leaf: WorkspaceLeaf;
-
-    if (existing.length > 0) {
-      leaf = existing[0];
-    } else {
-      const rightLeaf = this.app.workspace.getRightLeaf(false);
-      if (!rightLeaf) return;
-      leaf = rightLeaf;
-      await leaf.setViewState({ type: VIEW_TYPE_WORKFLOW, active: true });
-    }
-
-    void this.app.workspace.revealLeaf(leaf);
-  }
-
-  async activateChatView(): Promise<void> {
+  async activateChatView(tab?: "chat" | "workflow"): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_LLM_CHAT);
     let leaf: WorkspaceLeaf;
 
@@ -381,6 +347,10 @@ export class LocalLlmHubPlugin extends Plugin {
     }
 
     void this.app.workspace.revealLeaf(leaf);
+
+    if (tab && leaf.view instanceof ChatView) {
+      leaf.view.setActiveTab(tab);
+    }
   }
 
   private toggleChatView(): void {
