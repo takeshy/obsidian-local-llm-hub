@@ -335,6 +335,7 @@ export const ja: Record<string, string> = {
   "workflow.nodeType.ragSync": "RAG同期",
   "workflow.nodeType.obsidianCommand": "Obsidianコマンド",
   "workflow.nodeType.sleep": "スリープ",
+  "workflow.nodeType.script": "スクリプト",
 
   // Workflow panel
   "workflow.openMarkdownFile": "マークダウンファイルを開いてワークフローを表示・作成",
@@ -611,6 +612,10 @@ export const ja: Record<string, string> = {
   "nodeEditor.commandFilePath.placeholder": "path/to/file",
   "nodeEditor.duration": "待機時間（ミリ秒）",
   "nodeEditor.duration.placeholder": "1000",
+  "nodeEditor.code": "コード",
+  "nodeEditor.code.placeholder": "var items = '{{data}}'.split(',');\nreturn items.map(s => s.trim()).join('\\n');",
+  "nodeEditor.timeout": "タイムアウト（ms）",
+  "nodeEditor.timeout.placeholder": "実行タイムアウト（ミリ秒、デフォルト: 10000）",
   "nodeEditor.comment": "コメント",
   "nodeEditor.comment.placeholder": "任意のコメント...",
   "nodeEditor.trueNext": "True分岐（次のノード）",

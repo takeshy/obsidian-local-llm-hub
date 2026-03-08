@@ -2,6 +2,7 @@ import { TFile, TFolder, type App } from "obsidian";
 import type { ToolCall } from "../types";
 import type { McpManager } from "./mcpManager";
 import { getEditHistoryManager } from "./editHistory";
+import { executeSandboxedJS } from "./sandboxExecutor";
 
 export interface ToolExecutionResult {
   success: boolean;
@@ -217,6 +218,17 @@ export async function executeToolCall(
         await saveEditHistory();
         await app.vault.modify(file, newContent);
         return { success: true, result: `Edit applied to ${path}` };
+      }
+
+      case "execute_javascript": {
+        try {
+          const code = args.code as string;
+          const input = args.input as string | undefined;
+          const result = await executeSandboxedJS(code, input);
+          return { success: true, result };
+        } catch (err) {
+          return { success: false, result: err instanceof Error ? err.message : "JavaScript execution failed" };
+        }
       }
 
       case "run_skill_workflow": {

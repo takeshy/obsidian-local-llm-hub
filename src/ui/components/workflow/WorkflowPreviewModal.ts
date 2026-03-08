@@ -32,6 +32,7 @@ const getNodeTypeLabels = (): Record<WorkflowNodeType, string> => ({
   "rag-sync": t("workflow.nodeType.ragSync"),
   "obsidian-command": t("workflow.nodeType.obsidianCommand"),
   sleep: t("workflow.nodeType.sleep"),
+  script: t("workflow.nodeType.script"),
 });
 
 /**
@@ -80,6 +81,10 @@ function getNodeSummary(node: SidebarNode): string {
       return properties.storeName || "";
     case "obsidian-command":
       return properties.commandId || "";
+    case "script": {
+      const code = properties.code || "";
+      return code.length > 30 ? code.substring(0, 30) + "..." : code;
+    }
     default:
       return "";
   }

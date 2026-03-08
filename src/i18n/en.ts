@@ -331,6 +331,7 @@ export const en = {
   "workflow.nodeType.ragSync": "Rag sync",
   "workflow.nodeType.obsidianCommand": "Obsidian command",
   "workflow.nodeType.sleep": "Sleep",
+  "workflow.nodeType.script": "Script",
 
   // Workflow modal
   "workflowModal.selectFile": "Select a file",
@@ -567,6 +568,10 @@ export const en = {
   "nodeEditor.commandFilePath.placeholder": "Path/to/file",
   "nodeEditor.duration": "Duration (ms)",
   "nodeEditor.duration.placeholder": "1000",
+  "nodeEditor.code": "Code",
+  "nodeEditor.code.placeholder": "var items = '{{data}}'.split(',');\nreturn items.map(s => s.trim()).join('\\n');",
+  "nodeEditor.timeout": "Timeout (ms)",
+  "nodeEditor.timeout.placeholder": "Execution timeout in milliseconds (default: 10000)",
   "nodeEditor.comment": "Comment",
   "nodeEditor.comment.placeholder": "Optional comment...",
   "nodeEditor.trueNext": "True branch (next node)",

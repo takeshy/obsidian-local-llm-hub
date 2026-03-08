@@ -50,6 +50,7 @@ const getNodeTypeLabels = (): Record<WorkflowNodeType, string> => ({
   "rag-sync": t("workflow.nodeType.ragSync"),
   "obsidian-command": t("workflow.nodeType.obsidianCommand"),
   sleep: t("workflow.nodeType.sleep"),
+  script: t("workflow.nodeType.script"),
 });
 
 const ADDABLE_NODE_TYPES: WorkflowNodeType[] = [
@@ -75,6 +76,7 @@ const ADDABLE_NODE_TYPES: WorkflowNodeType[] = [
   "rag-sync",
   "obsidian-command",
   "sleep",
+  "script",
 ];
 
 function getDefaultProperties(type: WorkflowNodeType): Record<string, string> {
@@ -121,6 +123,8 @@ function getDefaultProperties(type: WorkflowNodeType): Record<string, string> {
       return { command: "", path: "", saveTo: "" };
     case "sleep":
       return { duration: "1000" };
+    case "script":
+      return { code: "", saveTo: "", timeout: "10000" };
     default:
       return {};
   }
@@ -233,6 +237,11 @@ function getNodeSummary(node: SidebarNode): string {
       return node.properties["command"] || "(no command)";
     case "sleep":
       return `${node.properties["duration"] || "0"}ms`;
+    case "script": {
+      const code = node.properties["code"] || "";
+      const truncated = code.length > 30 ? code.substring(0, 30) + "..." : code;
+      return truncated || "(no code)";
+    }
   }
 }
 

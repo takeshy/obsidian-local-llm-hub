@@ -29,6 +29,7 @@ const getNodeTypeLabels = (): Record<WorkflowNodeType, string> => ({
   "rag-sync": t("workflow.nodeType.ragSync"),
   "obsidian-command": t("workflow.nodeType.obsidianCommand"),
   sleep: t("workflow.nodeType.sleep"),
+  script: t("workflow.nodeType.script"),
 });
 
 function formatStatus(status: StepStatus): string {

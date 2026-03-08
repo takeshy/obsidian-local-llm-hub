@@ -3,6 +3,7 @@ import type { LocalLlmHubPlugin } from "../../plugin";
 import type { StreamChunkUsage, Message, ToolCall, ToolDefinition } from "../../types";
 import { localLlmChatStream } from "../../core/localLlmProvider";
 import { getVaultTools } from "../../core/tools";
+import { EXECUTE_JAVASCRIPT_TOOL } from "../../core/sandboxExecutor";
 import { executeToolCall } from "../../core/toolExecutor";
 import { WorkflowNode, ExecutionContext, FileExplorerData, PromptCallbacks } from "../types";
 import { replaceVariables } from "./utils";
@@ -92,7 +93,7 @@ Please revise the output based on the user's feedback above.`;
   if (useTools) {
     const vaultTools = getVaultTools("noSearch");
     const mcpTools = plugin.mcpManager.getAllTools();
-    const combined = [...vaultTools, ...mcpTools];
+    const combined = [...vaultTools, ...mcpTools, EXECUTE_JAVASCRIPT_TOOL];
     tools = combined.length > 0 ? combined : undefined;
   }
 

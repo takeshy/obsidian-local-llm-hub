@@ -41,3 +41,5 @@ export {
   handleObsidianCommandNode,
   handleJsonNode,
 } from "./handlers/integration";
+
+export { handleScriptNode } from "./handlers/script";

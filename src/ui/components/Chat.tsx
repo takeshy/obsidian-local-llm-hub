@@ -15,6 +15,7 @@ import {
 } from "src/types";
 import { localLlmChatStream } from "src/core/localLlmProvider";
 import { getVaultTools, skillWorkflowTool } from "src/core/tools";
+import { EXECUTE_JAVASCRIPT_TOOL } from "src/core/sandboxExecutor";
 import { executeToolCall } from "src/core/toolExecutor";
 import { getRagStore } from "src/core/ragStore";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
@@ -476,6 +477,11 @@ export default function Chat({ plugin }: ChatProps) {
         : new Map();
       if (skillWorkflowMap.size > 0) {
         tools.push(skillWorkflowTool);
+      }
+
+      // Add execute_javascript tool
+      if (vaultToolMode !== "none") {
+        tools.push(EXECUTE_JAVASCRIPT_TOOL);
       }
 
       // Conversation messages for the API (includes tool call/result messages)
