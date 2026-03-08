@@ -145,6 +145,27 @@ See [docs/WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node refer
 | Ollama | `/api/chat` (native) | Real-time | `message.thinking` field | `tools` parameter |
 | LM Studio | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
 
+## Installation
+
+### BRAT (Recommended)
+1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin
+2. Open BRAT settings → "Add Beta plugin"
+3. Enter: `https://github.com/takeshy/obsidian-local-llm-hub`
+4. Enable the plugin in Community plugins settings
+
+### Manual
+1. Download `main.js`, `manifest.json`, `styles.css` from releases
+2. Create `local-llm-hub` folder in `.obsidian/plugins/`
+3. Copy files and enable in Obsidian settings
+
+### From Source
+```bash
+git clone https://github.com/takeshy/obsidian-local-llm-hub
+cd obsidian-local-llm-hub
+npm install
+npm run build
+```
+
 ## Privacy
 
 All data stays local:
