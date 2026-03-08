@@ -2608,6 +2608,13 @@
   gap: 8px;
 }
 
+/* Paste response section */
+.llm-hub-workflow-paste-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
 /* AI Workflow attachment */
 .llm-hub-workflow-attachment-row {
   display: flex;

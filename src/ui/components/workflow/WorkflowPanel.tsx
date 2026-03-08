@@ -342,8 +342,8 @@ ${result.description || result.name}
 
   // Build workflow file
   const historyEntry = buildHistoryEntry("Created", result.description || "", result.resolvedMentions);
-  const workflowCodeBlock = buildWorkflowCodeBlock(result);
-  const workflowContent = `> [!info] AI Workflow History\n${historyEntry}\n\n` + workflowCodeBlock;
+  const workflowBody = result.rawMarkdown || buildWorkflowCodeBlock(result);
+  const workflowContent = `> [!info] AI Workflow History\n${historyEntry}\n\n` + workflowBody;
 
   // Create files
   await app.vault.create(workflowFilePath, workflowContent);
@@ -554,50 +554,11 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
 
     // Handle AI workflow creation
     if (value === "__new_ai__") {
-      // Reset the select to previous value
       e.target.value = String(currentWorkflowIndex);
-
-      // Use current file path as default output path (without .md extension)
       const defaultOutputPath = workflowFile?.path?.replace(/\.md$/, "");
       const result = await promptForAIWorkflow(plugin.app, plugin, "create", undefined, undefined, defaultOutputPath);
-
       if (result && result.outputPath) {
-        let targetFile: TFile;
-        if (result.createAsSkill) {
-          const skillsFolderPath = `${plugin.settings.workspaceFolder}/${plugin.settings.skillsFolderPath}`;
-          targetFile = await createSkillFromResult(plugin.app, result, skillsFolderPath);
-          new Notice(t("aiWorkflow.skillCreated", { name: result.name, path: targetFile.path }));
-        } else {
-          const filePath = result.outputPath.endsWith(".md")
-            ? result.outputPath
-            : `${result.outputPath}.md`;
-
-          const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
-          if (folderPath) {
-            const folder = plugin.app.vault.getAbstractFileByPath(folderPath);
-            if (!folder) {
-              await plugin.app.vault.createFolder(folderPath);
-            }
-          }
-
-          const historyLine = buildHistoryEntry("Created", result.description || "", result.resolvedMentions);
-          const historyEntry = `> [!info] AI Workflow History\n${historyLine}\n\n`;
-          const workflowContent = historyEntry + buildWorkflowCodeBlock(result);
-
-          const existingFile = plugin.app.vault.getAbstractFileByPath(filePath);
-          if (existingFile && existingFile instanceof TFile) {
-            const existingContent = await plugin.app.vault.read(existingFile);
-            const separator = existingContent.endsWith("\n") ? "\n" : "\n\n";
-            await plugin.app.vault.modify(existingFile, existingContent + separator + workflowContent);
-            targetFile = existingFile;
-            new Notice(t("workflow.appendedTo", { name: result.name, path: filePath }));
-          } else {
-            targetFile = await plugin.app.vault.create(filePath, workflowContent);
-            new Notice(t("workflow.createdAt", { name: result.name, path: filePath }));
-          }
-        }
-
-        await plugin.app.workspace.getLeaf().openFile(targetFile);
+        await saveWorkflowResultToFile(result);
       }
       return;
     }
@@ -1041,48 +1002,56 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
     modal.open();
   };
 
+  // Save a workflow result (from AI generation or import) to file
+  const saveWorkflowResultToFile = async (result: AIWorkflowResult) => {
+    if (!result.outputPath) return;
+
+    let targetFile: TFile;
+    if (result.createAsSkill) {
+      const skillsFolderPath = `${plugin.settings.workspaceFolder}/${plugin.settings.skillsFolderPath}`;
+      targetFile = await createSkillFromResult(plugin.app, result, skillsFolderPath);
+      new Notice(t("aiWorkflow.skillCreated", { name: result.name, path: targetFile.path }));
+      plugin.settingsEmitter.emit("skills-changed");
+    } else {
+      const filePath = result.outputPath.endsWith(".md")
+        ? result.outputPath
+        : `${result.outputPath}.md`;
+
+      const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
+      if (folderPath) {
+        const folder = plugin.app.vault.getAbstractFileByPath(folderPath);
+        if (!folder) {
+          await plugin.app.vault.createFolder(folderPath);
+        }
+      }
+
+      // Build content: use rawMarkdown if available, otherwise build from nodes
+      const historyLine = buildHistoryEntry("Created", result.description || "", result.resolvedMentions);
+      const workflowBody = result.rawMarkdown || buildWorkflowCodeBlock(result);
+      const workflowContent = `> [!info] AI Workflow History\n${historyLine}\n\n${workflowBody}`;
+
+      const existingFile = plugin.app.vault.getAbstractFileByPath(filePath);
+      if (existingFile && existingFile instanceof TFile) {
+        const existingContent = await plugin.app.vault.read(existingFile);
+        const separator = existingContent.endsWith("\n") ? "\n" : "\n\n";
+        await plugin.app.vault.modify(existingFile, existingContent + separator + workflowContent);
+        targetFile = existingFile;
+        new Notice(t("workflow.appendedTo", { name: result.name, path: filePath }));
+      } else {
+        targetFile = await plugin.app.vault.create(filePath, workflowContent);
+        new Notice(t("workflow.createdAt", { name: result.name, path: filePath }));
+      }
+    }
+
+    await plugin.app.workspace.getLeaf().openFile(targetFile);
+  };
+
   // AI new creation handler (used regardless of whether a file is open)
   const handleCreateWithAI = async () => {
-      const result = await promptForAIWorkflow(plugin.app, plugin, "create");
-
-      if (result && result.outputPath) {
-        let targetFile: TFile;
-        if (result.createAsSkill) {
-          const skillsFolderPath = `${plugin.settings.workspaceFolder}/${plugin.settings.skillsFolderPath}`;
-          targetFile = await createSkillFromResult(plugin.app, result, skillsFolderPath);
-          new Notice(t("aiWorkflow.skillCreated", { name: result.name, path: targetFile.path }));
-        } else {
-          const filePath = result.outputPath.endsWith(".md")
-            ? result.outputPath
-            : `${result.outputPath}.md`;
-
-          const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
-          if (folderPath) {
-            const folder = plugin.app.vault.getAbstractFileByPath(folderPath);
-            if (!folder) {
-              await plugin.app.vault.createFolder(folderPath);
-            }
-          }
-
-          const historyLine = buildHistoryEntry("Created", result.description || "", result.resolvedMentions);
-          const historyEntry = `> [!info] AI Workflow History\n${historyLine}\n\n`;
-          const workflowContent = historyEntry + buildWorkflowCodeBlock(result);
-
-          const existingFile = plugin.app.vault.getAbstractFileByPath(filePath);
-          if (existingFile && existingFile instanceof TFile) {
-            const existingContent = await plugin.app.vault.read(existingFile);
-            const separator = existingContent.endsWith("\n") ? "\n" : "\n\n";
-            await plugin.app.vault.modify(existingFile, existingContent + separator + workflowContent);
-            targetFile = existingFile;
-            new Notice(t("workflow.appendedTo", { name: result.name, path: filePath }));
-          } else {
-            targetFile = await plugin.app.vault.create(filePath, workflowContent);
-            new Notice(t("workflow.createdAt", { name: result.name, path: filePath }));
-          }
-        }
-
-        await plugin.app.workspace.getLeaf().openFile(targetFile);
-      }
+    const result = await promptForAIWorkflow(plugin.app, plugin, "create");
+    if (result && result.outputPath) {
+      await saveWorkflowResultToFile(result);
+    }
   };
 
   // Open workflow selector modal

@@ -622,7 +622,7 @@ export const en = {
   "workflow.filePatternDesc": "Glob pattern to filter files (e.g. **/*.md). Leave empty for all files.",
   "workflow.removeAllTriggers": "Remove all triggers",
   "workflow.browseAllWorkflows": "Browse all workflows...",
-  "workflow.newAI": "New (AI)...",  
+  "workflow.newAI": "New (AI)...",
   "workflow.reloadFromFile": "Reload from file",
   "workflow.noWorkflows": "No workflows",
   "workflow.reloaded": "Workflow reloaded from file",
@@ -654,7 +654,13 @@ export const en = {
   "aiWorkflow.currentWorkflow": "Current workflow",
   "aiWorkflow.confirmChanges": "Confirm changes",
   "aiWorkflow.confirmCheckbox": "I have reviewed the changes",
-  "aiWorkflow.aiExplanation": "AI explanation",  
+  "aiWorkflow.aiExplanation": "AI explanation",
+  "aiWorkflow.copyPrompt": "Copy prompt",
+  "aiWorkflow.promptCopied": "Prompt copied to clipboard",
+  "aiWorkflow.pasteLabel": "Paste the response from external llm",
+  "aiWorkflow.pastePlaceholder": "Paste the markdown (with ```workflow blocks) or YAML from Claude, GPT, etc...",
+  "aiWorkflow.applyPasted": "Apply",
+  "aiWorkflow.enterPastedYaml": "Please paste YAML content",
 
   // Workflow generation modal
   "workflow.generation.title": "Generating workflow...",
