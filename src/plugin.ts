@@ -58,6 +58,9 @@ export class LocalLlmHubPlugin extends Plugin {
       // Initialize edit history manager
       initEditHistoryManager(this.app, this.settings.editHistory);
 
+      // Apply workspace folder visibility
+      this.updateWorkspaceFolderVisibility();
+
       // Connect enabled MCP servers
       void this.mcpManager.connectAll(this.settings.mcpServers).catch((e) => {
         console.error("Local LLM Hub: Failed to connect MCP servers:", formatError(e));
@@ -96,6 +99,13 @@ export class LocalLlmHubPlugin extends Plugin {
       this.workflowManager.registerHotkeys();
       this.workflowManager.registerEventListeners();
     });
+
+    // Reapply workspace folder visibility on layout changes
+    this.registerEvent(
+      this.app.workspace.on("layout-change", () => {
+        this.updateWorkspaceFolderVisibility();
+      })
+    );
 
     // Track active markdown view and capture selection when switching to chat
     this.registerEvent(
@@ -355,6 +365,9 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.skillsFolderPath) {
       this.settings.skillsFolderPath = "skills";
     }
+    if (this.settings.hideWorkspaceFolder === undefined) {
+      this.settings.hideWorkspaceFolder = true;
+    }
     if (!this.settings.mcpServers) {
       this.settings.mcpServers = [];
     }
@@ -368,6 +381,17 @@ export class LocalLlmHubPlugin extends Plugin {
     const manager = getEditHistoryManager();
     if (manager) {
       manager.updateSettings(this.settings.editHistory);
+    }
+
+    // Update workspace folder visibility
+    this.updateWorkspaceFolderVisibility();
+  }
+
+  private updateWorkspaceFolderVisibility(): void {
+    const folder = this.settings.workspaceFolder || "LocalLlmHub";
+    const el = document.querySelector(`.nav-folder[data-path="${CSS.escape(folder)}"]`);
+    if (el instanceof HTMLElement) {
+      el.style.display = this.settings.hideWorkspaceFolder ? "none" : "";
     }
   }
 

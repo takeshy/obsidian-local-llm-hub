@@ -39,6 +39,18 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
     });
 
   new Setting(containerEl)
+    .setName(t("settings.hideWorkspaceFolder"))
+    .setDesc(t("settings.hideWorkspaceFolderDesc"))
+    .addToggle((toggle) => {
+      toggle
+        .setValue(plugin.settings.hideWorkspaceFolder)
+        .onChange(async (value) => {
+          plugin.settings.hideWorkspaceFolder = value;
+          await plugin.saveSettings();
+        });
+    });
+
+  new Setting(containerEl)
     .setName(t("settings.saveChatHistory"))
     .setDesc(t("settings.saveChatHistoryDesc"))
     .addToggle((toggle) => {

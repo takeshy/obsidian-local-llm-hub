@@ -57,7 +57,9 @@ export const ja: Record<string, string> = {
   "settings.systemPrompt": "システムプロンプト",
   "settings.systemPromptDesc": "AIアシスタントへのカスタム指示",
   "settings.skillsFolder": "スキルフォルダ",
-  "settings.skillsFolderDesc": "エージェントスキルのサブフォルダ（ワークスペースフォルダからの相対パス）",
+  "settings.skillsFolderDesc": "エージェントスキルのフォルダ（Vaultルートからの相対パス）",
+  "settings.hideWorkspaceFolder": "ファイルツリーでワークスペースフォルダを非表示",
+  "settings.hideWorkspaceFolderDesc": "ファイルエクスプローラーからワークスペースフォルダを非表示にする",
   "settings.systemPromptPlaceholder": "例: 常に日本語で回答してください",
 
   // Settings - RAG

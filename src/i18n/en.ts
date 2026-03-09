@@ -57,7 +57,9 @@ export const en = {
   "settings.systemPrompt": "System prompt",
   "settings.systemPromptDesc": "Custom instructions for the AI assistant",
   "settings.skillsFolder": "Skills folder",
-  "settings.skillsFolderDesc": "Subfolder for agent skills (relative to workspace folder)",
+  "settings.skillsFolderDesc": "Folder for agent skills (relative to vault root)",
+  "settings.hideWorkspaceFolder": "Hide workspace folder in file tree",
+  "settings.hideWorkspaceFolderDesc": "Hide the workspace folder from the file explorer",
   "settings.systemPromptPlaceholder": "E.g. Always respond in japanese",
 
   // Settings - RAG

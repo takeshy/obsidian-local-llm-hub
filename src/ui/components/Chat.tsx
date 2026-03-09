@@ -110,7 +110,7 @@ export default function Chat({ plugin }: ChatProps) {
 
   // Discover skills (on mount + when skills-changed is emitted)
   const refreshSkills = useCallback(() => {
-    const skillsFolderPath = `${plugin.settings.workspaceFolder}/${plugin.settings.skillsFolderPath}`;
+    const skillsFolderPath = plugin.settings.skillsFolderPath;
     void discoverSkills(plugin.app, skillsFolderPath).then(setAvailableSkills);
   }, [plugin]);
 

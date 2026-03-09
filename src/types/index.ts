@@ -187,6 +187,7 @@ export interface LocalLlmHubSettings {
   enabledWorkflowHotkeys: string[];
   enabledWorkflowEventTriggers: WorkflowEventTrigger[];
   skillsFolderPath: string;
+  hideWorkspaceFolder: boolean;
   lastSelectedWorkflowPath?: string;
   mcpServers: McpServerConfig[];
 }
@@ -204,5 +205,6 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   enabledWorkflowHotkeys: [],
   enabledWorkflowEventTriggers: [],
   skillsFolderPath: "skills",
+  hideWorkspaceFolder: true,
   mcpServers: [],
 };

@@ -1009,7 +1009,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
 
     let targetFile: TFile;
     if (result.createAsSkill) {
-      const skillsFolderPath = `${plugin.settings.workspaceFolder}/${plugin.settings.skillsFolderPath}`;
+      const skillsFolderPath = plugin.settings.skillsFolderPath;
       targetFile = await createSkillFromResult(plugin.app, result, skillsFolderPath);
       new Notice(t("aiWorkflow.skillCreated", { name: result.name, path: targetFile.path }));
       plugin.settingsEmitter.emit("skills-changed");
