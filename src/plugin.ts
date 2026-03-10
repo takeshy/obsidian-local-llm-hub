@@ -100,13 +100,6 @@ export class LocalLlmHubPlugin extends Plugin {
       this.workflowManager.registerEventListeners();
     });
 
-    // Reapply workspace folder visibility on layout changes
-    this.registerEvent(
-      this.app.workspace.on("layout-change", () => {
-        this.updateWorkspaceFolderVisibility();
-      })
-    );
-
     // Track active markdown view and capture selection when switching to chat
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", (leaf) => {
@@ -388,11 +381,7 @@ export class LocalLlmHubPlugin extends Plugin {
   }
 
   private updateWorkspaceFolderVisibility(): void {
-    const folder = this.settings.workspaceFolder || "LocalLlmHub";
-    const el = document.querySelector(`.nav-folder[data-path="${CSS.escape(folder)}"]`);
-    if (el instanceof HTMLElement) {
-      el.style.display = this.settings.hideWorkspaceFolder ? "none" : "";
-    }
+    document.body.toggleClass("llm-hub-hide-workspace-folder", this.settings.hideWorkspaceFolder);
   }
 
   private async ensureChatViewExists(): Promise<void> {

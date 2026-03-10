@@ -3,6 +3,8 @@ import { Send, Paperclip, StopCircle, Database } from "lucide-react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
 import type { McpServerInfo } from "src/core/mcpManager";
+import type { SkillMetadata } from "src/core/skillsLoader";
+import SkillSelector from "./SkillSelector";
 import { t } from "src/i18n";
 
 interface SlashCommandItem {
@@ -30,6 +32,9 @@ interface InputAreaProps {
   hasSelection: boolean;
   app: App;
   slashCommands?: SlashCommandItem[];
+  availableSkills?: SkillMetadata[];
+  activeSkillPaths?: string[];
+  onToggleSkill?: (folderPath: string) => void;
 }
 
 export interface InputAreaHandle {
@@ -69,6 +74,9 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   hasSelection,
   app,
   slashCommands,
+  availableSkills,
+  activeSkillPaths,
+  onToggleSkill,
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -553,6 +561,15 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
         </div>
       </div>
 
+      {/* Skills selector */}
+      {availableSkills && availableSkills.length > 0 && onToggleSkill && (
+        <SkillSelector
+          skills={availableSkills}
+          activeSkillPaths={activeSkillPaths || []}
+          onToggleSkill={onToggleSkill}
+          disabled={isLoading}
+        />
+      )}
     </div>
   );
 });

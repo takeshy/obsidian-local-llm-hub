@@ -5,7 +5,7 @@ import {
   useCallback,
 } from "react";
 import { TFile, Notice } from "obsidian";
-import { Plus, History, Trash2 } from "lucide-react";
+import { Plus, History, Trash2, FileText, Loader2, Check } from "lucide-react";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import {
   type Message,
@@ -38,7 +38,6 @@ import {
 } from "./chat/chatHistory";
 import MessageList from "./MessageList";
 import InputArea, { type InputAreaHandle } from "./InputArea";
-import SkillSelector from "./SkillSelector";
 import { t } from "src/i18n";
 import { formatError } from "src/utils/error";
 
@@ -54,6 +53,7 @@ export default function Chat({ plugin }: ChatProps) {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
+  const [saveNoteState, setSaveNoteState] = useState<"idle" | "saving" | "saved">("idle");
 
   const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>("all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
@@ -244,6 +244,26 @@ export default function Chat({ plugin }: ChatProps) {
       setCurrentChatId(chatId);
     }
   }, [currentChatId, plugin]);
+
+  // Save current chat as a note file
+  const handleSaveAsNote = useCallback(async () => {
+    if (saveNoteState !== "idle" || messages.length === 0) return;
+    setSaveNoteState("saving");
+    try {
+      const chatTitle = generateChatTitle(messages);
+      const markdown = messagesToMarkdown(messages, chatTitle, chatCreatedAt.current);
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const fileName = `chat-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.md`;
+      await plugin.app.vault.create(fileName, markdown);
+      new Notice(t("chat.savedAsNote", { path: fileName }));
+      setSaveNoteState("saved");
+      setTimeout(() => setSaveNoteState("idle"), 3000);
+    } catch (error) {
+      new Notice(t("common.error") + formatError(error));
+      setSaveNoteState("idle");
+    }
+  }, [saveNoteState, messages, plugin]);
 
   // Load chat histories
   const loadChatHistories = useCallback(async () => {
@@ -659,6 +679,16 @@ export default function Chat({ plugin }: ChatProps) {
         <div className="llm-hub-header-actions">
           <button
             className="llm-hub-header-btn"
+            onClick={() => { void handleSaveAsNote(); }}
+            disabled={saveNoteState === "saving" || messages.length === 0}
+            title={saveNoteState === "saved" ? t("chat.savedAsNote", { path: "" }) : t("chat.saveAsNote")}
+          >
+            {saveNoteState === "idle" && <FileText size={16} />}
+            {saveNoteState === "saving" && <Loader2 size={16} className="llm-hub-spin" />}
+            {saveNoteState === "saved" && <Check size={16} />}
+          </button>
+          <button
+            className="llm-hub-header-btn"
             onClick={newChat}
             title={t("chat.newChat")}
           >
@@ -711,16 +741,6 @@ export default function Chat({ plugin }: ChatProps) {
         </div>
       )}
 
-      {/* Skills selector */}
-      {availableSkills.length > 0 && (
-        <SkillSelector
-          skills={availableSkills}
-          activeSkillPaths={activeSkillPaths}
-          onToggleSkill={handleToggleSkill}
-          disabled={isLoading}
-        />
-      )}
-
       {/* Messages */}
       <MessageList
         ref={messagesEndRef}
@@ -749,6 +769,9 @@ export default function Chat({ plugin }: ChatProps) {
         mcpServerInfos={mcpServerInfos}
         enabledMcpServerIds={enabledMcpServerIds}
         onMcpServerToggle={handleMcpServerToggle}
+        availableSkills={availableSkills}
+        activeSkillPaths={activeSkillPaths}
+        onToggleSkill={handleToggleSkill}
         slashCommands={[
           ...plugin.settings.slashCommands.map(cmd => ({
             name: cmd.name,

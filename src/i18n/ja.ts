@@ -103,6 +103,8 @@ export const ja: Record<string, string> = {
   "chat.compacting": "圧縮中...",
   "chat.deleteChat": "このチャットを削除しますか？",
   "chat.noChats": "チャット履歴なし",
+  "chat.saveAsNote": "ノートとして保存",
+  "chat.savedAsNote": "{{path}}に保存しました",
   "chat.newChat": "新しいチャット",
   "chat.history": "チャット履歴",
   "chat.toolsNotSupported": "このモデルはツールに対応していません。Vaultツールなしで続行します。",

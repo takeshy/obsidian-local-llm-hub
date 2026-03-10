@@ -1,5 +1,21 @@
 /* Local LLM Hub Plugin Styles */
 
+/* Hide workspace folder in file explorer */
+body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"],
+body.llm-hub-hide-workspace-folder .nav-folder:has(> [data-path="LocalLlmHub"]) {
+  display: none !important;
+}
+
+/* Spin animation */
+.llm-hub-spin {
+  animation: llm-hub-spin 1s linear infinite;
+}
+
+@keyframes llm-hub-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Selection Highlight (CodeMirror decoration for captured selection) */
 .llm-hub-selection-highlight {
   background-color: rgba(255, 213, 79, 0.4);

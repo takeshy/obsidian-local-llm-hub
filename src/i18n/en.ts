@@ -103,6 +103,8 @@ export const en = {
   "chat.compacting": "Compacting...",
   "chat.deleteChat": "Delete this chat?",
   "chat.noChats": "No chat history",
+  "chat.saveAsNote": "Save as note",
+  "chat.savedAsNote": "Saved as {{path}}",
   "chat.newChat": "New chat",
   "chat.history": "Chat history",
   "chat.toolsNotSupported": "This model does not support tools. Continuing without vault tools.",
