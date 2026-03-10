@@ -1,5 +1,23 @@
 /* Local LLM Hub Plugin Styles */
 
+/* Workflow Mermaid diagram (code block processor) */
+.llm-hub-workflow-mermaid {
+  overflow: auto;
+  padding: 8px 0;
+}
+
+.llm-hub-workflow-mermaid svg {
+  max-width: none !important;
+}
+
+/* Wrap long text inside node labels instead of clipping */
+.llm-hub-workflow-mermaid .nodeLabel {
+  white-space: normal !important;
+  word-break: break-word !important;
+  max-width: 300px;
+  text-align: left !important;
+}
+
 /* Hide workspace folder in file explorer */
 body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"],
 body.llm-hub-hide-workspace-folder .nav-folder:has(> [data-path="LocalLlmHub"]) {

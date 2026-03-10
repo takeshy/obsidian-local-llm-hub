@@ -12,6 +12,7 @@ import type { SelectionLocationInfo } from "src/ui/selectionHighlight";
 import { McpManager } from "src/core/mcpManager";
 import { initEditHistoryManager, getEditHistoryManager } from "src/core/editHistory";
 import { cryptoCache } from "src/core/cryptoCache";
+import { registerWorkflowCodeBlockProcessor } from "src/ui/workflowCodeBlock";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -92,6 +93,9 @@ export class LocalLlmHubPlugin extends Plugin {
       CRYPT_VIEW_TYPE,
       (leaf) => new CryptView(leaf, this)
     );
+
+    // Workflow code block: render as Mermaid diagram (Reading mode + Live Preview)
+    registerWorkflowCodeBlockProcessor(this, this.app);
 
     // Ensure views on layout ready and register workflow hotkeys/events
     this.app.workspace.onLayoutReady(() => {
