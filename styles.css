@@ -4257,6 +4257,48 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> [data-path="LocalLlmHub"]) 
   color: var(--text-success);
 }
 
+/* Model Selector */
+.llm-hub-model-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.llm-hub-model-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.llm-hub-model-dropdown {
+  font-size: 11px;
+  padding: 1px 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  max-width: 200px;
+  min-width: 0;
+}
+
+.llm-hub-rag-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+
+.llm-hub-rag-toggle input[type="checkbox"] {
+  margin: 0;
+}
+
+.llm-hub-rag-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* Skills Selector */
 .llm-hub-skill-selector {
   display: flex;
@@ -4325,7 +4367,7 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> [data-path="LocalLlmHub"]) 
 
 .llm-hub-skill-dropdown {
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   z-index: var(--layer-popover);
   background: var(--background-primary);
@@ -4336,7 +4378,7 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> [data-path="LocalLlmHub"]) 
   max-height: 240px;
   overflow-y: auto;
   padding: 4px;
-  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
 .llm-hub-skill-dropdown-empty {

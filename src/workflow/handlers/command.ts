@@ -191,7 +191,16 @@ Please revise the output based on the user's feedback above.`;
   // Save response to variable if specified
   const saveTo = node.properties["saveTo"];
   if (saveTo) {
-    context.variables.set(saveTo, fullResponse);
+    // Strip markdown code fences if the entire response is a single code block.
+    // LLMs commonly wrap output in ```json ... ``` fences which are purely formatting;
+    // storing them breaks downstream script nodes that embed the value in template literals.
+    let responseToSave = fullResponse;
+    const trimmed = fullResponse.trim();
+    const fenceMatch = trimmed.match(/^```\w*\r?\n([\s\S]+?)\r?\n```$/);
+    if (fenceMatch && !fenceMatch[1].includes("```")) {
+      responseToSave = fenceMatch[1];
+    }
+    context.variables.set(saveTo, responseToSave);
     context.lastCommandInfo = {
       nodeId: node.id,
       originalPrompt,

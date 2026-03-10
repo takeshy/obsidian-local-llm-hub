@@ -1,7 +1,7 @@
 import { Setting, Notice, Modal, App } from "obsidian";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import type { McpServerConfig } from "src/types";
+import type { McpFraming, McpServerConfig } from "src/types";
 
 interface SettingsContext {
   plugin: LocalLlmHubPlugin;
@@ -141,6 +141,7 @@ class McpServerModal extends Modal {
           name: "",
           command: "",
           args: [],
+          framing: "content-length" as McpFraming,
           enabled: true,
         };
     this.onSave = onSave;
@@ -183,6 +184,17 @@ class McpServerModal extends Modal {
           .onChange((v) => {
             this.config.args = v.split(" ").filter((a) => a.length > 0);
           })
+      );
+
+    new Setting(contentEl)
+      .setName(t("settings.mcpFraming"))
+      .setDesc(t("settings.mcpFramingDesc"))
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("content-length", "Content-Length (npx)")
+          .addOption("newline", "Newline (uvx/python)")
+          .setValue(this.config.framing || "content-length")
+          .onChange((v) => { this.config.framing = v as McpFraming; })
       );
 
     new Setting(contentEl)

@@ -55,6 +55,8 @@ export default function Chat({ plugin }: ChatProps) {
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [saveNoteState, setSaveNoteState] = useState<"idle" | "saving" | "saved">("idle");
 
+  const [currentModel, setCurrentModel] = useState(plugin.settings.llmConfig.model);
+  const [ragEnabled, setRagEnabled] = useState(true);
   const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>("all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
@@ -68,9 +70,11 @@ export default function Chat({ plugin }: ChatProps) {
   const inputAreaRef = useRef<InputAreaHandle>(null);
   const chatCreatedAt = useRef<number>(Date.now());
 
-  const llmConfig = plugin.settings.llmConfig;
+  const baseLlmConfig = plugin.settings.llmConfig;
+  const llmConfig = { ...baseLlmConfig, model: currentModel || baseLlmConfig.model };
   const ragConfig = plugin.settings.ragConfig;
   const ragAvailable = ragConfig.enabled;
+  const availableModels = plugin.settings.availableModels || [];
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -80,8 +84,9 @@ export default function Chat({ plugin }: ChatProps) {
   // Listen for settings updates
   useEffect(() => {
     const onSettingsUpdate = () => {
-      // Re-read vault files
       refreshVaultFiles();
+      // Sync model if changed externally (e.g. in settings)
+      setCurrentModel(plugin.settings.llmConfig.model);
     };
     plugin.settingsEmitter.on("settings-updated", onSettingsUpdate);
     return () => {
@@ -122,12 +127,36 @@ export default function Chat({ plugin }: ChatProps) {
     };
   }, [plugin, refreshSkills]);
 
-  // Load MCP server infos
-  useEffect(() => {
+  // Load MCP server infos (on mount + when settings change)
+  const refreshMcpServerInfos = useCallback(() => {
     const infos = plugin.mcpManager.getServerInfos();
     setMcpServerInfos(infos);
-    setEnabledMcpServerIds(new Set(infos.map((s) => s.id)));
+    setEnabledMcpServerIds(prev => {
+      // Keep existing selections, add newly connected servers
+      const next = new Set(prev);
+      for (const info of infos) {
+        if (!prev.has(info.id) && prev.size === 0) {
+          // First load: enable all
+          next.add(info.id);
+        } else if (!prev.has(info.id)) {
+          next.add(info.id);
+        }
+      }
+      // Remove disconnected servers
+      for (const id of next) {
+        if (!infos.find(i => i.id === id)) next.delete(id);
+      }
+      return next;
+    });
   }, [plugin]);
+
+  useEffect(() => {
+    refreshMcpServerInfos();
+    plugin.settingsEmitter.on("settings-updated", refreshMcpServerInfos);
+    return () => {
+      plugin.settingsEmitter.off("settings-updated", refreshMcpServerInfos);
+    };
+  }, [plugin, refreshMcpServerInfos]);
 
   const handleToggleSkill = useCallback((folderPath: string) => {
     setActiveSkillPaths(prev =>
@@ -136,6 +165,12 @@ export default function Chat({ plugin }: ChatProps) {
         : [...prev, folderPath]
     );
   }, []);
+
+  const handleModelChange = useCallback((model: string) => {
+    setCurrentModel(model);
+    plugin.settings.llmConfig.model = model;
+    void plugin.saveSettings();
+  }, [plugin]);
 
   const handleMcpServerToggle = useCallback((serverId: string, enabled: boolean) => {
     setEnabledMcpServerIds(prev => {
@@ -459,7 +494,7 @@ export default function Chat({ plugin }: ChatProps) {
 
       // RAG context injection
       let ragSources: string[] | undefined;
-      if (vaultToolMode === "all" && ragAvailable) {
+      if (ragEnabled && ragAvailable) {
         try {
           const store = getRagStore();
           const results = await store.search(
@@ -670,7 +705,7 @@ export default function Chat({ plugin }: ChatProps) {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, ragConfig, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds]);
+  }, [messages, plugin, llmConfig, ragConfig, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds]);
 
   return (
     <div className="llm-hub-chat">
@@ -760,8 +795,13 @@ export default function Chat({ plugin }: ChatProps) {
         isLoading={isLoading || isCompacting}
         isCompacting={isCompacting}
         messageCount={messages.length}
-        vaultToolMode={vaultToolMode}
+        currentModel={currentModel}
+        availableModels={availableModels}
+        onModelChange={handleModelChange}
+        ragEnabled={ragEnabled}
         ragAvailable={ragAvailable}
+        onRagToggle={setRagEnabled}
+        vaultToolMode={vaultToolMode}
         onVaultToolModeChange={setVaultToolMode}
         vaultFiles={vaultFiles}
         hasSelection={hasSelection}

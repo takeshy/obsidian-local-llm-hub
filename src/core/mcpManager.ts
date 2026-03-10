@@ -39,7 +39,7 @@ export class McpManager {
       this.serverNames.delete(config.id);
     }
 
-    const client = new McpClient(config.command, config.args, config.env);
+    const client = new McpClient(config.command, config.args, config.env, config.framing);
     try {
       await client.start();
       this.clients.set(config.id, client);

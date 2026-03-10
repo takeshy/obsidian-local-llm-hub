@@ -16,6 +16,7 @@ This document provides detailed specifications for all workflow node types. For 
 | Composition | `workflow` | Execute another workflow as a sub-workflow |
 | RAG | `rag-sync` | Sync notes to RAG store |
 | External | `obsidian-command` | Execute Obsidian commands |
+| Script | `script` | Execute JavaScript in a sandboxed iframe |
 | Utility | `sleep` | Pause workflow execution |
 
 ---
@@ -729,6 +730,47 @@ nodes:
 ```
 
 > **Note:** Since the encryption command runs asynchronously, a `sleep` node is used to wait for the operation to complete before closing the tab.
+
+### script
+
+Execute JavaScript code in a sandboxed iframe. The sandbox has no DOM, network, or storage access — only pure computation.
+
+```yaml
+- id: transform
+  type: script
+  code: |
+    const lines = input.split('\n');
+    return lines.filter(l => l.trim()).map(l => '- ' + l).join('\n');
+  timeout: 5000
+  saveTo: result
+```
+
+| Property | Description |
+|----------|-------------|
+| `code` | JavaScript code to execute (required, supports `{{variables}}`) |
+| `saveTo` | Variable name to store the return value |
+| `timeout` | Execution timeout in milliseconds (default: 10000) |
+
+Use `return` to return a value. The `input` variable is available if provided. Results are stringified automatically (objects become JSON).
+
+**Security:** Code runs in an iframe with `sandbox="allow-scripts"` (no `allow-same-origin`). CSP blocks all network access (`fetch`, `XMLHttpRequest`, `WebSocket`). No access to parent DOM, cookies, localStorage, or IndexedDB.
+
+**Example: Parse CSV and extract column**
+```yaml
+- id: readCsv
+  type: note-read
+  path: "data/input.csv"
+  saveTo: csvData
+- id: extractNames
+  type: script
+  code: |
+    const rows = input.split('\n').map(r => r.split(','));
+    const nameCol = rows[0].indexOf('name');
+    return rows.slice(1).map(r => r[nameCol]).join('\n');
+  saveTo: names
+```
+
+In this example, `{{csvData}}` is automatically substituted into the code template before execution. You can reference any workflow variable using `{{variable}}` syntax inside the `code` property.
 
 ### sleep
 

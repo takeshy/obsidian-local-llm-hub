@@ -22,8 +22,13 @@ interface InputAreaProps {
   isLoading: boolean;
   isCompacting?: boolean;
   messageCount?: number;
-  vaultToolMode: VaultToolMode;
+  currentModel: string;
+  availableModels: string[];
+  onModelChange: (model: string) => void;
+  ragEnabled: boolean;
   ragAvailable: boolean;
+  onRagToggle: (enabled: boolean) => void;
+  vaultToolMode: VaultToolMode;
   onVaultToolModeChange: (mode: VaultToolMode) => void;
   mcpServerInfos: McpServerInfo[];
   enabledMcpServerIds: Set<string>;
@@ -64,8 +69,13 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   onCompact,
   isLoading,
   messageCount,
-  vaultToolMode,
+  currentModel,
+  availableModels,
+  onModelChange,
+  ragEnabled,
   ragAvailable,
+  onRagToggle,
+  vaultToolMode,
   onVaultToolModeChange,
   mcpServerInfos,
   enabledMcpServerIds,
@@ -470,64 +480,62 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           >
             <Paperclip size={18} />
           </button>
-          {ragAvailable && (
-            <div className="llm-hub-vault-tool-container" ref={vaultToolMenuRef}>
-              <button
-                className={`llm-hub-vault-tool-btn ${vaultToolMode !== "all" ? "active" : ""}`}
-                onClick={() => setShowVaultToolMenu(!showVaultToolMenu)}
-                disabled={isLoading}
-                title={t("input.vaultToolTitle")}
-              >
-                <Database size={18} />
-              </button>
-              {showVaultToolMenu && (
-                <div className="llm-hub-vault-tool-menu">
-                  {(["all", "noSearch", "none"] as const).map((mode) => (
-                    <div
-                      key={mode}
-                      className={`llm-hub-vault-tool-item ${vaultToolMode === mode ? "selected" : ""}`}
-                      onClick={() => {
-                        onVaultToolModeChange(mode);
-                        setShowVaultToolMenu(false);
-                      }}
-                    >
-                      {t(`input.vaultTool_${mode}` as Parameters<typeof t>[0])}
+          <div className="llm-hub-vault-tool-container" ref={vaultToolMenuRef}>
+            <button
+              className={`llm-hub-vault-tool-btn ${vaultToolMode !== "all" ? "active" : ""}`}
+              onClick={() => setShowVaultToolMenu(!showVaultToolMenu)}
+              disabled={isLoading}
+              title={t("input.vaultToolTitle")}
+            >
+              <Database size={18} />
+            </button>
+            {showVaultToolMenu && (
+              <div className="llm-hub-vault-tool-menu">
+                {(["all", "noSearch", "none"] as const).map((mode) => (
+                  <div
+                    key={mode}
+                    className={`llm-hub-vault-tool-item ${vaultToolMode === mode ? "selected" : ""}`}
+                    onClick={() => {
+                      onVaultToolModeChange(mode);
+                      setShowVaultToolMenu(false);
+                    }}
+                  >
+                    {t(`input.vaultTool_${mode}` as Parameters<typeof t>[0])}
+                  </div>
+                ))}
+                {mcpServerInfos.length > 0 && (
+                  <>
+                    <div className="llm-hub-vault-tool-divider" />
+                    <div className="llm-hub-vault-tool-section-label">
+                      {t("input.mcpServersLabel")}
                     </div>
-                  ))}
-                  {mcpServerInfos.length > 0 && (
-                    <>
-                      <div className="llm-hub-vault-tool-divider" />
-                      <div className="llm-hub-vault-tool-section-label">
-                        {t("input.mcpServersLabel")}
-                      </div>
-                      {mcpServerInfos.map((server) => {
-                        const toolHint = server.toolCount > 0
-                          ? `${server.toolCount} ${server.toolCount === 1 ? "tool" : "tools"}`
-                          : "";
-                        return (
-                          <label
-                            key={server.id}
-                            className="llm-hub-mcp-server-item"
-                            title={server.toolNames.join(", ")}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={enabledMcpServerIds.has(server.id)}
-                              onChange={(e) => onMcpServerToggle(server.id, e.target.checked)}
-                            />
-                            <span className="llm-hub-mcp-server-name">{server.name}</span>
-                            {toolHint && (
-                              <span className="llm-hub-mcp-tool-hint">{toolHint}</span>
-                            )}
-                          </label>
-                        );
-                      })}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+                    {mcpServerInfos.map((server) => {
+                      const toolHint = server.toolCount > 0
+                        ? `${server.toolCount} ${server.toolCount === 1 ? "tool" : "tools"}`
+                        : "";
+                      return (
+                        <label
+                          key={server.id}
+                          className="llm-hub-mcp-server-item"
+                          title={server.toolNames.join(", ")}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={enabledMcpServerIds.has(server.id)}
+                            onChange={(e) => onMcpServerToggle(server.id, e.target.checked)}
+                          />
+                          <span className="llm-hub-mcp-server-name">{server.name}</span>
+                          {toolHint && (
+                            <span className="llm-hub-mcp-tool-hint">{toolHint}</span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <textarea
@@ -560,6 +568,38 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           )}
         </div>
       </div>
+
+      {/* Model & RAG selector */}
+      {(availableModels.length > 1 || ragAvailable) && (
+        <div className="llm-hub-model-selector">
+          {availableModels.length > 1 && (
+            <>
+              <label className="llm-hub-model-label">{t("input.model")}</label>
+              <select
+                className="llm-hub-model-dropdown"
+                value={currentModel}
+                onChange={(e) => onModelChange(e.target.value)}
+                disabled={isLoading}
+              >
+                {availableModels.map((model) => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
+            </>
+          )}
+          {ragAvailable && (
+            <label className="llm-hub-rag-toggle">
+              <input
+                type="checkbox"
+                checked={ragEnabled}
+                onChange={(e) => onRagToggle(e.target.checked)}
+                disabled={isLoading}
+              />
+              <span className="llm-hub-rag-label">RAG</span>
+            </label>
+          )}
+        </div>
+      )}
 
       {/* Skills selector */}
       {availableSkills && availableSkills.length > 0 && onToggleSkill && (

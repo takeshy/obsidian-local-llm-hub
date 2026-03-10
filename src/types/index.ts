@@ -164,12 +164,16 @@ export interface WorkflowEventTrigger {
 }
 
 // MCP server configuration (stdio transport)
+// MCP stdio framing protocol
+export type McpFraming = "content-length" | "newline";
+
 export interface McpServerConfig {
   id: string;
   name: string;
   command: string;
   args: string[];
   env?: Record<string, string>;
+  framing: McpFraming;
   enabled: boolean;
 }
 
@@ -177,6 +181,7 @@ export interface McpServerConfig {
 export interface LocalLlmHubSettings {
   llmConfig: LocalLlmConfig;
   llmVerified: boolean;
+  availableModels: string[];
   ragConfig: RagConfig;
   workspaceFolder: string;
   saveChatHistory: boolean;
@@ -195,6 +200,7 @@ export interface LocalLlmHubSettings {
 export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   llmConfig: DEFAULT_LOCAL_LLM_CONFIG,
   llmVerified: false,
+  availableModels: [],
   ragConfig: DEFAULT_RAG_CONFIG,
   workspaceFolder: "LocalLlmHub",
   saveChatHistory: true,

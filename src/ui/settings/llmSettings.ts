@@ -1,5 +1,4 @@
 import { Setting, Notice } from "obsidian";
-import { verifyLocalLlm } from "src/core/localLlmProvider";
 import { t } from "src/i18n";
 import { DEFAULT_LOCAL_LLM_CONFIG } from "src/types";
 import { LocalLlmModal } from "./LocalLlmModal";
@@ -37,50 +36,6 @@ export function displayLlmSettings(containerEl: HTMLElement, ctx: SettingsContex
           new Notice(t("settings.llmDisabled"));
         })
     );
-  } else {
-    setting.addButton((button) =>
-      button
-        .setButtonText(t("settings.verify"))
-        .setCta()
-        .onClick(async () => {
-          statusEl.empty();
-          statusEl.removeClass("llm-hub-status--success", "llm-hub-status--error");
-          statusEl.setText(t("settings.llmVerifying"));
-
-          try {
-            const result = await verifyLocalLlm(llmConfig);
-
-            if (!result.success) {
-              statusEl.addClass("llm-hub-status--error");
-              plugin.settings.llmVerified = false;
-              await plugin.saveSettings();
-              statusEl.empty();
-              statusEl.createEl("strong", { text: t("settings.llmConnectionFailed") });
-              statusEl.createSpan({ text: result.error || "" });
-              return;
-            }
-
-            if (!llmConfig.model) {
-              statusEl.addClass("llm-hub-status--error");
-              statusEl.empty();
-              statusEl.createEl("strong", { text: t("settings.llmNoModel") });
-              return;
-            }
-
-            plugin.settings.llmVerified = true;
-            await plugin.saveSettings();
-            display();
-            new Notice(t("settings.llmVerified"));
-          } catch (err) {
-            plugin.settings.llmVerified = false;
-            await plugin.saveSettings();
-            statusEl.addClass("llm-hub-status--error");
-            statusEl.empty();
-            statusEl.createEl("strong", { text: t("common.error") });
-            statusEl.createSpan({ text: String(err) });
-          }
-        })
-    );
   }
 
   setting.addExtraButton((button) =>
@@ -91,19 +46,14 @@ export function displayLlmSettings(containerEl: HTMLElement, ctx: SettingsContex
         new LocalLlmModal(
           app,
           llmConfig,
-          async (config) => {
-            let verified = false;
-            if (config.model && config.baseUrl) {
-              try {
-                const result = await verifyLocalLlm(config);
-                verified = result.success;
-              } catch { /* ignore */ }
-            }
+          plugin.settings.availableModels || [],
+          async (config, models) => {
             plugin.settings.llmConfig = config;
-            plugin.settings.llmVerified = verified;
+            plugin.settings.availableModels = models;
+            plugin.settings.llmVerified = models.length > 0 && !!config.model;
             await plugin.saveSettings();
             display();
-            new Notice(verified ? t("settings.llmVerified") : t("settings.llmConfigSaved"));
+            new Notice(t("settings.llmVerified"));
           },
         ).open();
       })

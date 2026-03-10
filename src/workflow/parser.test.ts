@@ -90,7 +90,7 @@ nodes:
       expect(result).toBe(input);
     });
 
-    it("stops re-indentation at lowercase YAML property key", () => {
+    it("identifies trailing YAML properties via backwards scan", () => {
       const input = `- id: step1
   prompt: |
   Create something.
@@ -182,6 +182,107 @@ nodes:
       const result = normalizeYamlText(input);
       expect(result).toContain("    Keep trailing newlines");
       expect(result).toContain("  saveTo: result");
+    });
+
+    it("does not break on JS object keys inside code block scalar", () => {
+      const input = `- id: compute-report
+  type: script
+  code: |
+  var today = new Date();
+  return {
+  monday: formatYMD(targetMonday),
+  friday: formatYMD(targetFriday),
+  reportTitle: 'Weekly Report',
+  weekNumber: weekNumber
+  };
+  saveTo: reportMeta
+  timeout: "10000"`;
+
+      const result = normalizeYamlText(input);
+      // JS code lines should be re-indented (not treated as YAML keys)
+      expect(result).toContain("    var today = new Date();");
+      expect(result).toContain("    return {");
+      expect(result).toContain("    monday: formatYMD(targetMonday),");
+      expect(result).toContain("    friday: formatYMD(targetFriday),");
+      expect(result).toContain("    reportTitle: 'Weekly Report',");
+      expect(result).toContain("    weekNumber: weekNumber");
+      expect(result).toContain("    };");
+      // Sibling YAML keys preserved at original indent
+      expect(result).toContain("  saveTo: reportMeta");
+      expect(result).toContain('  timeout: "10000"');
+    });
+
+    it("handles JS object with keys matching YAML whitelist (notes, name, path)", () => {
+      const input = `- id: filter-notes
+  type: script
+  code: |
+  var result = [];
+  for (var i = 0; i < files.length; i++) {
+  var note = files[i];
+  var fullPath = note.path || '';
+  var fileName = fullPath.split('/').pop();
+  if (fileName >= monday) {
+  result.push({
+  path: fullPath,
+  name: fileName
+  });
+  }
+  }
+  return {
+  notes: result,
+  count: result.length
+  };
+  saveTo: targetNotes
+  timeout: "10000"
+
+- id: next-step
+  type: variable
+  name: idx
+  value: "0"`;
+
+      const result = normalizeYamlText(input);
+      // All JS code lines re-indented (notes, name, path are in whitelist but inside JS)
+      expect(result).toContain("    var result = [];");
+      expect(result).toContain("    result.push({");
+      expect(result).toContain("    path: fullPath,");
+      expect(result).toContain("    name: fileName");
+      expect(result).toContain("    });");
+      expect(result).toContain("    return {");
+      expect(result).toContain("    notes: result,");
+      expect(result).toContain("    count: result.length");
+      expect(result).toContain("    };");
+      // Trailing YAML properties at original indent
+      expect(result).toContain("  saveTo: targetNotes");
+      expect(result).toContain('  timeout: "10000"');
+      // Next node unaffected
+      expect(result).toContain("- id: next-step");
+      expect(result).toContain('  value: "0"');
+    });
+
+    it("handles multiple block scalars in sequence across nodes", () => {
+      const input = `* id: step1
+  type: script
+  code: |
+  var x = { name: 'test', value: 42 };
+  return x;
+  saveTo: result1
+
+* id: step2
+  type: command
+  prompt: |
+  Analyze this:
+  {{result1}}
+  saveTo: result2`;
+
+      const result = normalizeYamlText(input);
+      // First code block
+      expect(result).toContain("    var x = { name: 'test', value: 42 };");
+      expect(result).toContain("    return x;");
+      expect(result).toContain("  saveTo: result1");
+      // Second prompt block
+      expect(result).toContain("    Analyze this:");
+      expect(result).toContain("    {{result1}}");
+      expect(result).toContain("  saveTo: result2");
     });
 
     it("handles the full infographic workflow with * bullets in prompt", () => {

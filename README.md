@@ -1,149 +1,179 @@
-# Local LLM Hub
+# Local LLM Hub for Obsidian
 
-Chat with local LLMs (Ollama, LM Studio) with vault tools via function calling, MCP server integration, local embeddings RAG, agent skills, file encryption, edit history, slash commands, and workflow automation.
+**Your company's security policy blocks cloud APIs. But you refuse to give up AI-powered note automation.**
 
-## Requirements
+Local LLM Hub brings the full power of [Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper)'s workflow automation, RAG, MCP integration, and agent skills to a **completely local** environment. Ollama or LM Studio — your data never leaves your machine.
 
-- [Ollama](https://ollama.com/) or [LM Studio](https://lmstudio.ai/)
-- A chat model (e.g. `ollama pull qwen3.5:4b`)
-- **For RAG**: An embedding model is required (e.g. `ollama pull nomic-embed-text`)
+![Workflow Execution](docs/images/execute_workflow.png)
 
-## Setup
+---
 
-1. Install and start your LLM server
-2. Open plugin settings and select your framework (Ollama / LM Studio)
-3. Set the server URL (defaults are pre-filled per framework)
-4. Fetch and select your chat model
-5. Click "Verify connection"
+## Why Local?
 
-### RAG Setup
+Every byte stays on your machine. No API keys sent to the cloud. No vault contents uploaded anywhere. This isn't a privacy "option" — it's the architecture.
 
-RAG (Retrieval-Augmented Generation) indexes your vault notes and uses them as context for chat. An embedding model is required.
+| What | Where it stays |
+|------|---------------|
+| Chat history | Markdown files in your vault |
+| RAG index | Local embeddings in workspace folder |
+| LLM requests | `localhost` only (Ollama / LM Studio) |
+| MCP servers | Local child processes via stdio |
+| Encrypted files | Encrypted/decrypted locally |
+| Edit history | In-memory (cleared on restart) |
 
-**Ollama:**
-```
-ollama pull nomic-embed-text
-```
+> If you use [Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper) at home but need something for work — this is it. Same workflow engine, same UX, zero cloud dependency.
 
-**LM Studio:**
-Download an embedding model (e.g. nomic-embed-text) in LM Studio and load it. All loaded models will appear in the embedding model dropdown.
+---
 
-Then:
-1. Enable RAG in settings
-2. Fetch and select the embedding model
-3. Configure target folders (optional, defaults to entire vault)
-4. Click "Sync" to build the index
+## Workflow Automation — The Core Feature
 
-## Features
+Describe what you want in plain language. The AI builds the workflow. No YAML knowledge required.
 
-### AI Chat
+### Create with AI
 
-- **Streaming responses** with real-time display
-- **Thinking display** for models that support it
-- **File attachments** (images, PDFs, text files)
-- **@ mentions** to reference vault notes as context
-- **Multiple chat sessions** with conversation history
+![Create Workflow with AI](docs/images/create_workflow.png)
+
+1. Open the **Workflow** tab → select **+ New (AI)**
+2. Describe: *"Convert the current page into an infographic and save it"*
+3. Click **Generate** — done
+
+Don't have a powerful local model? Click **Copy Prompt**, paste into Claude/GPT/Gemini, paste the response back, and click **Apply**.
+
+![Create Skill with External LLM](docs/images/create_skill_with_external_llm.png)
+
+### Modify with AI
+
+Load any workflow, click **AI Modify**, describe the change. Reference execution history to debug failures.
+
+![Modify Workflow with AI](docs/images/modify_workflow.png)
+
+### Visual Node Editor
+
+23 node types across 9 categories:
+
+| Category | Nodes |
+|----------|-------|
+| Variables | `variable`, `set` |
+| Control | `if`, `while` |
+| LLM | `command` |
+| Data | `http`, `json` |
+| Notes | `note`, `note-read`, `note-search`, `note-list`, `folder-list`, `open` |
+| Files | `file-explorer`, `file-save` |
+| Prompts | `prompt-file`, `prompt-selection`, `dialog` |
+| Composition | `workflow` (sub-workflows) |
+| RAG | `rag-sync` |
+| Script | `script` (sandboxed JavaScript) |
+| External | `obsidian-command` |
+| Utility | `sleep` |
+
+![Workflow Panel](docs/images/workflow.png)
+
+### Event Triggers & Hotkeys
+
+- **Event triggers** — auto-run workflows on file create / modify / delete / rename / open
+- **Hotkey support** — assign keyboard shortcuts to any named workflow
+- **Execution history** — review past runs with step-by-step details
+
+See [WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node reference.
+
+---
+
+## AI Chat
+
+Streaming chat with your local LLM. Thinking display, file attachments, `@` mentions for vault notes, multiple sessions.
+
+![Chat with RAG](docs/images/chat_with_rag.png)
 
 ### Vault Tools (Function Calling)
 
-Models that support function calling (e.g., Qwen, Llama 3.1+, Mistral) can directly interact with your vault through 10 built-in tools:
+Models with function calling support (Qwen, Llama 3.1+, Mistral) can directly interact with your vault:
 
-| Tool | Description |
-|------|-------------|
-| `read_note` | Read content from a note |
-| `create_note` | Create a new note |
-| `update_note` | Update an existing note (replace/append/prepend) |
-| `rename_note` | Rename or move a note |
-| `create_folder` | Create a new folder |
-| `search_notes` | Search notes by content |
-| `list_notes` | List notes in a folder |
-| `list_folders` | List folders in the vault |
-| `get_active_note` | Get the currently active note |
-| `propose_edit` | Propose an edit to the user |
+`read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit`
 
-**Vault Tool Modes:**
+Three modes — **All**, **No Search**, **Off** — selectable from the input area.
 
-Click the database icon in the chat input area to select a mode:
-
-| Mode | Description |
-|------|-------------|
-| **All** | All 10 vault tools enabled |
-| **No Search** | All tools except `search_notes` and `list_notes` |
-| **Off** | No vault tools (text-only chat) |
-
-**Fallback:** If a model doesn't support function calling, the plugin automatically switches to "Off" mode and shows a notification. You can continue chatting without tools.
+![Tool Settings](docs/images/chat_tool_setting.png)
 
 ### MCP Servers
 
-Connect to local [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers to extend the AI's capabilities with external tools. MCP tools are automatically merged with vault tools and made available to the LLM via function calling.
+Connect local [MCP](https://modelcontextprotocol.io/) servers to extend the AI with external tools. MCP tools are merged with vault tools and routed via function calling — all running as **local child processes**.
 
-**Setup:**
+![Chat with MCP](docs/images/chat_with_mcp.png)
 
-1. Open plugin settings → **MCP servers** → **Add server**
-2. Configure the server:
-   - **Name**: Display name (e.g. "filesystem")
-   - **Command**: Executable to run (e.g. `npx`, `node`, `python`)
-   - **Arguments**: Command arguments (e.g. `-y @modelcontextprotocol/server-filesystem /path/to/dir`)
-   - **Environment variables**: Optional `KEY=VALUE` pairs
-3. Toggle the server on — it connects automatically via stdio
+### RAG (Local Embeddings)
 
-MCP tools are available regardless of vault tool mode. Each MCP server can be individually toggled on/off from the tool settings menu in the chat input area. Tool names are namespaced (e.g. `mcp__filesystem__read_file`) to avoid conflicts with vault tools.
-
-**Example MCP servers:**
-
-| Server | Command | Arguments |
-|--------|---------|-----------|
-| Filesystem | `npx` | `-y @modelcontextprotocol/server-filesystem /home/user/docs` |
-| SQLite | `npx` | `-y @modelcontextprotocol/server-sqlite /path/to/db.sqlite` |
-| GitHub | `npx` | `-y @modelcontextprotocol/server-github` |
-
-### Compact History
-
-Use the `/compact` slash command (available when there are 2+ messages) to compress your conversation history. The LLM summarizes the conversation, and a new chat session is created with the summary as context. This helps manage long conversations without losing important context.
-
-### Slash Commands
-
-Create custom prompt templates in settings. Type `/` in the chat input to see available commands.
-
-Each slash command can optionally override the vault tool mode, so you can create commands that always run with specific tool access regardless of the current setting.
-
-### RAG (Retrieval-Augmented Generation)
-
-When RAG is enabled and synced, relevant vault notes are automatically included as context for your chat messages.
-
-### File Encryption
-
-Encrypt sensitive notes using the command palette. Encrypted files are stored securely and can be decrypted on demand.
-
-### Edit History
-
-Automatic tracking of file changes with the ability to view and restore previous versions.
+Index your vault with a local embedding model (e.g. `nomic-embed-text`). Relevant notes are automatically included as context. Everything computed and stored locally.
 
 ### Agent Skills
 
-Inject reusable instructions and reference materials into the AI's system prompt. Create a `SKILL.md` file in a subfolder of your skills directory to define a skill. Activate skills from the chat UI to customize the AI's behavior per conversation.
+Inject reusable instructions into the system prompt via `SKILL.md` files. Activate per conversation.
 
-See [docs/SKILLS.md](docs/SKILLS.md) for details on creating and using skills.
+![Agent Skills](docs/images/skill.png)
 
-### Workflow Automation
+See [SKILLS.md](docs/SKILLS.md) for details.
 
-Node-based workflow engine for automating tasks. Features include:
+### Slash Commands & Compact History
 
-- **22 node types** for variables, control flow, LLM prompts, HTTP requests, note operations, user dialogs, and more
-- **AI generation** - describe what you want and the AI creates the workflow
-- **Event triggers** - automatically run workflows on file create/modify/delete/rename/open
-- **Hotkey support** - assign keyboard shortcuts to any named workflow
-- **Sub-workflows** - compose complex workflows from reusable parts
-- **Execution history** - review past workflow runs with step-by-step details
+- Custom prompt templates triggered by `/`
+- `/compact` to compress long conversations while preserving context
 
-See [docs/WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node reference.
+### File Encryption
 
-## Supported Frameworks
+Password-protect sensitive notes. Encrypted files are invisible to AI chat tools but accessible to workflows with password prompt — ideal for storing API keys or credentials.
+
+### Edit History
+
+Automatic tracking of AI-made changes with diff view and one-click restore.
+
+---
+
+## Setup
+
+### Requirements
+
+- [Ollama](https://ollama.com/) or [LM Studio](https://lmstudio.ai/)
+- A chat model (e.g. `ollama pull qwen3.5:4b`)
+- **For RAG**: an embedding model (e.g. `ollama pull nomic-embed-text`)
+
+### Quick Start
+
+1. Install and start your LLM server
+2. Open plugin settings → select framework (Ollama / LM Studio)
+3. Set the server URL (defaults pre-filled)
+4. Fetch and select your chat model
+5. Click **Verify connection**
+
+![LLM Settings](docs/images/setting_llm.png)
+
+### RAG Setup
+
+1. Enable RAG in settings
+2. Fetch and select the embedding model
+3. Configure target folders (optional — defaults to entire vault)
+4. Click **Sync** to build the index
+
+![RAG Settings](docs/images/setting_rag_and_command.png)
+
+### MCP Server Setup
+
+1. Settings → **MCP servers** → **Add server**
+2. Configure: name, command (e.g. `npx`), arguments, optional env vars
+3. Toggle on — connects automatically via stdio
+
+![MCP & Encryption Settings](docs/images/setting_mcp_server_and_encryption.png)
+
+### Workspace Settings
+
+![Workspace Settings](docs/images/setting_workspace.png)
+
+### Supported Frameworks
 
 | Framework | Chat Endpoint | Streaming | Thinking | Function Calling |
 |-----------|--------------|-----------|----------|-----------------|
 | Ollama | `/api/chat` (native) | Real-time | `message.thinking` field | `tools` parameter |
 | LM Studio | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
+
+---
 
 ## Installation
 
@@ -166,13 +196,22 @@ npm install
 npm run build
 ```
 
-## Privacy
+---
 
-All data stays local:
+## Gemini Helper との関係 / Relationship to Gemini Helper
 
-- **Chat history** - stored as markdown in the workspace folder
-- **RAG index** - stored locally in the workspace folder
-- **Encrypted files** - encrypted/decrypted locally
-- **Edit history** - stored in memory (cleared on Obsidian restart)
-- **LLM requests** - sent only to your local Ollama or LM Studio server
-- **MCP servers** - run as local child processes via stdio
+This plugin is the **local-only sibling** of [obsidian-gemini-helper](https://github.com/takeshy/obsidian-gemini-helper). Same workflow engine, same UX patterns, but designed for environments where cloud APIs are not an option.
+
+| | Gemini Helper | Local LLM Hub |
+|---|---|---|
+| LLM Backend | Google Gemini API / CLI | Ollama / LM Studio |
+| Data destination | Google servers | `localhost` only |
+| Workflow engine | ✅ | ✅ (same architecture) |
+| RAG | Google File Search | Local embeddings |
+| MCP | ✅ | ✅ (stdio only) |
+| Agent Skills | ✅ | ✅ |
+| Image generation | ✅ (Gemini) | — |
+| Web search | ✅ (Google) | — |
+| Cost | Free / Pay-per-use | **Free forever** (your hardware) |
+
+Choose Gemini Helper when you want cutting-edge cloud models. Choose Local LLM Hub when **privacy is non-negotiable**.

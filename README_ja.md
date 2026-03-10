@@ -1,157 +1,217 @@
-# Local LLM Hub
+# Local LLM Hub for Obsidian
 
-ローカル LLM（Ollama、LM Studio）とチャットできる Obsidian プラグイン。Vault ツール（Function Calling）、MCP サーバー連携、ローカル埋め込み RAG、エージェントスキル、ファイル暗号化、編集履歴、スラッシュコマンド、ワークフロー自動化に対応。
+**会社のセキュリティポリシーでクラウド API が使えない。でも、AI によるノート自動整理・ワークフロー自動化を諦めたくない人へ。**
 
-## 必要なもの
+Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper) のワークフロー自動化・RAG・MCP 連携・エージェントスキルを、**完全ローカル環境**で実現します。Ollama または LM Studio — あなたのデータは一切外に出ません。
 
-- [Ollama](https://ollama.com/) または [LM Studio](https://lmstudio.ai/)
-- チャットモデル（例: `ollama pull qwen3.5:4b`）
-- **RAG 使用時**: 埋め込みモデルが必要（例: `ollama pull nomic-embed-text`）
+![ワークフロー実行](docs/images/execute_workflow.png)
 
-## セットアップ
+---
 
-1. LLM サーバーをインストール・起動
-2. プラグイン設定を開き、フレームワーク（Ollama / LM Studio）を選択
-3. サーバー URL を設定（フレームワークごとにデフォルト値あり）
-4. チャットモデルを取得・選択
-5. 「接続確認」をクリック
+## なぜローカルなのか
 
-### RAG セットアップ
+すべてのデータがあなたのマシンに留まります。API キーがクラウドに送られることも、Vault の中身がアップロードされることもありません。プライバシーは「オプション」ではなく、**アーキテクチャそのもの**です。
 
-RAG（Retrieval-Augmented Generation）は Vault のノートをインデックス化し、チャットのコンテキストとして使用します。埋め込みモデルが必要です。
+| データ | 保存先 |
+|--------|--------|
+| チャット履歴 | Vault 内の Markdown ファイル |
+| RAG インデックス | ワークスペースフォルダにローカル保存 |
+| LLM リクエスト | `localhost` のみ（Ollama / LM Studio） |
+| MCP サーバー | stdio 経由のローカル子プロセス |
+| 暗号化ファイル | ローカルで暗号化/復号 |
+| 編集履歴 | メモリ上（再起動でクリア） |
 
-**Ollama:**
-```
-ollama pull nomic-embed-text
-```
+> 自宅では [Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper) を使っているけど、仕事では使えない — そんなあなたのためのプラグインです。同じワークフローエンジン、同じ UX、クラウド依存ゼロ。
 
-**LM Studio:**
-LM Studio で埋め込みモデル（例: nomic-embed-text）をダウンロード・ロードしてください。ロード済みのモデルはすべて埋め込みモデルのドロップダウンに表示されます。
+---
 
-次に:
-1. 設定で RAG を有効化
-2. 埋め込みモデルを取得・選択
-3. 対象フォルダを設定（省略時は Vault 全体）
-4. 「同期」をクリックしてインデックスを構築
+## ワークフロー自動化 — コア機能
 
-## 機能
+やりたいことを自然言語で書くだけ。AI がワークフローを組み立てます。YAML の知識は不要です。
 
-### AI チャット
+### AI でワークフローを作成
 
-- **ストリーミング応答** - リアルタイム表示
-- **思考表示** - 対応モデルでの思考プロセス表示
-- **ファイル添付** - 画像、PDF、テキストファイル
-- **@ メンション** - Vault ノートをコンテキストとして参照
-- **複数チャットセッション** - 会話履歴の管理
+![AI でワークフロー作成](docs/images/create_workflow.png)
+
+1. **Workflow** タブを開く → **+ New (AI)** を選択
+2. 説明を入力: *「現在のページをインフォグラフィックに変換して保存して」*
+3. **Generate** をクリック — 完成
+
+ローカルの LLM だけでは力不足？ **Copy Prompt** をクリックして Claude / GPT / Gemini に貼り付け、レスポンスを貼り戻して **Apply** すれば OK です。
+
+![外部 LLM でスキル作成](docs/images/create_skill_with_external_llm.png)
+
+### AI でワークフローを修正
+
+既存のワークフローを読み込み、**AI Modify** をクリック、変更内容を説明するだけ。実行履歴を参照してエラーのデバッグも可能です。
+
+![AI でワークフロー修正](docs/images/modify_workflow.png)
+
+### ビジュアルノードエディタ
+
+9 カテゴリ・23 種類のノードタイプ:
+
+| カテゴリ | ノード |
+|----------|--------|
+| 変数 | `variable`, `set` |
+| 制御 | `if`, `while` |
+| LLM | `command` |
+| データ | `http`, `json` |
+| ノート | `note`, `note-read`, `note-search`, `note-list`, `folder-list`, `open` |
+| ファイル | `file-explorer`, `file-save` |
+| プロンプト | `prompt-file`, `prompt-selection`, `dialog` |
+| 合成 | `workflow`（サブワークフロー） |
+| RAG | `rag-sync` |
+| スクリプト | `script`（サンドボックス JavaScript） |
+| 外部連携 | `obsidian-command` |
+| ユーティリティ | `sleep` |
+
+![ワークフローパネル](docs/images/workflow.png)
+
+### イベントトリガー & ホットキー
+
+- **イベントトリガー** — ファイルの作成 / 変更 / 削除 / 名前変更 / オープン時に自動実行
+- **ホットキー対応** — 任意の名前付きワークフローにキーボードショートカットを割り当て
+- **実行履歴** — 過去のワークフロー実行をステップごとに確認
+
+完全なノードリファレンスは [WORKFLOW_NODES_ja.md](docs/WORKFLOW_NODES_ja.md) を参照してください。
+
+---
+
+## AI チャット
+
+ローカル LLM とのストリーミングチャット。思考プロセス表示、ファイル添付、`@` メンションによる Vault ノート参照、複数セッション管理。
+
+![RAG 付きチャット](docs/images/chat_with_rag.png)
 
 ### Vault ツール（Function Calling）
 
-Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral 等）は、10 個の組み込みツールで Vault を直接操作できます:
+Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral）で Vault を直接操作:
 
-| ツール | 説明 |
-|--------|------|
-| `read_note` | ノートの内容を読み取り |
-| `create_note` | 新しいノートを作成 |
-| `update_note` | 既存ノートを更新（置換/末尾追加/先頭追加） |
-| `rename_note` | ノートの名前変更・移動 |
-| `create_folder` | 新しいフォルダを作成 |
-| `search_notes` | ノートを内容で検索 |
-| `list_notes` | フォルダ内のノート一覧 |
-| `list_folders` | Vault 内のフォルダ一覧 |
-| `get_active_note` | 現在アクティブなノートを取得 |
-| `propose_edit` | ユーザーに編集を提案 |
+`read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit`
 
-**Vault ツールモード:**
+**All** / **No Search** / **Off** の 3 モードを入力エリアから切り替え。
 
-チャット入力エリアのデータベースアイコンをクリックしてモードを選択:
-
-| モード | 説明 |
-|--------|------|
-| **All** | 10 個すべての Vault ツールを有効化 |
-| **No Search** | `search_notes` と `list_notes` 以外のすべてのツール |
-| **Off** | Vault ツールなし（テキストのみのチャット） |
-
-**フォールバック:** モデルが Function Calling に対応していない場合、プラグインは自動的に「Off」モードに切り替え、通知を表示します。ツールなしでチャットを続けられます。
+![ツール設定](docs/images/chat_tool_setting.png)
 
 ### MCP サーバー
 
-ローカル [MCP（Model Context Protocol）](https://modelcontextprotocol.io/) サーバーに接続して、AI の機能を外部ツールで拡張できます。MCP ツールは Vault ツールと自動的にマージされ、Function Calling 経由で LLM に提供されます。
+ローカル [MCP](https://modelcontextprotocol.io/) サーバーに接続して AI の機能を外部ツールで拡張。MCP ツールは Vault ツールとマージされ、Function Calling 経由でルーティングされます — すべて**ローカル子プロセス**として実行。
 
-**セットアップ:**
+![MCP 付きチャット](docs/images/chat_with_mcp.png)
 
-1. プラグイン設定 → **MCP サーバー** → **サーバーを追加**
-2. サーバーを設定:
-   - **名前**: 表示名（例: "filesystem"）
-   - **コマンド**: 実行するコマンド（例: `npx`、`node`、`python`）
-   - **引数**: コマンド引数（例: `-y @modelcontextprotocol/server-filesystem /path/to/dir`）
-   - **環境変数**: `KEY=VALUE` 形式（任意）
-3. サーバーをオンに切り替え — stdio 経由で自動接続
+### RAG（ローカル埋め込み）
 
-MCP ツールは Vault ツールモードに関係なく使用可能です。各 MCP サーバーはチャット入力エリアのツール設定メニューから個別にオン/オフできます。ツール名は名前空間付き（例: `mcp__filesystem__read_file`）で、Vault ツールとの競合を回避します。
-
-**MCP サーバーの例:**
-
-| サーバー | コマンド | 引数 |
-|----------|----------|------|
-| Filesystem | `npx` | `-y @modelcontextprotocol/server-filesystem /home/user/docs` |
-| SQLite | `npx` | `-y @modelcontextprotocol/server-sqlite /path/to/db.sqlite` |
-| GitHub | `npx` | `-y @modelcontextprotocol/server-github` |
-
-### 会話の圧縮
-
-`/compact` スラッシュコマンド（メッセージが 2 件以上の場合に利用可能）で会話履歴を圧縮できます。LLM が会話を要約し、その要約をコンテキストとして新しいチャットセッションが作成されます。重要なコンテキストを失わずに長い会話を管理できます。
-
-### スラッシュコマンド
-
-設定でカスタムプロンプトテンプレートを作成できます。チャット入力で `/` を入力すると利用可能なコマンドが表示されます。
-
-各スラッシュコマンドは Vault ツールモードを任意でオーバーライドでき、現在の設定に関係なく特定のツールアクセスで常に実行するコマンドを作成できます。
-
-### RAG（Retrieval-Augmented Generation）
-
-RAG が有効で同期済みの場合、関連する Vault ノートがチャットメッセージのコンテキストとして自動的に含まれます。
-
-### ファイル暗号化
-
-コマンドパレットを使用して機密ノートを暗号化できます。暗号化されたファイルは安全に保存され、オンデマンドで復号できます。
-
-### 編集履歴
-
-ファイル変更の自動追跡と、以前のバージョンの表示・復元機能。
+ローカルの埋め込みモデル（例: `nomic-embed-text`）で Vault をインデックス化。関連ノートがコンテキストとして自動的に含まれます。すべてローカルで計算・保存。
 
 ### エージェントスキル
 
-再利用可能な指示や参考資料を AI のシステムプロンプトに注入できます。スキルディレクトリのサブフォルダに `SKILL.md` ファイルを作成してスキルを定義します。チャット UI からスキルを有効化して、会話ごとに AI の動作をカスタマイズできます。
+`SKILL.md` ファイルで再利用可能な指示をシステムプロンプトに注入。会話ごとに有効化できます。
 
-詳細は [docs/SKILLS_ja.md](docs/SKILLS_ja.md) を参照してください。
+![エージェントスキル](docs/images/skill.png)
 
-### ワークフロー自動化
+詳細は [SKILLS_ja.md](docs/SKILLS_ja.md) を参照してください。
 
-タスクを自動化するノードベースのワークフローエンジン:
+### スラッシュコマンド & 会話の圧縮
 
-- **22 種類のノードタイプ** - 変数、制御フロー、LLM プロンプト、HTTP リクエスト、ノート操作、ユーザーダイアログなど
-- **AI 生成** - やりたいことを自然言語で記述すると AI がワークフローを作成
-- **イベントトリガー** - ファイルの作成/変更/削除/名前変更/オープン時に自動実行
-- **ホットキー対応** - 任意の名前付きワークフローにキーボードショートカットを割り当て
-- **サブワークフロー** - 再利用可能なパーツから複雑なワークフローを構成
-- **実行履歴** - 過去のワークフロー実行をステップごとに確認
+- `/` で呼び出すカスタムプロンプトテンプレート
+- `/compact` で長い会話をコンテキストを保持したまま圧縮
 
-完全なノードリファレンスは [docs/WORKFLOW_NODES_ja.md](docs/WORKFLOW_NODES_ja.md) を参照してください。
+### ファイル暗号化
 
-## 対応フレームワーク
+機密ノートをパスワードで保護。暗号化ファイルは AI チャットのツールからは見えませんが、ワークフローからはパスワード入力で読み取り可能 — API キーや認証情報の保管に最適。
+
+### 編集履歴
+
+AI による変更の自動追跡、差分表示、ワンクリック復元。
+
+---
+
+## セットアップ
+
+### 必要なもの
+
+- [Ollama](https://ollama.com/) または [LM Studio](https://lmstudio.ai/)
+- チャットモデル（例: `ollama pull qwen3.5:4b`）
+- **RAG 使用時**: 埋め込みモデル（例: `ollama pull nomic-embed-text`）
+
+### クイックスタート
+
+1. LLM サーバーをインストール・起動
+2. プラグイン設定 → フレームワーク（Ollama / LM Studio）を選択
+3. サーバー URL を設定（デフォルト値あり）
+4. チャットモデルを取得・選択
+5. **接続確認**をクリック
+
+![LLM 設定](docs/images/setting_llm.png)
+
+### RAG セットアップ
+
+1. 設定で RAG を有効化
+2. 埋め込みモデルを取得・選択
+3. 対象フォルダを設定（省略時は Vault 全体）
+4. **同期**をクリックしてインデックスを構築
+
+![RAG 設定](docs/images/setting_rag_and_command.png)
+
+### MCP サーバーのセットアップ
+
+1. 設定 → **MCP サーバー** → **サーバーを追加**
+2. 設定: 名前、コマンド（例: `npx`）、引数、環境変数（任意）
+3. オンに切り替え — stdio 経由で自動接続
+
+![MCP & 暗号化設定](docs/images/setting_mcp_server_and_encryption.png)
+
+### ワークスペース設定
+
+![ワークスペース設定](docs/images/setting_workspace.png)
+
+### 対応フレームワーク
 
 | フレームワーク | チャットエンドポイント | ストリーミング | 思考 | Function Calling |
 |----------------|------------------------|----------------|------|------------------|
 | Ollama | `/api/chat`（ネイティブ） | リアルタイム | `message.thinking` フィールド | `tools` パラメータ |
 | LM Studio | `/v1/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
 
-## プライバシー
+---
 
-すべてのデータはローカルに保持されます:
+## インストール
 
-- **チャット履歴** - ワークスペースフォルダに Markdown として保存
-- **RAG インデックス** - ワークスペースフォルダにローカル保存
-- **暗号化ファイル** - ローカルで暗号化/復号
-- **編集履歴** - メモリに保存（Obsidian 再起動時にクリア）
-- **LLM リクエスト** - ローカルの Ollama または LM Studio サーバーにのみ送信
-- **MCP サーバー** - stdio 経由のローカル子プロセスとして実行
+### BRAT（推奨）
+1. [BRAT](https://github.com/TfTHacker/obsidian42-brat) プラグインをインストール
+2. BRAT 設定 → "Add Beta plugin"
+3. `https://github.com/takeshy/obsidian-local-llm-hub` を入力
+4. Community plugins 設定でプラグインを有効化
+
+### 手動インストール
+1. リリースから `main.js`、`manifest.json`、`styles.css` をダウンロード
+2. `.obsidian/plugins/` に `local-llm-hub` フォルダを作成
+3. ファイルをコピーして Obsidian 設定で有効化
+
+### ソースからビルド
+```bash
+git clone https://github.com/takeshy/obsidian-local-llm-hub
+cd obsidian-local-llm-hub
+npm install
+npm run build
+```
+
+---
+
+## Gemini Helper との関係
+
+このプラグインは [obsidian-gemini-helper](https://github.com/takeshy/obsidian-gemini-helper) の**ローカル専用版**です。同じワークフローエンジン、同じ UX パターンを、クラウド API が使えない環境向けに設計しました。
+
+| | Gemini Helper | Local LLM Hub |
+|---|---|---|
+| LLM バックエンド | Google Gemini API / CLI | Ollama / LM Studio |
+| データの送信先 | Google サーバー | `localhost` のみ |
+| ワークフローエンジン | ✅ | ✅（同一アーキテクチャ） |
+| RAG | Google File Search | ローカル埋め込み |
+| MCP | ✅ | ✅（stdio のみ） |
+| エージェントスキル | ✅ | ✅ |
+| 画像生成 | ✅（Gemini） | — |
+| Web 検索 | ✅（Google） | — |
+| コスト | 無料 / 従量課金 | **永久無料**（自分のハードウェア） |
+
+最先端のクラウドモデルが必要なら Gemini Helper。**プライバシーが譲れない条件なら Local LLM Hub**。

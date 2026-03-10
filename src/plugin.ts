@@ -63,7 +63,9 @@ export class LocalLlmHubPlugin extends Plugin {
       this.updateWorkspaceFolderVisibility();
 
       // Connect enabled MCP servers
-      void this.mcpManager.connectAll(this.settings.mcpServers).catch((e) => {
+      void this.mcpManager.connectAll(this.settings.mcpServers).then(() => {
+        this.settingsEmitter.emit("settings-updated", this.settings);
+      }).catch((e) => {
         console.error("Local LLM Hub: Failed to connect MCP servers:", formatError(e));
       });
     }).catch((e) => {

@@ -97,7 +97,7 @@ function getNodeLabel(node: SidebarNode): string {
       break;
     }
     default:
-      label = `**${id}**\n${node.type}`;
+      label = `**${id}**\n${String(node.type)}`;
   }
 
   // Append comment if present

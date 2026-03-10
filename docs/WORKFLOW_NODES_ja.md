@@ -16,6 +16,7 @@
 | 合成 | `workflow` | 別のワークフローをサブワークフローとして実行 |
 | RAG | `rag-sync` | ノートを RAG ストアに同期 |
 | 外部 | `obsidian-command` | Obsidian コマンドを実行 |
+| スクリプト | `script` | サンドボックス化された iframe で JavaScript を実行 |
 | ユーティリティ | `sleep` | ワークフロー実行を一時停止 |
 
 ---
@@ -729,6 +730,47 @@ nodes:
 ```
 
 > **注意:** 暗号化コマンドは非同期で実行されるため、`sleep` ノードを使用してタブを閉じる前に操作の完了を待ちます。
+
+### script
+
+サンドボックス化された iframe で JavaScript コードを実行します。サンドボックスは DOM、ネットワーク、ストレージへのアクセスがなく、純粋な計算のみ可能です。
+
+```yaml
+- id: transform
+  type: script
+  code: |
+    const lines = input.split('\n');
+    return lines.filter(l => l.trim()).map(l => '- ' + l).join('\n');
+  timeout: 5000
+  saveTo: result
+```
+
+| プロパティ | 説明 |
+|------------|------|
+| `code` | 実行する JavaScript コード（必須、`{{variables}}` 対応） |
+| `saveTo` | 戻り値を格納する変数名 |
+| `timeout` | 実行タイムアウト（ミリ秒、デフォルト: 10000） |
+
+`return` で値を返します。`input` 変数が利用可能です。結果は自動的に文字列化されます（オブジェクトは JSON になります）。
+
+**セキュリティ:** コードは `sandbox="allow-scripts"`（`allow-same-origin` なし）の iframe で実行されます。CSP によりすべてのネットワークアクセス（`fetch`、`XMLHttpRequest`、`WebSocket`）がブロックされます。親 DOM、Cookie、localStorage、IndexedDB へのアクセスもありません。
+
+**例: CSV を解析してカラムを抽出**
+```yaml
+- id: readCsv
+  type: note-read
+  path: "data/input.csv"
+  saveTo: csvData
+- id: extractNames
+  type: script
+  code: |
+    const rows = input.split('\n').map(r => r.split(','));
+    const nameCol = rows[0].indexOf('name');
+    return rows.slice(1).map(r => r[nameCol]).join('\n');
+  saveTo: names
+```
+
+この例では、`{{csvData}}` がコードテンプレートに自動的に代入されてから実行されます。`code` プロパティ内で `{{variable}}` 構文を使用して任意のワークフロー変数を参照できます。
 
 ### sleep
 

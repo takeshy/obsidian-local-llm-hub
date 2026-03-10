@@ -1155,6 +1155,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
             title={t("workflow.modifyWithAI")}
           >
             <Sparkles size={14} />
+            <span className="llm-hub-workflow-btn-label">{t("workflow.modifyWithAI")}</span>
           </button>
         </div>
       </div>

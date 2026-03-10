@@ -73,7 +73,7 @@ export async function verifyLocalLlm(config: LocalLlmConfig): Promise<{
           models?: { name: string; details?: { families?: string[] } }[];
         };
         const models = (ollamaData.models || [])
-          .filter(m => !isEmbeddingModel(m.details?.families))
+          .filter(m => !isEmbeddingModel(m.details?.families) && !isEmbeddingModelByName(m.name))
           .map(m => m.name);
         return { success: true, models };
       } catch {
@@ -89,7 +89,9 @@ export async function verifyLocalLlm(config: LocalLlmConfig): Promise<{
         headers,
       });
       const data = response.json as OpenAiModelsResponse;
-      const models = data.data?.map((m: OpenAiModel) => m.id) || [];
+      const models = (data.data || [])
+        .filter((m: OpenAiModel) => !isEmbeddingModelByName(m.id))
+        .map((m: OpenAiModel) => m.id);
       return { success: true, models };
     } catch {
       return { success: false, error: `Cannot connect to ${config.baseUrl}. Is the server running?` };
@@ -103,6 +105,13 @@ export async function verifyLocalLlm(config: LocalLlmConfig): Promise<{
 function isEmbeddingModel(families?: string[]): boolean {
   if (!families) return false;
   return families.some(f => EMBEDDING_FAMILIES.has(f));
+}
+
+/** Name patterns that indicate embedding-only models */
+const EMBEDDING_NAME_PATTERN = /embed|bge-|e5-|gte-|arctic-embed/i;
+
+function isEmbeddingModelByName(name: string): boolean {
+  return EMBEDDING_NAME_PATTERN.test(name);
 }
 
 /**
