@@ -14,6 +14,88 @@ export interface WorkflowCodeBlock {
 // Match workflow code blocks - end marker must use same backtick count as opening
 const BLOCK_REGEX = /^(`{3,})workflow[^\n]*\r?\n([\s\S]*?)\r?\n\1\s*$/gm;
 
+// Normalize YAML text from external sources (e.g., LLM output):
+// 1. Convert Markdown-style "* " list markers to YAML "- " (only for YAML mapping items)
+// 2. Fix block scalar (| or >) content that lacks proper indentation
+export function normalizeYamlText(yamlText: string): string {
+  // Step 1: Convert * list markers to - only when followed by a YAML key pattern (e.g., "* id: xxx")
+  // This avoids converting Markdown bullets like "* A clear title" inside block scalar content
+  let text = yamlText.replace(/^(\s*)\* (?=\w[\w-]*:(\s|$))/gm, "$1- ");
+
+  // Step 2: Fix block scalar indentation
+  const lines = text.split("\n");
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    // Match lines ending with block scalar indicator: "key: |" or "key: >" with optional modifiers
+    const blockMatch = line.match(/^(\s*)\S.*:\s*[|>][+-]?\s*$/);
+
+    if (blockMatch) {
+      const keyIndent = blockMatch[1].length;
+      result.push(line);
+      i++;
+
+      // Find first non-empty line after the indicator
+      let firstContentIdx = i;
+      while (firstContentIdx < lines.length && lines[firstContentIdx].trim() === "") {
+        firstContentIdx++;
+      }
+
+      if (firstContentIdx < lines.length) {
+        const firstContentIndent = lines[firstContentIdx].search(/\S/);
+
+        // Only fix if content is not properly indented (should be > keyIndent)
+        if (firstContentIndent >= 0 && firstContentIndent <= keyIndent) {
+          const addSpaces = " ".repeat(keyIndent + 2 - firstContentIndent);
+
+          // Push blank lines before content
+          while (i < firstContentIdx) {
+            result.push(lines[i]);
+            i++;
+          }
+
+          // Re-indent content lines until we detect end of block scalar
+          while (i < lines.length) {
+            const currentLine = lines[i];
+
+            if (currentLine.trim() === "") {
+              result.push(currentLine);
+              i++;
+              continue;
+            }
+
+            const currentIndent = currentLine.search(/\S/);
+
+            // End: new list item at strictly higher level (lower indent) than key
+            if (/^\s*-\s/.test(currentLine) && currentIndent < keyIndent) {
+              break;
+            }
+
+            // End: lowercase YAML property key at key indent level
+            // Uses lowercase to avoid matching content like "Requirements:" or "Summary:"
+            if (currentIndent <= keyIndent && /^\s*[a-z][\w-]*:(\s|$)/.test(currentLine)) {
+              break;
+            }
+
+            result.push(addSpaces + currentLine);
+            i++;
+          }
+          continue;
+        }
+      }
+      // Block scalar detected but content already properly indented - skip to avoid double push
+      continue;
+    }
+
+    result.push(line);
+    i++;
+  }
+
+  return result.join("\n");
+}
+
 export function findWorkflowBlocks(content: string): WorkflowCodeBlock[] {
   const blocks: WorkflowCodeBlock[] = [];
   let match: RegExpExecArray | null;
@@ -28,7 +110,7 @@ export function findWorkflowBlocks(content: string): WorkflowCodeBlock[] {
     let parseError: string | undefined;
 
     try {
-      parsed = (parseYaml(yamlText) as Record<string, unknown>) || {};
+      parsed = (parseYaml(normalizeYamlText(yamlText)) as Record<string, unknown>) || {};
     } catch (e) {
       // Store parse error but still include the block
       parseError = e instanceof Error ? e.message : String(e);
