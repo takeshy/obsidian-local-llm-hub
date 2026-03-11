@@ -33,8 +33,9 @@ export async function generateEmbeddings(
     headers["Authorization"] = `Bearer ${llmConfig.apiKey}`;
   }
 
+  const pathPrefix = llmConfig.framework === "anythingllm" ? "/v1/openai" : "/v1";
   const response = await requestUrl({
-    url: `${baseUrl}/v1/embeddings`,
+    url: `${baseUrl}${pathPrefix}/embeddings`,
     method: "POST",
     headers,
     body: JSON.stringify({

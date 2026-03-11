@@ -8,7 +8,7 @@ export const en = {
 
   // Settings - LLM
   "settings.llm": "Llm connection",
-  "settings.llmDesc": "Connect to ollama or lm studio",
+  "settings.llmDesc": "Connect to ollama, lm studio, or anythingllm",
   "settings.llmConfigure": "Configure llm",
   "settings.llmVerifying": "Verifying connection...",
   "settings.llmVerified": "Llm verified",
@@ -22,7 +22,7 @@ export const en = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "Llm settings",
-  "settings.llmModal.desc": "Configure ollama or lm studio connection.",
+  "settings.llmModal.desc": "Configure ollama, lm studio, or anythingllm connection.",
   "settings.llmModal.framework": "Framework",
   "settings.llmModal.frameworkDesc": "Select your llm server framework",
   "settings.llmModal.baseUrl": "Base URL",
@@ -47,6 +47,8 @@ export const en = {
   "settings.llmModal.maxTokens": "Max tokens",
   "settings.llmModal.maxTokensDesc": "Maximum response tokens. Leave empty for server default.",
   "settings.llmModal.serverDefault": "Server default",
+  "settings.llmModal.apiKeyDescAnythingllm": "API key from AnythingLLM developer settings",
+  "settings.ragEmbeddingModelPlaceholder": "Fetch models first",
 
   // Settings - Workspace
   "settings.workspace": "Workspace",

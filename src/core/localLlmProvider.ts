@@ -48,6 +48,12 @@ interface OpenAiModelsResponse {
 /** Families that are embedding-only models (not usable for chat) */
 const EMBEDDING_FAMILIES = new Set(["nomic-bert", "bert", "snowflake-arctic-embed"]);
 
+/** OpenAI-compatible API path prefix. AnythingLLM uses /v1/openai, others use /v1. */
+function openaiPathPrefix(config: LocalLlmConfig): string {
+  if (config.framework === "anythingllm") return "/v1/openai";
+  return "/v1";
+}
+
 /**
  * Verify connection to local LLM server and check available models
  */
@@ -81,10 +87,10 @@ export async function verifyLocalLlm(config: LocalLlmConfig): Promise<{
       }
     }
 
-    // OpenAI-compatible /v1/models (LM Studio, vLLM, etc.)
+    // OpenAI-compatible /v1/models (LM Studio, AnythingLLM, vLLM, etc.)
     try {
       const response = await requestUrl({
-        url: `${config.baseUrl}/v1/models`,
+        url: `${config.baseUrl}${openaiPathPrefix(config)}/models`,
         method: "GET",
         headers,
       });
@@ -142,13 +148,13 @@ export async function fetchEmbeddingModels(config: LocalLlmConfig): Promise<stri
         .map(m => m.name);
     }
 
-    // LM Studio, vLLM, etc.: return all loaded models
+    // LM Studio, AnythingLLM, vLLM, etc.: return all loaded models
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (config.apiKey) {
       headers["Authorization"] = `Bearer ${config.apiKey}`;
     }
     const response = await requestUrl({
-      url: `${config.baseUrl}/v1/models`,
+      url: `${config.baseUrl}${openaiPathPrefix(config)}/models`,
       method: "GET",
       headers,
     });
@@ -162,7 +168,7 @@ export async function fetchEmbeddingModels(config: LocalLlmConfig): Promise<stri
 /**
  * Stream chat completion from a local LLM server.
  * Ollama: uses native /api/chat (NDJSON, immediate streaming).
- * LM Studio: uses /v1/chat/completions (OpenAI SSE).
+ * LM Studio / AnythingLLM: uses OpenAI-compatible chat/completions (SSE).
  */
 export async function* localLlmChatStream(
   config: LocalLlmConfig,
@@ -474,7 +480,7 @@ async function* openaiChatStream(
   }
   const body = JSON.stringify(requestBody);
 
-  const url = new URL(`${config.baseUrl}/v1/chat/completions`);
+  const url = new URL(`${config.baseUrl}${openaiPathPrefix(config)}/chat/completions`);
   const httpModule = getHttpModule(url.protocol);
 
   const chunks: StreamChunk[] = [];
@@ -602,7 +608,7 @@ async function* openaiChatStream(
               pendingToolCalls.clear();
             }
 
-            if (parsed.usage) {
+            if (parsed.usage && (parsed.usage.prompt_tokens || parsed.usage.completion_tokens)) {
               chunks.push({
                 type: "done",
                 usage: {

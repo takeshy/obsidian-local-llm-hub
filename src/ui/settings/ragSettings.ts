@@ -40,7 +40,11 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
   embeddingModelSetting.controlEl.createEl("select", {}, (select) => {
     embeddingDropdown = select;
     select.addClass("dropdown");
-    if (ragConfig.embeddingModel) {
+    if (!ragConfig.embeddingModel) {
+      const placeholder = select.createEl("option", { text: t("settings.ragEmbeddingModelPlaceholder"), value: "" });
+      placeholder.disabled = true;
+      placeholder.selected = true;
+    } else {
       const opt = select.createEl("option", { text: ragConfig.embeddingModel, value: ragConfig.embeddingModel });
       opt.selected = true;
     }
@@ -85,16 +89,6 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
         }
       })
   );
-
-  embeddingModelSetting.addText((text) => {
-    text
-      .setPlaceholder("Nomic-embed-text")
-      .setValue(ragConfig.embeddingModel)
-      .onChange(async (value) => {
-        plugin.settings.ragConfig = { ...ragConfig, embeddingModel: value };
-        await plugin.saveSettings();
-      });
-  });
 
   // Target folders
   new Setting(containerEl)

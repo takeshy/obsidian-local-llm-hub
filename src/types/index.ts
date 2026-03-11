@@ -1,5 +1,5 @@
 // Supported LLM frameworks
-export type LlmFramework = "ollama" | "lm-studio";
+export type LlmFramework = "ollama" | "lm-studio" | "anythingllm";
 
 // Vault tool mode for RAG
 export type VaultToolMode = "all" | "noSearch" | "none";

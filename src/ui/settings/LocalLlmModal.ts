@@ -27,7 +27,12 @@ export class LocalLlmModal extends Modal {
   }
 
   onOpen() {
+    this.display();
+  }
+
+  private display() {
     const { contentEl } = this;
+    contentEl.empty();
     contentEl.addClass("llm-hub-modal");
     contentEl.createEl("h2", { text: t("settings.llmModal.title") });
 
@@ -38,6 +43,7 @@ export class LocalLlmModal extends Modal {
     const frameworkDefaults: Record<LlmFramework, string> = {
       ollama: "http://localhost:11434",
       "lm-studio": "http://localhost:1234",
+      anythingllm: "http://localhost:3001/api",
     };
 
     const baseUrlInput = { el: null as HTMLInputElement | null };
@@ -49,17 +55,15 @@ export class LocalLlmModal extends Modal {
         dropdown
           .addOption("ollama", "Ollama")
           .addOption("lm-studio", "Lm studio")
+          .addOption("anythingllm", "AnythingLLM")
           .setValue(this.config.framework)
           .onChange((value) => {
             const fw = value as LlmFramework;
             this.config.framework = fw;
-            if (baseUrlInput.el) {
-              baseUrlInput.el.placeholder = frameworkDefaults[fw];
-            }
             // Reset fetch state when framework changes
             this.modelsFetched = false;
             this.fetchedModels = [];
-            this.updateSaveButton();
+            this.display();
           });
       });
 
@@ -85,7 +89,9 @@ export class LocalLlmModal extends Modal {
     // API Key (optional)
     new Setting(contentEl)
       .setName(t("settings.llmModal.apiKey"))
-      .setDesc(t("settings.llmModal.apiKeyDesc"))
+      .setDesc(this.config.framework === "anythingllm"
+        ? t("settings.llmModal.apiKeyDescAnythingllm")
+        : t("settings.llmModal.apiKeyDesc"))
       .addText((text) => {
         text
           .setPlaceholder(t("settings.llmModal.apiKeyPlaceholder"))

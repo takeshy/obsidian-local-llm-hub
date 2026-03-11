@@ -8,7 +8,7 @@ export const ja: Record<string, string> = {
 
   // Settings
   "settings.llm": "LLM接続",
-  "settings.llmDesc": "OllamaまたはLM Studioに接続",
+  "settings.llmDesc": "Ollama、LM Studio、またはAnythingLLMに接続",
   "settings.llmConfigure": "LLM設定",
   "settings.llmVerifying": "接続確認中...",
   "settings.llmVerified": "LLM認証済み",
@@ -22,7 +22,7 @@ export const ja: Record<string, string> = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "LLM設定",
-  "settings.llmModal.desc": "OllamaまたはLM Studioの接続を設定します。",
+  "settings.llmModal.desc": "Ollama、LM Studio、またはAnythingLLMの接続を設定します。",
   "settings.llmModal.framework": "フレームワーク",
   "settings.llmModal.frameworkDesc": "使用するLLMサーバーを選択",
   "settings.llmModal.baseUrl": "ベースURL",
@@ -47,6 +47,8 @@ export const ja: Record<string, string> = {
   "settings.llmModal.maxTokens": "最大トークン数",
   "settings.llmModal.maxTokensDesc": "応答の最大トークン数。空欄でサーバーデフォルト。",
   "settings.llmModal.serverDefault": "サーバーデフォルト",
+  "settings.llmModal.apiKeyDescAnythingllm": "AnythingLLMの開発者設定から取得したAPIキー",
+  "settings.ragEmbeddingModelPlaceholder": "先にモデルを取得してください",
 
   // Settings - Workspace
   "settings.workspace": "ワークスペース",
