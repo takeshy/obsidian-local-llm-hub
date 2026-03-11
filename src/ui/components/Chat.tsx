@@ -12,6 +12,7 @@ import {
   type Attachment,
   type VaultToolMode,
   type ToolCall,
+  WORKSPACE_FOLDER,
 } from "src/types";
 import { localLlmChatStream } from "src/core/localLlmProvider";
 import { getVaultTools, skillWorkflowTool } from "src/core/tools";
@@ -255,7 +256,7 @@ export default function Chat({ plugin }: ChatProps) {
     if (!plugin.settings.saveChatHistory || msgs.length === 0) return;
 
     const chatTitle = title || generateChatTitle(msgs);
-    const folder = `${plugin.settings.workspaceFolder}/chats`;
+    const folder = `${WORKSPACE_FOLDER}/chats`;
 
     // Ensure folder exists
     if (!plugin.app.vault.getAbstractFileByPath(folder)) {
@@ -301,7 +302,7 @@ export default function Chat({ plugin }: ChatProps) {
 
   // Load chat histories
   const loadChatHistories = useCallback(async () => {
-    const folder = `${plugin.settings.workspaceFolder}/chats`;
+    const folder = `${WORKSPACE_FOLDER}/chats`;
     const folderFile = plugin.app.vault.getAbstractFileByPath(folder);
     if (!folderFile) {
       setChatHistories([]);
@@ -348,7 +349,7 @@ export default function Chat({ plugin }: ChatProps) {
 
   // Delete a chat
   const deleteChat = useCallback(async (history: ChatHistory) => {
-    const folder = `${plugin.settings.workspaceFolder}/chats`;
+    const folder = `${WORKSPACE_FOLDER}/chats`;
     const filePath = `${folder}/${history.id}.md`;
     const file = plugin.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof TFile) {
@@ -501,7 +502,7 @@ export default function Chat({ plugin }: ChatProps) {
             ragConfig,
             llmConfig,
             plugin.app,
-            plugin.settings.workspaceFolder,
+            WORKSPACE_FOLDER,
           );
           if (results.length > 0) {
             ragSources = [...new Set(results.map(r => r.filePath))];

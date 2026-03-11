@@ -1,6 +1,7 @@
 import { App, TFile, WorkspaceLeaf } from "obsidian";
 import type { LocalLlmHubPlugin } from "../../plugin";
 import { getRagStore } from "../../core/ragStore";
+import { WORKSPACE_FOLDER } from "../../types";
 import { WorkflowNode, ExecutionContext, PromptCallbacks } from "../types";
 import { replaceVariables } from "./utils";
 
@@ -125,7 +126,7 @@ export async function handleRagSyncNode(
       app,
       plugin.settings.ragConfig,
       plugin.settings.llmConfig,
-      plugin.settings.workspaceFolder,
+      WORKSPACE_FOLDER,
       path,
       oldPath || undefined,
     );
@@ -139,7 +140,7 @@ export async function handleRagSyncNode(
       app,
       plugin.settings.ragConfig,
       plugin.settings.llmConfig,
-      plugin.settings.workspaceFolder,
+      WORKSPACE_FOLDER,
     );
 
     if (saveTo) {

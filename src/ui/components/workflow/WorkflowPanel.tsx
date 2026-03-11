@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { TFile, Notice, Menu, MarkdownView, stringifyYaml } from "obsidian";
 import { FolderOpen, Keyboard, KeyboardOff, Plus, Sparkles, Zap, ZapOff } from "lucide-react";
 import { EventTriggerModal } from "./EventTriggerModal";
-import { SKILLS_FOLDER, type WorkflowEventTrigger } from "src/types";
+import { SKILLS_FOLDER, WORKSPACE_FOLDER, type WorkflowEventTrigger } from "src/types";
 import { promptForAIWorkflow, type AIWorkflowResult, type ResolvedMention } from "./AIWorkflowModal";
 import { WorkflowExecutionModal } from "./WorkflowExecutionModal";
 import type { LocalLlmHubPlugin } from "src/plugin";
@@ -993,7 +993,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
     const modal = new HistoryModal(
       plugin.app,
       workflowFile.path,
-      plugin.settings.workspaceFolder,
+      WORKSPACE_FOLDER,
       encryptionConfig,
       (retryPath, retryName, errorNodeId, variablesSnapshot) => {
         void retryFromError(retryPath, retryName, errorNodeId, variablesSnapshot);

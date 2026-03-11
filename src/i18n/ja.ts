@@ -52,8 +52,6 @@ export const ja: Record<string, string> = {
 
   // Settings - Workspace
   "settings.workspace": "ワークスペース",
-  "settings.workspaceFolder": "ワークスペースフォルダ",
-  "settings.workspaceFolderDesc": "チャット履歴とRAGデータの保存先",
   "settings.saveChatHistory": "チャット履歴を保存",
   "settings.saveChatHistoryDesc": "チャット会話をマークダウンファイルとして保存",
   "settings.systemPrompt": "システムプロンプト",

@@ -52,8 +52,6 @@ export const en = {
 
   // Settings - Workspace
   "settings.workspace": "Workspace",
-  "settings.workspaceFolder": "Workspace folder",
-  "settings.workspaceFolderDesc": "Folder for chat history and rag data",
   "settings.saveChatHistory": "Save chat history",
   "settings.saveChatHistoryDesc": "Save chat conversations as Markdown files",
   "settings.systemPrompt": "System prompt",

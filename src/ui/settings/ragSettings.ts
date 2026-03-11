@@ -2,6 +2,7 @@ import { Setting, Notice } from "obsidian";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { getRagStore } from "src/core/ragStore";
+import { WORKSPACE_FOLDER } from "src/types";
 import { fetchEmbeddingModels } from "src/core/localLlmProvider";
 
 interface SettingsContext {
@@ -188,7 +189,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
             plugin.app,
             plugin.settings.ragConfig,
             plugin.settings.llmConfig,
-            plugin.settings.workspaceFolder,
+            WORKSPACE_FOLDER,
           );
           new Notice(t("settings.ragSynced", {
             count: String(result.totalChunks),
@@ -211,7 +212,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
     btn
       .setButtonText(t("settings.ragClear"))
       .onClick(async () => {
-        await store.clear(plugin.app, plugin.settings.workspaceFolder);
+        await store.clear(plugin.app, WORKSPACE_FOLDER);
         new Notice(t("settings.ragCleared"));
         display();
       })

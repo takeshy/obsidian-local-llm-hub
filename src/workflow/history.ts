@@ -29,7 +29,7 @@ export class ExecutionHistoryManager {
 
   constructor(app: App, workspaceFolder: string, encryptionConfig?: EncryptionConfig) {
     this.app = app;
-    const baseFolder = workspaceFolder || "LocalLlmHub";
+    const baseFolder = workspaceFolder;
     this.historyFolder = `${baseFolder}/workflow-history`;
     this.encryptionConfig = encryptionConfig || null;
   }

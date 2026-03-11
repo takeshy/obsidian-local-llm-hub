@@ -4,7 +4,7 @@ import { listWorkflowOptions, WorkflowOption } from "src/workflow/parser";
 import { loadFromCodeBlock, LoadResult } from "src/workflow/codeblockSync";
 import type { SidebarNode, WorkflowNodeType } from "src/workflow/types";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import { WORKFLOWS_FOLDER } from "src/types";
+import { WORKFLOWS_FOLDER, WORKSPACE_FOLDER } from "src/types";
 
 function getNodeTypeLabels(): Record<WorkflowNodeType, string> {
   return {
@@ -125,7 +125,7 @@ export class WorkflowSelectorModal extends Modal {
     modalEl.addClass("llm-hub-workflow-selector-modal-container");
 
     // Load and sort files (workflows/ first), excluding workspace folder (chat history etc.)
-    const wsFolder = this.plugin.settings.workspaceFolder || "LocalLlmHub";
+    const wsFolder = WORKSPACE_FOLDER;
     this.files = this.app.vault
       .getMarkdownFiles()
       .filter((file) => !file.path.startsWith(wsFolder + "/"))

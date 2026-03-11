@@ -361,10 +361,18 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.enabledWorkflowEventTriggers) {
       this.settings.enabledWorkflowEventTriggers = [];
     }
-    // Clean up legacy skillsFolderPath from saved settings
+    // Clean up legacy settings from saved data
     const raw = this.settings as unknown as Record<string, unknown>;
+    let needsSave = false;
     if ("skillsFolderPath" in raw) {
       delete raw.skillsFolderPath;
+      needsSave = true;
+    }
+    if ("workspaceFolder" in raw) {
+      delete raw.workspaceFolder;
+      needsSave = true;
+    }
+    if (needsSave) {
       await this.saveSettings();
     }
     if (this.settings.hideWorkspaceFolder === undefined) {

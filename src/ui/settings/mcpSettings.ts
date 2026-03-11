@@ -191,7 +191,7 @@ class McpServerModal extends Modal {
       .setDesc(t("settings.mcpFramingDesc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("content-length", "Content-Length (npx)")
+          .addOption("content-length", "Content-length (npx)")
           .addOption("newline", "Newline (uvx/python)")
           .setValue(this.config.framing || "content-length")
           .onChange((v) => { this.config.framing = v as McpFraming; })

@@ -183,7 +183,6 @@ export interface LocalLlmHubSettings {
   llmVerified: boolean;
   availableModels: string[];
   ragConfig: RagConfig;
-  workspaceFolder: string;
   saveChatHistory: boolean;
   systemPrompt: string;
   encryption: EncryptionSettings;
@@ -200,13 +199,14 @@ export interface LocalLlmHubSettings {
 export const SKILLS_FOLDER = "skills";
 /** Fixed workflows folder name. */
 export const WORKFLOWS_FOLDER = "workflows";
+/** Fixed workspace folder name. */
+export const WORKSPACE_FOLDER = "LocalLlmHub";
 
 export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   llmConfig: DEFAULT_LOCAL_LLM_CONFIG,
   llmVerified: false,
   availableModels: [],
   ragConfig: DEFAULT_RAG_CONFIG,
-  workspaceFolder: "LocalLlmHub",
   saveChatHistory: true,
   systemPrompt: "",
   encryption: { ...DEFAULT_ENCRYPTION_SETTINGS },

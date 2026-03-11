@@ -1,6 +1,6 @@
 import { App, TFile } from "obsidian";
 import type { LocalLlmHubPlugin } from "../plugin";
-import type { StreamChunkUsage } from "../types";
+import { WORKSPACE_FOLDER, type StreamChunkUsage } from "../types";
 import {
   Workflow,
   WorkflowNode,
@@ -80,7 +80,7 @@ export class WorkflowExecutor {
 
     this.historyManager = new ExecutionHistoryManager(
       app,
-      plugin.settings.workspaceFolder,
+      WORKSPACE_FOLDER,
       encryptionConfig
     );
   }

@@ -13,19 +13,6 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
   new Setting(containerEl).setName(t("settings.workspace")).setHeading();
 
   new Setting(containerEl)
-    .setName(t("settings.workspaceFolder"))
-    .setDesc(t("settings.workspaceFolderDesc"))
-    .addText((text) => {
-      text
-        .setPlaceholder("LocalLlmHub")
-        .setValue(plugin.settings.workspaceFolder)
-        .onChange(async (value) => {
-          plugin.settings.workspaceFolder = value || "LocalLlmHub";
-          await plugin.saveSettings();
-        });
-    });
-
-  new Setting(containerEl)
     .setName(t("settings.hideWorkspaceFolder"))
     .setDesc(t("settings.hideWorkspaceFolderDesc"))
     .addToggle((toggle) => {
