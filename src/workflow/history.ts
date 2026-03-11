@@ -1,5 +1,5 @@
 import { App } from "obsidian";
-import type { StreamChunkUsage } from "../types";
+import { WORKSPACE_FOLDER, type StreamChunkUsage } from "../types";
 import {
   ExecutionRecord,
   ExecutionStatus,
@@ -27,10 +27,9 @@ export class ExecutionHistoryManager {
   private historyFolder: string;
   private encryptionConfig: EncryptionConfig | null;
 
-  constructor(app: App, workspaceFolder: string, encryptionConfig?: EncryptionConfig) {
+  constructor(app: App, encryptionConfig?: EncryptionConfig) {
     this.app = app;
-    const baseFolder = workspaceFolder;
-    this.historyFolder = `${baseFolder}/workflow-history`;
+    this.historyFolder = `${WORKSPACE_FOLDER}/workflow-history`;
     this.encryptionConfig = encryptionConfig || null;
   }
 

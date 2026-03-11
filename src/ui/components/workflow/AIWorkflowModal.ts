@@ -1,7 +1,7 @@
 import { App, Modal, Notice, parseYaml, TFile } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { localLlmChatStream } from "src/core/localLlmProvider";
-import { SKILLS_FOLDER, WORKFLOWS_FOLDER, WORKSPACE_FOLDER, type LocalLlmConfig, type StreamChunkUsage, type Message } from "src/types";
+import { SKILLS_FOLDER, WORKFLOWS_FOLDER, type LocalLlmConfig, type StreamChunkUsage, type Message } from "src/types";
 import { getWorkflowSpecification } from "src/workflow/workflowSpec";
 import type { SidebarNode, WorkflowNodeType, ExecutionStep } from "src/workflow/types";
 import { listWorkflowOptions, normalizeYamlText } from "src/workflow/parser";
@@ -545,7 +545,6 @@ export class AIWorkflowModal extends Modal {
       } : undefined;
       const historyManager = new ExecutionHistoryManager(
         this.app,
-        WORKSPACE_FOLDER,
         encryptionConfig
       );
       const executionRecords = await historyManager.loadRecords(activeFile.path);
