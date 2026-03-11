@@ -58,8 +58,6 @@ export const ja: Record<string, string> = {
   "settings.saveChatHistoryDesc": "チャット会話をマークダウンファイルとして保存",
   "settings.systemPrompt": "システムプロンプト",
   "settings.systemPromptDesc": "AIアシスタントへのカスタム指示",
-  "settings.skillsFolder": "スキルフォルダ",
-  "settings.skillsFolderDesc": "エージェントスキルのフォルダ（Vaultルートからの相対パス）",
   "settings.hideWorkspaceFolder": "ファイルツリーでワークスペースフォルダを非表示",
   "settings.hideWorkspaceFolderDesc": "ファイルエクスプローラーからワークスペースフォルダを非表示にする",
   "settings.systemPromptPlaceholder": "例: 常に日本語で回答してください",

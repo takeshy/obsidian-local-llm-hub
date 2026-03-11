@@ -4,6 +4,7 @@ import { listWorkflowOptions, WorkflowOption } from "src/workflow/parser";
 import { loadFromCodeBlock, LoadResult } from "src/workflow/codeblockSync";
 import type { SidebarNode, WorkflowNodeType } from "src/workflow/types";
 import type { LocalLlmHubPlugin } from "src/plugin";
+import { WORKFLOWS_FOLDER } from "src/types";
 
 function getNodeTypeLabels(): Record<WorkflowNodeType, string> {
   return {
@@ -129,8 +130,8 @@ export class WorkflowSelectorModal extends Modal {
       .getMarkdownFiles()
       .filter((file) => !file.path.startsWith(wsFolder + "/"))
       .sort((a, b) => {
-        const aInWorkflows = a.path.startsWith("workflows/");
-        const bInWorkflows = b.path.startsWith("workflows/");
+        const aInWorkflows = a.path.startsWith(`${WORKFLOWS_FOLDER}/`);
+        const bInWorkflows = b.path.startsWith(`${WORKFLOWS_FOLDER}/`);
         if (aInWorkflows && !bInWorkflows) return -1;
         if (!aInWorkflows && bInWorkflows) return 1;
         return a.path.localeCompare(b.path);
@@ -142,7 +143,7 @@ export class WorkflowSelectorModal extends Modal {
 
     // Determine initial search query
     const lastPath = this.plugin.settings.lastSelectedWorkflowPath;
-    let initialQuery = "workflows/";
+    let initialQuery = `${WORKFLOWS_FOLDER}/`;
     if (lastPath) {
       // Use the folder part of the last selected path
       const lastIndex = lastPath.lastIndexOf("/");

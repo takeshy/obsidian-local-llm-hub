@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { TFile, Notice, Menu, MarkdownView, stringifyYaml } from "obsidian";
 import { FolderOpen, Keyboard, KeyboardOff, Plus, Sparkles, Zap, ZapOff } from "lucide-react";
 import { EventTriggerModal } from "./EventTriggerModal";
-import type { WorkflowEventTrigger } from "src/types";
+import { SKILLS_FOLDER, type WorkflowEventTrigger } from "src/types";
 import { promptForAIWorkflow, type AIWorkflowResult, type ResolvedMention } from "./AIWorkflowModal";
 import { WorkflowExecutionModal } from "./WorkflowExecutionModal";
 import type { LocalLlmHubPlugin } from "src/plugin";
@@ -312,9 +312,8 @@ ${result.nodes.map(node => {
 async function createSkillFromResult(
   app: import("obsidian").App,
   result: AIWorkflowResult,
-  skillsFolderPath: string,
 ): Promise<TFile> {
-  const skillFolderPath = `${skillsFolderPath}/${result.name}`;
+  const skillFolderPath = `${SKILLS_FOLDER}/${result.name}`;
   const workflowsFolderPath = `${skillFolderPath}/workflows`;
   const skillFilePath = `${skillFolderPath}/SKILL.md`;
   const workflowFilePath = `${workflowsFolderPath}/workflow.md`;
@@ -1009,8 +1008,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
 
     let targetFile: TFile;
     if (result.createAsSkill) {
-      const skillsFolderPath = plugin.settings.skillsFolderPath;
-      targetFile = await createSkillFromResult(plugin.app, result, skillsFolderPath);
+      targetFile = await createSkillFromResult(plugin.app, result);
       new Notice(t("aiWorkflow.skillCreated", { name: result.name, path: targetFile.path }));
       plugin.settingsEmitter.emit("skills-changed");
     } else {

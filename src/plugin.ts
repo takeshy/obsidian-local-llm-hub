@@ -361,8 +361,12 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.enabledWorkflowEventTriggers) {
       this.settings.enabledWorkflowEventTriggers = [];
     }
-    if (!this.settings.skillsFolderPath) {
-      this.settings.skillsFolderPath = "skills";
+    // Clean up legacy skillsFolderPath from saved settings
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const settingsAny = this.settings as any;
+    if (settingsAny.skillsFolderPath !== undefined) {
+      delete settingsAny.skillsFolderPath;
+      await this.saveSettings();
     }
     if (this.settings.hideWorkspaceFolder === undefined) {
       this.settings.hideWorkspaceFolder = true;

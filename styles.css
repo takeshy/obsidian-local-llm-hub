@@ -24,6 +24,16 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> [data-path="LocalLlmHub"]) 
   display: none !important;
 }
 
+/* Folder icons in file explorer */
+.nav-folder[data-path="skills"] > .nav-folder-title > .nav-folder-title-content::before,
+.nav-folder:has(> [data-path="skills"]) > .nav-folder-title > .nav-folder-title-content::before {
+  content: "\01F9E9 ";
+}
+.nav-folder[data-path="workflows"] > .nav-folder-title > .nav-folder-title-content::before,
+.nav-folder:has(> [data-path="workflows"]) > .nav-folder-title > .nav-folder-title-content::before {
+  content: "\26A1 ";
+}
+
 /* Spin animation */
 .llm-hub-spin {
   animation: llm-hub-spin 1s linear infinite;

@@ -1,7 +1,7 @@
 import { App, Modal, Notice, parseYaml, TFile } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { localLlmChatStream } from "src/core/localLlmProvider";
-import type { LocalLlmConfig, StreamChunkUsage, Message } from "src/types";
+import { SKILLS_FOLDER, WORKFLOWS_FOLDER, type LocalLlmConfig, type StreamChunkUsage, type Message } from "src/types";
 import { getWorkflowSpecification } from "src/workflow/workflowSpec";
 import type { SidebarNode, WorkflowNodeType, ExecutionStep } from "src/workflow/types";
 import { listWorkflowOptions, normalizeYamlText } from "src/workflow/parser";
@@ -341,12 +341,12 @@ export class AIWorkflowModal extends Modal {
       // Output path input
       const pathContainer = contentEl.createDiv({ cls: "llm-hub-workflow-input-row" });
       pathContainer.createEl("label", { text: t("aiWorkflow.outputPath") });
-      const defaultPath = this.defaultOutputPath || "workflows/{{name}}";
+      const defaultPath = this.defaultOutputPath || `${WORKFLOWS_FOLDER}/{{name}}`;
       this.outputPathEl = pathContainer.createEl("input", {
         type: "text",
         cls: "llm-hub-workflow-path-input",
         value: defaultPath,
-        attr: { placeholder: "workflows/{{name}}" },
+        attr: { placeholder: `${WORKFLOWS_FOLDER}/{{name}}` },
       });
       pathContainer.createEl("div", {
         cls: "llm-hub-workflow-hint",
@@ -367,10 +367,10 @@ export class AIWorkflowModal extends Modal {
       this.skillCheckbox.addEventListener("change", () => {
         if (!this.outputPathEl) return;
         if (this.skillCheckbox?.checked) {
-          this.outputPathEl.value = `${this.plugin.settings.skillsFolderPath}/{{name}}`;
+          this.outputPathEl.value = `${SKILLS_FOLDER}/{{name}}`;
           this.outputPathEl.disabled = true;
         } else {
-          this.outputPathEl.value = this.defaultOutputPath || "workflows/{{name}}";
+          this.outputPathEl.value = this.defaultOutputPath || `${WORKFLOWS_FOLDER}/{{name}}`;
           this.outputPathEl.disabled = false;
         }
       });
@@ -681,7 +681,7 @@ export class AIWorkflowModal extends Modal {
         parsed.description = description;
         parsed.mode = "create";
         parsed.resolvedMentions = resolvedMentions;
-        const outputPathTemplate = this.outputPathEl?.value?.trim() || "workflows/{{name}}";
+        const outputPathTemplate = this.outputPathEl?.value?.trim() || `${WORKFLOWS_FOLDER}/{{name}}`;
         parsed.outputPath = outputPathTemplate.replace(/\{\{name\}\}/g, workflowName);
         if (isSkill) {
           parsed.createAsSkill = true;
@@ -710,7 +710,7 @@ export class AIWorkflowModal extends Modal {
       }
 
       // Save as raw markdown
-      const outputPathTemplate = this.outputPathEl?.value?.trim() || "workflows/{{name}}";
+      const outputPathTemplate = this.outputPathEl?.value?.trim() || `${WORKFLOWS_FOLDER}/{{name}}`;
       const result: AIWorkflowResult = {
         yaml: "",
         nodes: [],
@@ -768,7 +768,7 @@ export class AIWorkflowModal extends Modal {
 
     // Get output path template for create mode
     const outputPathTemplate = this.mode === "create"
-      ? this.outputPathEl?.value?.trim() || "workflows/{{name}}/main"
+      ? this.outputPathEl?.value?.trim() || `${WORKFLOWS_FOLDER}/{{name}}/main`
       : undefined;
 
     // Resolve @ mentions (embed file content, selection, etc.)

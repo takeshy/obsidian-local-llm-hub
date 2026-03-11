@@ -191,11 +191,15 @@ export interface LocalLlmHubSettings {
   slashCommands: SlashCommand[];
   enabledWorkflowHotkeys: string[];
   enabledWorkflowEventTriggers: WorkflowEventTrigger[];
-  skillsFolderPath: string;
   hideWorkspaceFolder: boolean;
   lastSelectedWorkflowPath?: string;
   mcpServers: McpServerConfig[];
 }
+
+/** Fixed skills folder name. */
+export const SKILLS_FOLDER = "skills";
+/** Fixed workflows folder name. */
+export const WORKFLOWS_FOLDER = "workflows";
 
 export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   llmConfig: DEFAULT_LOCAL_LLM_CONFIG,
@@ -210,7 +214,6 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   slashCommands: [],
   enabledWorkflowHotkeys: [],
   enabledWorkflowEventTriggers: [],
-  skillsFolderPath: "skills",
   hideWorkspaceFolder: true,
   mcpServers: [],
 };
