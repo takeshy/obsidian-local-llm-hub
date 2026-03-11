@@ -3,7 +3,7 @@
  * Manages chunking, embedding, indexing, and searching of vault notes
  */
 
-import type { App, TFile } from "obsidian";
+import { type App, TFile } from "obsidian";
 import type { LocalLlmConfig, RagConfig } from "../types";
 import { generateEmbeddings, generateEmbedding } from "./embeddingProvider";
 import {
@@ -167,6 +167,102 @@ class RagStore {
     return {
       totalChunks: allMeta.length,
       indexedFiles: Object.keys(newChecksums).length,
+    };
+  }
+
+  /**
+   * Sync a single file into the RAG index.
+   * If oldPath is provided, removes chunks for that path first (useful for renames).
+   */
+  async syncFile(
+    app: App,
+    ragConfig: RagConfig,
+    llmConfig: LocalLlmConfig,
+    workspaceFolder: string,
+    filePath: string,
+    oldPath?: string,
+  ): Promise<{ path: string; syncedAt: string }> {
+    await this.load(app, workspaceFolder);
+
+    const dimension = this.index?.dimension || 0;
+
+    // Collect existing chunks, removing old entries for this file (and oldPath if rename)
+    const keptMeta: ChunkMeta[] = [];
+    const keptVectors: number[][] = [];
+    const pathsToRemove = new Set<string>([filePath]);
+    if (oldPath) pathsToRemove.add(oldPath);
+
+    if (this.index && this.vectors) {
+      const dim = this.index.dimension;
+      for (let i = 0; i < this.index.meta.length; i++) {
+        if (!pathsToRemove.has(this.index.meta[i].filePath)) {
+          keptMeta.push(this.index.meta[i]);
+          keptVectors.push(Array.from(this.vectors.slice(i * dim, (i + 1) * dim)));
+        }
+      }
+    }
+
+    // Update checksums
+    const checksums = { ...(this.index?.fileChecksums || {}) };
+    if (oldPath) delete checksums[oldPath];
+
+    // Read and embed the file
+    const file = app.vault.getAbstractFileByPath(filePath);
+    if (file instanceof TFile && file.extension === "md") {
+      const content = await app.vault.cachedRead(file);
+      const checksum = simpleChecksum(content);
+
+      // Skip re-embedding if content hasn't changed (and not a rename)
+      if (!oldPath && checksum === checksums[filePath]) {
+        return { path: filePath, syncedAt: new Date().toISOString() };
+      }
+
+      checksums[filePath] = checksum;
+
+      const chunks = chunkText(content, ragConfig.chunkSize, ragConfig.chunkOverlap);
+      if (chunks.length > 0) {
+        const texts = chunks.map(c => c.text);
+        const BATCH_SIZE = 32;
+        const newEmbeddings: number[][] = [];
+        for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+          const batch = texts.slice(i, i + BATCH_SIZE);
+          const embeddings = await generateEmbeddings(batch, ragConfig, llmConfig);
+          newEmbeddings.push(...embeddings);
+        }
+
+        for (let i = 0; i < chunks.length; i++) {
+          keptMeta.push({
+            filePath,
+            startOffset: chunks[i].startOffset,
+            text: chunks[i].text,
+          });
+          keptVectors.push(newEmbeddings[i]);
+        }
+      }
+    } else {
+      // File doesn't exist or isn't markdown — just remove it from index
+      delete checksums[filePath];
+    }
+
+    // Rebuild index
+    const newDimension = keptVectors.length > 0 ? keptVectors[0].length : dimension;
+    const vectors = new Float32Array(keptMeta.length * newDimension);
+    for (let i = 0; i < keptVectors.length; i++) {
+      vectors.set(keptVectors[i], i * newDimension);
+    }
+
+    this.index = {
+      meta: keptMeta,
+      dimension: newDimension,
+      fileChecksums: checksums,
+    };
+    this.vectors = vectors;
+
+    await saveRagIndex(app, workspaceFolder, this.index, this.vectors);
+
+    return {
+      path: filePath,
+      syncedAt: new Date().toISOString(),
     };
   }
 

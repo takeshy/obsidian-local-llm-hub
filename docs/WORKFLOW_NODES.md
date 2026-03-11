@@ -422,25 +422,43 @@ Execute another workflow as a sub-workflow.
 
 ### rag-sync
 
-Sync a note to the RAG store.
+Sync notes to the RAG store. If `path` is specified, syncs a single file (fast). Without `path`, triggers a full sync of all notes in the configured target folders.
 
+**Single file sync:**
 ```yaml
 - id: sync
   type: rag-sync
-  path: "{{fileInfo.path}}"
+  path: "{{__eventFilePath__}}"
+  saveTo: syncResult
+```
+
+**Full sync:**
+```yaml
+- id: syncAll
+  type: rag-sync
   saveTo: syncResult
 ```
 
 | Property | Description |
 |----------|-------------|
-| `path` | Note path to sync (required, supports `{{variables}}`) |
+| `path` | Note path to sync (optional, supports `{{variables}}`). Omit for full sync. |
+| `oldPath` | Previous file path to remove from index (optional, for renames) |
 | `saveTo` | Variable to store result (optional) |
 
-**Output format:**
+**Output format (single file):**
 ```json
 {
   "path": "folder/note.md",
   "syncedAt": "2025-01-01T12:00:00.000Z"
+}
+```
+
+**Output format (full sync):**
+```json
+{
+  "syncedAt": 1704067200000,
+  "totalChunks": 150,
+  "indexedFiles": 42
 }
 ```
 

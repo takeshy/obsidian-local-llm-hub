@@ -151,7 +151,7 @@ List folders.
 - **folder** (optional): Parent folder (empty for all)
 - **saveTo** (required): Variable for results
 
-**Result structure**: \`{ "folders": [{ "name": "subfolder", "path": "parent/subfolder" }], "count": 1 }\`
+**Result structure**: \`{ "folders": ["parent/subfolder", "parent/other"], "count": 2 }\`
 
 ### File Operations
 
@@ -204,7 +204,6 @@ Prompt user to select file and read its content.
 
 #### prompt-selection
 Prompt user to select text from a file.
-- **title** (optional): Dialog title
 - **saveTo** (required): Variable for selected text
 - **saveSelectionTo** (optional): Variable for selection metadata
 
@@ -219,10 +218,9 @@ Execute sub-workflow.
 - **prefix** (optional): Prefix for all imported variables
 
 #### rag-sync
-Sync note to RAG store.
-- **path** (optional): Note path to sync
-- **ragSetting** (required): RAG setting name
-- **oldPath** (optional): Old path to delete
+Sync notes to RAG store. If path is specified, syncs a single file (fast). Without path, triggers a full sync.
+- **path** (optional): Note path to sync (supports {{variables}}). Omit for full sync.
+- **oldPath** (optional): Previous file path to remove from index (for renames)
 - **saveTo** (optional): Variable for result
 
 #### obsidian-command

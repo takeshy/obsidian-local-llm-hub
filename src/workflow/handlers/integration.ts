@@ -102,7 +102,7 @@ export async function handleWorkflowNode(
   }
 }
 
-// Handle rag-sync node - trigger a full RAG sync
+// Handle rag-sync node - sync a single file or trigger full sync
 export async function handleRagSyncNode(
   node: WorkflowNode,
   context: ExecutionContext,
@@ -110,26 +110,45 @@ export async function handleRagSyncNode(
   plugin: LocalLlmHubPlugin
 ): Promise<void> {
   const saveTo = node.properties["saveTo"];
+  const path = replaceVariables(node.properties["path"] || "", context);
+  const oldPath = replaceVariables(node.properties["oldPath"] || "", context);
 
   if (!plugin.settings.ragConfig.enabled) {
     throw new Error("RAG is not enabled. Please enable RAG in settings first.");
   }
 
-  // Trigger a full sync of the local RAG store
   const store = getRagStore();
-  const result = await store.sync(
-    app,
-    plugin.settings.ragConfig,
-    plugin.settings.llmConfig,
-    plugin.settings.workspaceFolder,
-  );
 
-  if (saveTo) {
-    context.variables.set(saveTo, JSON.stringify({
-      syncedAt: Date.now(),
-      totalChunks: result.totalChunks,
-      indexedFiles: result.indexedFiles,
-    }));
+  if (path) {
+    // Single file sync
+    const result = await store.syncFile(
+      app,
+      plugin.settings.ragConfig,
+      plugin.settings.llmConfig,
+      plugin.settings.workspaceFolder,
+      path,
+      oldPath || undefined,
+    );
+
+    if (saveTo) {
+      context.variables.set(saveTo, JSON.stringify(result));
+    }
+  } else {
+    // Full sync (no path specified)
+    const result = await store.sync(
+      app,
+      plugin.settings.ragConfig,
+      plugin.settings.llmConfig,
+      plugin.settings.workspaceFolder,
+    );
+
+    if (saveTo) {
+      context.variables.set(saveTo, JSON.stringify({
+        syncedAt: Date.now(),
+        totalChunks: result.totalChunks,
+        indexedFiles: result.indexedFiles,
+      }));
+    }
   }
 }
 
