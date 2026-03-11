@@ -29,13 +29,14 @@ Every byte stays on your machine. No API keys sent to the cloud. No vault conten
 
 Describe what you want in plain language. The AI builds the workflow. No YAML knowledge required.
 
-### Create with AI
+### Create Workflows & Skills with AI
 
 ![Create Workflow with AI](docs/images/create_workflow.png)
 
 1. Open the **Workflow** tab → select **+ New (AI)**
 2. Describe: *"Convert the current page into an infographic and save it"*
-3. Click **Generate** — done
+3. Check **"Create as agent skill"** if you want to create an agent skill instead of a standalone workflow
+4. Click **Generate** — done
 
 Don't have a powerful local model? Click **Copy Prompt**, paste into Claude/GPT/Gemini, paste the response back, and click **Apply**.
 
@@ -106,7 +107,9 @@ Index your vault with a local embedding model (e.g. `nomic-embed-text`). Relevan
 
 ### Agent Skills
 
-Inject reusable instructions into the system prompt via `SKILL.md` files. Activate per conversation.
+Inject reusable instructions into the system prompt via `SKILL.md` files. Activate per conversation. Skills can also expose workflows that the AI can invoke as tools during chat.
+
+Create skills the same way as workflows — select **+ New (AI)**, check **"Create as agent skill"**, and describe what you want. The AI generates both the `SKILL.md` instructions and the workflow.
 
 ![Agent Skills](docs/images/skill.png)
 
