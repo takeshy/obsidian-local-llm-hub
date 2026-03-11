@@ -55,7 +55,14 @@ export function registerWorkflowCodeBlockProcessor(plugin: Plugin, _app: App): v
         observer.disconnect();
         if (svg && !cancelled && el.isConnected) {
           el.empty();
-          el.innerHTML = svg;
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(svg, "image/svg+xml");
+          const svgEl = doc.documentElement;
+          if (svgEl && !doc.querySelector("parsererror")) {
+            el.appendChild(el.doc.importNode(svgEl, true));
+          } else {
+            el.textContent = "Failed to render workflow diagram";
+          }
         }
       }).catch((e) => {
         observer.disconnect();

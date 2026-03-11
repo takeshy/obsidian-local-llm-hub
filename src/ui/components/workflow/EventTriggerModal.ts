@@ -3,11 +3,11 @@ import type { ObsidianEventType, WorkflowEventTrigger } from "src/types";
 import { t } from "src/i18n";
 
 const EVENT_LABELS: Record<ObsidianEventType, { name: string; desc: string }> = {
-  create: { name: "File Created", desc: "Triggered when a new file is created" },
-  modify: { name: "File Modified", desc: "Triggered when a file is saved" },
-  delete: { name: "File Deleted", desc: "Triggered when a file is deleted" },
-  rename: { name: "File Renamed", desc: "Triggered when a file is renamed" },
-  "file-open": { name: "File Opened", desc: "Triggered when a file is opened" },
+  create: { name: "File created", desc: "Triggered when a new file is created" },
+  modify: { name: "File modified", desc: "Triggered when a file is saved" },
+  delete: { name: "File deleted", desc: "Triggered when a file is deleted" },
+  rename: { name: "File renamed", desc: "Triggered when a file is renamed" },
+  "file-open": { name: "File opened", desc: "Triggered when a file is opened" },
 };
 
 const ALL_EVENTS: ObsidianEventType[] = ["create", "modify", "delete", "rename", "file-open"];

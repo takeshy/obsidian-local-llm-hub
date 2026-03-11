@@ -80,14 +80,13 @@ export default function MessageBubble({
     try {
       await navigator.clipboard.writeText(message.content);
     } catch {
-      // Fallback for Electron/Obsidian environment
-      const textarea = document.createElement("textarea");
-      textarea.value = message.content;
-      textarea.addClass("llm-hub-offscreen");
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
+      try {
+        const blob = new Blob([message.content], { type: "text/plain" });
+        await navigator.clipboard.write([new ClipboardItem({ "text/plain": blob })]);
+      } catch {
+        // Both clipboard APIs unavailable — silently ignore
+        return;
+      }
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

@@ -362,10 +362,9 @@ export class LocalLlmHubPlugin extends Plugin {
       this.settings.enabledWorkflowEventTriggers = [];
     }
     // Clean up legacy skillsFolderPath from saved settings
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const settingsAny = this.settings as any;
-    if (settingsAny.skillsFolderPath !== undefined) {
-      delete settingsAny.skillsFolderPath;
+    const raw = this.settings as unknown as Record<string, unknown>;
+    if ("skillsFolderPath" in raw) {
+      delete raw.skillsFolderPath;
       await this.saveSettings();
     }
     if (this.settings.hideWorkspaceFolder === undefined) {
