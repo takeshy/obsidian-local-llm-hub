@@ -5,8 +5,9 @@
  * each other. This utility ensures only one render runs at a time and retries
  * once on failure.
  *
- * Ported from gemihub's mermaid-render.ts, adapted for Obsidian.
  */
+
+import { loadMermaid } from "obsidian";
 
 let queue: Promise<void> = Promise.resolve();
 
@@ -48,7 +49,7 @@ async function doRender(
 
   const id = `mermaid-${Date.now()}-${attempt}`;
   try {
-    const mermaid = (await import("mermaid")).default;
+    const mermaid = await loadMermaid();
     if (isCancelled()) return null;
 
     mermaid.initialize({
