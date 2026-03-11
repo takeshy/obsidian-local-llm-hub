@@ -243,7 +243,7 @@ async function* ollamaChatStream(
   const httpModule = getHttpModule(url.protocol);
 
   const chunks: StreamChunk[] = [];
-  let streamResolve: (() => void) | null = null;
+  const signal$ = new StreamSignal();
   let streamDone = false;
   let streamError: Error | null = null;
 
@@ -266,7 +266,7 @@ async function* ollamaChatStream(
         res.on("end", () => {
           chunks.push({ type: "error", error: `HTTP ${res.statusCode}: ${errorBody.slice(0, 200) || res.statusMessage}` });
           streamDone = true;
-          streamResolve?.();
+          signal$.notify();
         });
         return;
       }
@@ -355,14 +355,14 @@ async function* ollamaChatStream(
                 : undefined;
               chunks.push({ type: "done", usage });
               streamDone = true;
-              streamResolve?.();
+              signal$.notify();
               return;
             }
           } catch (parseErr) {
             console.warn("[llm-hub] Failed to parse Ollama NDJSON:", trimmed.slice(0, 200), parseErr);
           }
         }
-        streamResolve?.();
+        signal$.notify();
       });
 
       res.on("end", () => {
@@ -374,12 +374,12 @@ async function* ollamaChatStream(
           chunks.push({ type: "done" });
           streamDone = true;
         }
-        streamResolve?.();
+        signal$.notify();
       });
 
       res.on("error", (err: Error) => {
         streamError = err;
-        streamResolve?.();
+        signal$.notify();
       });
     },
   );
@@ -387,13 +387,13 @@ async function* ollamaChatStream(
   req.on("error", (err: Error) => {
     streamError = err;
     streamDone = true;
-    streamResolve?.();
+    signal$.notify();
   });
 
   const onAbort = () => {
     req.destroy();
     streamDone = true;
-    streamResolve?.();
+    signal$.notify();
   };
   signal?.addEventListener("abort", onAbort, { once: true });
 
@@ -412,10 +412,12 @@ async function* ollamaChatStream(
       }
       if (streamDone) break;
       if (signal?.aborted) return;
-      await new Promise<void>((resolve) => { streamResolve = resolve; });
-    }
-    if (streamError !== null) {
-      yield { type: "error", error: `Connection failed: ${(streamError as Error).message}` };
+      const ok = await signal$.wait(STREAM_IDLE_TIMEOUT_MS);
+      if (!ok) {
+        yield { type: "error", error: "Stream timed out: no data received for 2 minutes" };
+        req.destroy();
+        return;
+      }
     }
   } finally {
     signal?.removeEventListener("abort", onAbort);
@@ -484,7 +486,7 @@ async function* openaiChatStream(
   const httpModule = getHttpModule(url.protocol);
 
   const chunks: StreamChunk[] = [];
-  let streamResolve: (() => void) | null = null;
+  const signal$ = new StreamSignal();
   let streamDone = false;
   let streamError: Error | null = null;
 
@@ -503,7 +505,7 @@ async function* openaiChatStream(
         res.on("end", () => {
           chunks.push({ type: "error", error: `HTTP ${res.statusCode}: ${errorBody.slice(0, 200) || res.statusMessage}` });
           streamDone = true;
-          streamResolve?.();
+          signal$.notify();
         });
         return;
       }
@@ -542,7 +544,7 @@ async function* openaiChatStream(
             }
             chunks.push({ type: "done" });
             streamDone = true;
-            streamResolve?.();
+            signal$.notify();
             return;
           }
 
@@ -618,14 +620,14 @@ async function* openaiChatStream(
                 },
               });
               streamDone = true;
-              streamResolve?.();
+              signal$.notify();
               return;
             }
           } catch (parseErr) {
             console.warn("[llm-hub] Failed to parse SSE data:", data.slice(0, 200), parseErr);
           }
         }
-        streamResolve?.();
+        signal$.notify();
       });
 
       res.on("end", () => {
@@ -637,12 +639,12 @@ async function* openaiChatStream(
           chunks.push({ type: "done" });
           streamDone = true;
         }
-        streamResolve?.();
+        signal$.notify();
       });
 
       res.on("error", (err: Error) => {
         streamError = err;
-        streamResolve?.();
+        signal$.notify();
       });
     },
   );
@@ -650,13 +652,13 @@ async function* openaiChatStream(
   req.on("error", (err: Error) => {
     streamError = err;
     streamDone = true;
-    streamResolve?.();
+    signal$.notify();
   });
 
   const onAbort = () => {
     req.destroy();
     streamDone = true;
-    streamResolve?.();
+    signal$.notify();
   };
   signal?.addEventListener("abort", onAbort, { once: true });
 
@@ -675,13 +677,46 @@ async function* openaiChatStream(
       }
       if (streamDone) break;
       if (signal?.aborted) return;
-      await new Promise<void>((resolve) => { streamResolve = resolve; });
-    }
-    if (streamError !== null) {
-      yield { type: "error", error: `Connection failed: ${(streamError as Error).message}` };
+      const ok = await signal$.wait(STREAM_IDLE_TIMEOUT_MS);
+      if (!ok) {
+        yield { type: "error", error: "Stream timed out: no data received for 2 minutes" };
+        req.destroy();
+        return;
+      }
     }
   } finally {
     signal?.removeEventListener("abort", onAbort);
+  }
+}
+
+/** Idle timeout for stream chunks (ms). If no data arrives for this duration, treat it as a stall. */
+const STREAM_IDLE_TIMEOUT_MS = 120_000;
+
+/**
+ * Robust signaling queue for bridging Node.js event callbacks to an async generator.
+ * Uses a version counter to avoid lost notifications.
+ */
+class StreamSignal {
+  private version = 0;
+  private resolve: (() => void) | null = null;
+
+  /** Wake up the waiting generator. Safe to call multiple times. */
+  notify(): void {
+    this.version++;
+    const fn = this.resolve;
+    this.resolve = null;
+    fn?.();
+  }
+
+  /** Wait until notified or timed out. Returns false on timeout. */
+  async wait(timeoutMs: number): Promise<boolean> {
+    const vBefore = this.version;
+    return new Promise<boolean>((res) => {
+      const timer = setTimeout(() => { this.resolve = null; res(false); }, timeoutMs);
+      this.resolve = () => { clearTimeout(timer); this.resolve = null; res(true); };
+      // Double-check after setting resolve (covers notify() called between vBefore read and here)
+      if (this.version !== vBefore) { clearTimeout(timer); this.resolve = null; res(true); }
+    });
   }
 }
 
