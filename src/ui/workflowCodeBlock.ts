@@ -55,13 +55,13 @@ export function registerWorkflowCodeBlockProcessor(plugin: Plugin, _app: App): v
         observer.disconnect();
         if (svg && !cancelled && el.isConnected) {
           el.empty();
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(svg, "image/svg+xml");
-          const svgEl = doc.documentElement;
-          if (svgEl && !doc.querySelector("parsererror")) {
+          // Parse as text/html to tolerate HTML void elements (<br> etc.)
+          // inside foreignObject that strict XML parsing rejects on mobile
+          const doc = new DOMParser().parseFromString(svg, "text/html");
+          const svgEl = doc.querySelector("svg");
+
+          if (svgEl) {
             el.appendChild(el.doc.importNode(svgEl, true));
-          } else {
-            el.textContent = "Failed to render workflow diagram";
           }
         }
       }).catch((e) => {
