@@ -106,6 +106,7 @@ export const ja: Record<string, string> = {
   "chat.newChat": "新しいチャット",
   "chat.history": "チャット履歴",
   "chat.toolsNotSupported": "このモデルはツールに対応していません。Vaultツールなしで続行します。",
+  "chat.anythingLlmToolsNotSupported": "AnythingLLMはfunction callingに対応していません。ツール（Vault/MCP）は無効化されます。",
   "chat.compacted": "会話を圧縮しました: {{before}}メッセージ → {{after}}",
   "chat.compactedContext": "圧縮された会話コンテキスト",
   "chat.compactFailed": "会話の圧縮に失敗しました",

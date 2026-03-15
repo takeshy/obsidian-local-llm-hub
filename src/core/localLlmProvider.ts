@@ -481,7 +481,9 @@ async function* openaiChatStream(
     ...(config.maxTokens != null && { max_tokens: config.maxTokens }),
   };
 
-  if (tools) {
+  // AnythingLLM's OpenAI-compatible endpoint does not support the `tools` parameter.
+  // Sending tools causes it to return an internal chat ID instead of LLM output.
+  if (tools && config.framework !== "anythingllm") {
     requestBody.tools = tools;
   }
   const body = JSON.stringify(requestBody);
@@ -601,8 +603,8 @@ async function* openaiChatStream(
               }
             }
 
-            // finish_reason: "tool_calls" means all tool calls are complete
-            if (choice?.finish_reason === "tool_calls") {
+            // finish_reason: "tool_calls" (OpenAI) or "function_call" (legacy) means all tool calls are complete
+            if (choice?.finish_reason === "tool_calls" || choice?.finish_reason === "function_call") {
               for (const [, tc] of pendingToolCalls) {
                 try {
                   const args = JSON.parse(tc.args) as Record<string, unknown>;
@@ -636,6 +638,16 @@ async function* openaiChatStream(
 
       res.on("end", () => {
         if (!streamDone) {
+          // Emit any pending tool calls that weren't emitted via finish_reason or [DONE]
+          for (const [, tc] of pendingToolCalls) {
+            try {
+              const args = JSON.parse(tc.args) as Record<string, unknown>;
+              chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: args } });
+            } catch {
+              chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });
+            }
+          }
+          pendingToolCalls.clear();
           if (tagBuffer) {
             chunks.push({ type: inThinkTag ? "thinking" : "text", content: tagBuffer });
             tagBuffer = "";

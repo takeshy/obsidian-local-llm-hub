@@ -535,22 +535,27 @@ export default function Chat({ plugin }: ChatProps) {
       }
 
       // Get vault tools based on mode + MCP tools (MCP always available if servers enabled)
-      const vaultTools = getVaultTools(vaultToolMode);
-      const mcpTools = plugin.mcpManager.getAllTools(
+      // AnythingLLM does not support OpenAI function calling — skip tools entirely
+      const isAnythingLlm = llmConfig.framework === "anythingllm";
+      const vaultTools = isAnythingLlm ? [] : getVaultTools(vaultToolMode);
+      const mcpTools = isAnythingLlm ? [] : plugin.mcpManager.getAllTools(
         enabledMcpServerIds.size > 0 ? Array.from(enabledMcpServerIds) : undefined,
       );
+      if (isAnythingLlm && (vaultToolMode !== "none" || enabledMcpServerIds.size > 0)) {
+        new Notice(t("chat.anythingLlmToolsNotSupported"));
+      }
       const tools = [...vaultTools, ...mcpTools];
 
       // Add skill workflow tool if any active skill has workflows
       const skillWorkflowMap = loadedSkillsList.length > 0
         ? collectSkillWorkflows(loadedSkillsList)
         : new Map();
-      if (skillWorkflowMap.size > 0) {
+      if (skillWorkflowMap.size > 0 && !isAnythingLlm) {
         tools.push(skillWorkflowTool);
       }
 
       // Add execute_javascript tool
-      if (vaultToolMode !== "none") {
+      if (vaultToolMode !== "none" && !isAnythingLlm) {
         tools.push(EXECUTE_JAVASCRIPT_TOOL);
       }
 

@@ -106,6 +106,7 @@ export const en = {
   "chat.newChat": "New chat",
   "chat.history": "Chat history",
   "chat.toolsNotSupported": "This model does not support tools. Continuing without vault tools.",
+  "chat.anythingLlmToolsNotSupported": "Function calling is not supported by AnythingLLM — tools are disabled for this request.",
   "chat.compacted": "Conversation compressed: {{before}} messages → {{after}}",
   "chat.compactedContext": "Compacted conversation context",
   "chat.compactFailed": "Failed to compress conversation",
