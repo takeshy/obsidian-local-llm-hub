@@ -13,10 +13,11 @@ interface EmbeddingResponse {
 }
 
 /**
- * Get the embedding server base URL (same as LLM server)
+ * Get the embedding server base URL.
+ * Uses ragConfig.embeddingBaseUrl if set, otherwise falls back to LLM server.
  */
-function getEmbeddingBaseUrl(_ragConfig: RagConfig, llmConfig: LocalLlmConfig): string {
-  return llmConfig.baseUrl;
+function getEmbeddingBaseUrl(ragConfig: RagConfig, llmConfig: LocalLlmConfig): string {
+  return ragConfig.embeddingBaseUrl || llmConfig.baseUrl;
 }
 
 /**
@@ -33,7 +34,7 @@ export async function generateEmbeddings(
     headers["Authorization"] = `Bearer ${llmConfig.apiKey}`;
   }
 
-  const pathPrefix = llmConfig.framework === "anythingllm" ? "/v1/openai" : "/v1";
+  const pathPrefix = !ragConfig.embeddingBaseUrl && llmConfig.framework === "anythingllm" ? "/v1/openai" : "/v1";
   const response = await requestUrl({
     url: `${baseUrl}${pathPrefix}/embeddings`,
     method: "POST",

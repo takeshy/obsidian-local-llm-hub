@@ -2,7 +2,7 @@
 
 **会社のセキュリティポリシーでクラウド API が使えない。でも、AI によるノート自動整理・ワークフロー自動化を諦めたくない人へ。**
 
-Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper) のワークフロー自動化・RAG・MCP 連携・エージェントスキルを、**完全ローカル環境**で実現します。Ollama、LM Studio、または AnythingLLM — あなたのデータは一切外に出ません。
+Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper) のワークフロー自動化・RAG・MCP 連携・エージェントスキルを、**完全ローカル環境**で実現します。Ollama、LM Studio、vLLM、または AnythingLLM — あなたのデータは一切外に出ません。
 
 ![ワークフロー実行](docs/images/execute_workflow.png)
 
@@ -16,7 +16,7 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 |--------|--------|
 | チャット履歴 | Vault 内の Markdown ファイル |
 | RAG インデックス | ワークスペースフォルダにローカル保存 |
-| LLM リクエスト | `localhost` のみ（Ollama / LM Studio / AnythingLLM） |
+| LLM リクエスト | `localhost` のみ（Ollama / LM Studio / vLLM / AnythingLLM） |
 | MCP サーバー | stdio 経由のローカル子プロセス |
 | 暗号化ファイル | ローカルで暗号化/復号 |
 | 編集履歴 | メモリ上（再起動でクリア） |
@@ -134,14 +134,14 @@ AI による変更の自動追跡、差分表示、ワンクリック復元。
 
 ### 必要なもの
 
-- [Ollama](https://ollama.com/)、[LM Studio](https://lmstudio.ai/)、または [AnythingLLM](https://anythingllm.com/)
+- [Ollama](https://ollama.com/)、[LM Studio](https://lmstudio.ai/)、[vLLM](https://docs.vllm.ai/)、または [AnythingLLM](https://anythingllm.com/)
 - チャットモデル（例: `ollama pull qwen3.5:4b`）
 - **RAG 使用時**: 埋め込みモデル（例: `ollama pull nomic-embed-text`）
 
 ### クイックスタート
 
 1. LLM サーバーをインストール・起動
-2. プラグイン設定 → フレームワーク（Ollama / LM Studio / AnythingLLM）を選択
+2. プラグイン設定 → フレームワーク（Ollama / LM Studio / vLLM / AnythingLLM）を選択
 3. サーバー URL を設定（デフォルト値あり）
 4. チャットモデルを取得・選択
 5. **接続確認**をクリック
@@ -175,6 +175,7 @@ AI による変更の自動追跡、差分表示、ワンクリック復元。
 |----------------|------------------------|----------------|------|------------------|
 | Ollama | `/api/chat`（ネイティブ） | リアルタイム | `message.thinking` フィールド | `tools` パラメータ |
 | LM Studio | `/v1/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
+| vLLM | `/v1/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
 | AnythingLLM | `/v1/openai/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
 
 ---
@@ -208,7 +209,7 @@ npm run build
 
 | | Gemini Helper | Local LLM Hub |
 |---|---|---|
-| LLM バックエンド | Google Gemini API / CLI | Ollama / LM Studio / AnythingLLM |
+| LLM バックエンド | Google Gemini API / CLI | Ollama / LM Studio / vLLM / AnythingLLM |
 | データの送信先 | Google サーバー | `localhost` のみ |
 | ワークフローエンジン | ✅ | ✅（同一アーキテクチャ） |
 | RAG | Google File Search | ローカル埋め込み |

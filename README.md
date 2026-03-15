@@ -2,7 +2,7 @@
 
 **Your company's security policy blocks cloud APIs. But you refuse to give up AI-powered note automation.**
 
-Local LLM Hub brings the full power of [Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper)'s workflow automation, RAG, MCP integration, and agent skills to a **completely local** environment. Ollama, LM Studio, or AnythingLLM — your data never leaves your machine.
+Local LLM Hub brings the full power of [Gemini Helper](https://github.com/takeshy/obsidian-gemini-helper)'s workflow automation, RAG, MCP integration, and agent skills to a **completely local** environment. Ollama, LM Studio, vLLM, or AnythingLLM — your data never leaves your machine.
 
 ![Workflow Execution](docs/images/execute_workflow.png)
 
@@ -16,7 +16,7 @@ Every byte stays on your machine. No API keys sent to the cloud. No vault conten
 |------|---------------|
 | Chat history | Markdown files in your vault |
 | RAG index | Local embeddings in workspace folder |
-| LLM requests | `localhost` only (Ollama / LM Studio / AnythingLLM) |
+| LLM requests | `localhost` only (Ollama / LM Studio / vLLM / AnythingLLM) |
 | MCP servers | Local child processes via stdio |
 | Encrypted files | Encrypted/decrypted locally |
 | Edit history | In-memory (cleared on restart) |
@@ -134,14 +134,14 @@ Automatic tracking of AI-made changes with diff view and one-click restore.
 
 ### Requirements
 
-- [Ollama](https://ollama.com/), [LM Studio](https://lmstudio.ai/), or [AnythingLLM](https://anythingllm.com/)
+- [Ollama](https://ollama.com/), [LM Studio](https://lmstudio.ai/), [vLLM](https://docs.vllm.ai/), or [AnythingLLM](https://anythingllm.com/)
 - A chat model (e.g. `ollama pull qwen3.5:4b`)
 - **For RAG**: an embedding model (e.g. `ollama pull nomic-embed-text`)
 
 ### Quick Start
 
 1. Install and start your LLM server
-2. Open plugin settings → select framework (Ollama / LM Studio / AnythingLLM)
+2. Open plugin settings → select framework (Ollama / LM Studio / vLLM / AnythingLLM)
 3. Set the server URL (defaults pre-filled)
 4. Fetch and select your chat model
 5. Click **Verify connection**
@@ -175,6 +175,7 @@ Automatic tracking of AI-made changes with diff view and one-click restore.
 |-----------|--------------|-----------|----------|-----------------|
 | Ollama | `/api/chat` (native) | Real-time | `message.thinking` field | `tools` parameter |
 | LM Studio | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
+| vLLM | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
 | AnythingLLM | `/v1/openai/chat/completions` | SSE | `<think>` tags | `tools` parameter |
 
 ---
@@ -208,7 +209,7 @@ This plugin is the **local-only sibling** of [obsidian-gemini-helper](https://gi
 
 | | Gemini Helper | Local LLM Hub |
 |---|---|---|
-| LLM Backend | Google Gemini API / CLI | Ollama / LM Studio / AnythingLLM |
+| LLM Backend | Google Gemini API / CLI | Ollama / LM Studio / vLLM / AnythingLLM |
 | Data destination | Google servers | `localhost` only |
 | Workflow engine | ✅ | ✅ (same architecture) |
 | RAG | Google File Search | Local embeddings |

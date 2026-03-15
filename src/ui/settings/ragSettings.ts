@@ -13,6 +13,10 @@ interface SettingsContext {
 export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContext): void {
   const { plugin, display } = ctx;
   const ragConfig = plugin.settings.ragConfig;
+  const updateRagConfig = async (patch: Partial<typeof plugin.settings.ragConfig>) => {
+    plugin.settings.ragConfig = { ...plugin.settings.ragConfig, ...patch };
+    await plugin.saveSettings();
+  };
 
   new Setting(containerEl).setName(t("settings.rag")).setHeading();
 
@@ -24,13 +28,26 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
       toggle
         .setValue(ragConfig.enabled)
         .onChange(async (value) => {
-          plugin.settings.ragConfig = { ...ragConfig, enabled: value };
-          await plugin.saveSettings();
+          await updateRagConfig({ enabled: value });
           display();
         });
     });
 
   if (!ragConfig.enabled) return;
+
+  // Embedding server URL (optional override)
+  new Setting(containerEl)
+    .setName(t("settings.ragEmbeddingBaseUrl"))
+    .setDesc(t("settings.ragEmbeddingBaseUrlDesc"))
+    .addText((text) => {
+      text
+        .setPlaceholder("http://localhost:8001")
+        .setValue(ragConfig.embeddingBaseUrl || "")
+        .onChange(async (value) => {
+          await updateRagConfig({ embeddingBaseUrl: value || undefined });
+        });
+      text.inputEl.addClass("llm-hub-wide-input");
+    });
 
   // Embedding model
   const embeddingModelSetting = new Setting(containerEl)
@@ -50,8 +67,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
       opt.selected = true;
     }
     select.addEventListener("change", () => {
-      plugin.settings.ragConfig = { ...ragConfig, embeddingModel: select.value };
-      void plugin.saveSettings();
+      void updateRagConfig({ embeddingModel: select.value });
     });
   });
 
@@ -62,7 +78,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
         btn.setButtonText(t("settings.llmModal.fetching"));
         btn.setDisabled(true);
         try {
-          const models = await fetchEmbeddingModels(plugin.settings.llmConfig);
+          const models = await fetchEmbeddingModels(plugin.settings.llmConfig, plugin.settings.ragConfig.embeddingBaseUrl);
           if (models.length === 0) {
             new Notice(t("settings.llmModal.noModelsFound"));
             return;
@@ -76,9 +92,8 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
               }
             }
             if (!ragConfig.embeddingModel || !models.includes(ragConfig.embeddingModel)) {
-              plugin.settings.ragConfig = { ...ragConfig, embeddingModel: models[0] };
+              await updateRagConfig({ embeddingModel: models[0] });
               embeddingDropdown.value = models[0];
-              await plugin.saveSettings();
             }
           }
           new Notice(t("settings.llmModal.modelsLoaded", { count: String(models.length) }));
@@ -100,8 +115,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
         .setValue(ragConfig.targetFolders.join(", "))
         .onChange(async (value) => {
           const folders = value.split(",").map(s => s.trim()).filter(Boolean);
-          plugin.settings.ragConfig = { ...ragConfig, targetFolders: folders };
-          await plugin.saveSettings();
+          await updateRagConfig({ targetFolders: folders });
         });
       text.inputEl.addClass("llm-hub-wide-input");
     });
@@ -115,8 +129,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
         .setValue(ragConfig.excludePatterns.join(", "))
         .onChange(async (value) => {
           const patterns = value.split(",").map(s => s.trim()).filter(Boolean);
-          plugin.settings.ragConfig = { ...ragConfig, excludePatterns: patterns };
-          await plugin.saveSettings();
+          await updateRagConfig({ excludePatterns: patterns });
         });
       text.inputEl.addClass("llm-hub-wide-input");
     });
@@ -131,8 +144,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
         .onChange(async (value) => {
           const num = parseInt(value, 10);
           if (!isNaN(num) && num > 0) {
-            plugin.settings.ragConfig = { ...ragConfig, chunkSize: num };
-            await plugin.saveSettings();
+            await updateRagConfig({ chunkSize: num });
           }
         });
       text.inputEl.type = "number";
@@ -150,8 +162,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
         .onChange(async (value) => {
           const num = parseInt(value, 10);
           if (!isNaN(num) && num > 0) {
-            plugin.settings.ragConfig = { ...ragConfig, topK: num };
-            await plugin.saveSettings();
+            await updateRagConfig({ topK: num });
           }
         });
       text.inputEl.type = "number";

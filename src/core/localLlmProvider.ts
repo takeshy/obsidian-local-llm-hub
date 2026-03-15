@@ -133,11 +133,13 @@ export async function fetchLocalLlmModels(config: LocalLlmConfig): Promise<strin
  * Ollama: filters by family (BERT-based models only).
  * Others: returns all models from /v1/models (user selects the right one).
  */
-export async function fetchEmbeddingModels(config: LocalLlmConfig): Promise<string[]> {
+export async function fetchEmbeddingModels(config: LocalLlmConfig, embeddingBaseUrl?: string): Promise<string[]> {
   try {
-    if (config.framework === "ollama") {
+    const baseUrl = embeddingBaseUrl || config.baseUrl;
+
+    if (config.framework === "ollama" && !embeddingBaseUrl) {
       const response = await requestUrl({
-        url: `${config.baseUrl}/api/tags`,
+        url: `${baseUrl}/api/tags`,
         method: "GET",
       });
       const data = response.json as {
@@ -149,12 +151,14 @@ export async function fetchEmbeddingModels(config: LocalLlmConfig): Promise<stri
     }
 
     // LM Studio, AnythingLLM, vLLM, etc.: return all loaded models
+    // Also used when embeddingBaseUrl overrides Ollama's base URL
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (config.apiKey) {
       headers["Authorization"] = `Bearer ${config.apiKey}`;
     }
+    const prefix = embeddingBaseUrl ? "/v1" : openaiPathPrefix(config);
     const response = await requestUrl({
-      url: `${config.baseUrl}${openaiPathPrefix(config)}/models`,
+      url: `${baseUrl}${prefix}/models`,
       method: "GET",
       headers,
     });

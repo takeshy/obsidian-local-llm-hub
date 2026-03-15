@@ -8,7 +8,7 @@ export const en = {
 
   // Settings - LLM
   "settings.llm": "Llm connection",
-  "settings.llmDesc": "Connect to ollama, lm studio, or anythingllm",
+  "settings.llmDesc": "Connect to ollama, lm studio, vllm, or anythingllm",
   "settings.llmConfigure": "Configure llm",
   "settings.llmVerifying": "Verifying connection...",
   "settings.llmVerified": "Llm verified",
@@ -22,7 +22,7 @@ export const en = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "Llm settings",
-  "settings.llmModal.desc": "Configure ollama, lm studio, or anythingllm connection.",
+  "settings.llmModal.desc": "Configure ollama, lm studio, vllm, or anythingllm connection.",
   "settings.llmModal.framework": "Framework",
   "settings.llmModal.frameworkDesc": "Select your llm server framework",
   "settings.llmModal.baseUrl": "Base URL",

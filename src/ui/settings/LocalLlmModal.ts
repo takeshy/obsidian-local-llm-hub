@@ -44,6 +44,7 @@ export class LocalLlmModal extends Modal {
       ollama: "http://localhost:11434",
       "lm-studio": "http://localhost:1234",
       anythingllm: "http://localhost:3001/api",
+      vllm: "http://localhost:8000",
     };
 
     const baseUrlInput = { el: null as HTMLInputElement | null };
@@ -56,6 +57,7 @@ export class LocalLlmModal extends Modal {
           .addOption("ollama", "Ollama")
           .addOption("lm-studio", "Lm studio")
           .addOption("anythingllm", "AnythingLLM")
+          .addOption("vllm", "vLLM")
           .setValue(this.config.framework)
           .onChange((value) => {
             const fw = value as LlmFramework;

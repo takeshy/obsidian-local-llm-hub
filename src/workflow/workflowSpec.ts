@@ -315,6 +315,52 @@ nodes:
     message: "Processed {{index}} files"
 \`\`\`
 
+## Event-Triggered Workflows
+
+Workflows can be triggered automatically by Obsidian vault events. When triggered by an event, the following variables are automatically available (no need to declare them with variable nodes):
+
+| Variable | Available On | Description |
+|----------|-------------|-------------|
+| \`_eventType\` | All events | Event type: \`create\`, \`modify\`, \`delete\`, \`rename\`, \`file-open\` |
+| \`_eventFilePath\` | All events | Full path of the affected file (e.g., "folder/note.md") |
+| \`_eventFile\` | All events | JSON object: \`{"path": "...", "basename": "...", "name": "...", "extension": "..."}\` |
+| \`_eventFileContent\` | create, modify, file-open | The file's text content |
+| \`_eventOldPath\` | rename only | The previous file path before rename |
+
+### Event Types
+- **create**: A new file is created in the vault
+- **modify**: A file is saved (debounced, won't fire on every keystroke)
+- **delete**: A file is deleted from the vault
+- **rename**: A file is renamed or moved
+- **file-open**: A file is opened in the editor
+
+### Event Workflow Example
+\`\`\`yaml
+name: auto-summarize-new-notes
+nodes:
+  - id: check-markdown
+    type: if
+    condition: "{{_eventFilePath}} contains .md"
+    trueNext: summarize
+    falseNext: end
+  - id: summarize
+    type: command
+    prompt: "Summarize the following note concisely:\\n\\n{{_eventFileContent}}"
+    saveTo: summary
+  - id: save-summary
+    type: note
+    path: "summaries/{{_eventFile.name}}"
+    content: "{{summary}}"
+    mode: overwrite
+    confirm: "false"
+\`\`\`
+
+### Tips for Event Workflows
+- Use \`_eventFilePath\` to filter by file path or extension with an \`if\` node
+- Parse \`_eventFile\` with a \`json\` node if you need to access individual fields like name or extension
+- \`_eventFileContent\` is only available for create/modify/file-open events; for other events, use \`note-read\` if you need file content
+- For rename events, use \`_eventOldPath\` to handle cleanup of old references
+
 ## Best Practices
 1. Use descriptive node IDs (e.g., "read-input", "process-data", "save-result")
 2. Initialize variables before use with variable node
