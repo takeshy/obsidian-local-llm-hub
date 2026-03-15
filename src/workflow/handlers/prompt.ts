@@ -53,7 +53,7 @@ export async function handlePromptFileNode(
     }
   } else if (eventFile) {
     try {
-      const fileInfo = JSON.parse(String(eventFile));
+      const fileInfo = JSON.parse(eventFile as string);
       if (fileInfo.path) {
         filePath = fileInfo.path as string;
       }
@@ -144,11 +144,11 @@ export async function handlePromptSelectionNode(
   const eventFile = getEventVariable(context.variables, "_eventFile");
 
   if (eventFileContent !== undefined && eventFileContent !== "") {
-    const fullContent = String(eventFileContent);
+    const fullContent = eventFileContent as string;
     context.variables.set(saveTo, fullContent);
 
     if (saveSelectionTo) {
-      const filePath = eventFilePath ? String(eventFilePath) : "";
+      const filePath = eventFilePath ? (eventFilePath as string) : "";
       const lines = fullContent.split("\n");
       context.variables.set(saveSelectionTo, JSON.stringify({
         filePath: filePath,
@@ -163,7 +163,7 @@ export async function handlePromptSelectionNode(
 
   if (eventFile) {
     try {
-      const fileInfo = JSON.parse(String(eventFile));
+      const fileInfo = JSON.parse(eventFile as string);
       if (fileInfo.path) {
         const file = app.vault.getAbstractFileByPath(fileInfo.path);
         if (file && file instanceof TFile) {

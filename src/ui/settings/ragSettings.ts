@@ -41,6 +41,7 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
     .setDesc(t("settings.ragEmbeddingBaseUrlDesc"))
     .addText((text) => {
       text
+        // eslint-disable-next-line obsidianmd/ui/sentence-case
         .setPlaceholder("http://localhost:8001")
         .setValue(ragConfig.embeddingBaseUrl || "")
         .onChange(async (value) => {
