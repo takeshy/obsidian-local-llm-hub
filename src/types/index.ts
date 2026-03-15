@@ -1,5 +1,5 @@
 // Supported LLM frameworks
-export type LlmFramework = "ollama" | "lm-studio" | "anythingllm";
+export type LlmFramework = "ollama" | "lm-studio" | "anythingllm" | "vllm";
 
 // Vault tool mode for RAG
 export type VaultToolMode = "all" | "noSearch" | "none";
@@ -24,6 +24,7 @@ export const DEFAULT_LOCAL_LLM_CONFIG: LocalLlmConfig = {
 export interface RagConfig {
   enabled: boolean;
   embeddingModel: string;       // e.g. "nomic-embed-text"
+  embeddingBaseUrl?: string;    // separate embedding server URL (empty = same as LLM)
   targetFolders: string[];      // folders to index (empty = all)
   excludePatterns: string[];    // regex patterns to exclude
   chunkSize: number;            // characters per chunk

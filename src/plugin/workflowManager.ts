@@ -17,6 +17,7 @@ import { matchFilePattern } from "src/utils/globMatcher";
 import { formatError } from "src/utils/error";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
+import { setEventVariable } from "src/workflow/eventVariables";
 
 export class WorkflowManager {
   private plugin: LocalLlmHubPlugin;
@@ -428,11 +429,11 @@ export class WorkflowManager {
       };
 
       // Set event-specific variables
-      input.variables.set("__eventType__", eventType);
-      input.variables.set("__eventFilePath__", filePath);
+      setEventVariable(input.variables, "_eventType", eventType);
+      setEventVariable(input.variables, "_eventFilePath", filePath);
 
       if (eventData.file) {
-        input.variables.set("__eventFile__", JSON.stringify({
+        setEventVariable(input.variables, "_eventFile", JSON.stringify({
           path: eventData.file.path,
           basename: eventData.file.basename,
           name: eventData.file.name,
@@ -441,14 +442,14 @@ export class WorkflowManager {
       }
 
       if (eventData.oldPath) {
-        input.variables.set("__eventOldPath__", eventData.oldPath);
+        setEventVariable(input.variables, "_eventOldPath", eventData.oldPath);
       }
 
       // Read file content for created/modified/opened events
       if (eventData.file && (eventType === "create" || eventType === "modify" || eventType === "file-open")) {
         try {
           const content = await this.app.vault.read(eventData.file);
-          input.variables.set("__eventFileContent__", content);
+          setEventVariable(input.variables, "_eventFileContent", content);
         } catch {
           // File might not be readable (e.g., binary file)
         }

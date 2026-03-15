@@ -1,6 +1,7 @@
 import { App, TFile } from "obsidian";
 import { WorkflowNode, ExecutionContext, PromptCallbacks } from "../types";
 import { replaceVariables } from "./utils";
+import { getEventVariable } from "../eventVariables";
 
 // Helper function to create file info object from path
 function createFileInfo(filePath: string): { path: string; basename: string; name: string; extension: string } {
@@ -31,7 +32,7 @@ export async function handlePromptFileNode(
   let filePath: string | null = null;
 
   const hotkeyActiveFile = context.variables.get("__hotkeyActiveFile__");
-  const eventFile = context.variables.get("__eventFile__");
+  const eventFile = getEventVariable(context.variables, "_eventFile");
 
   if (forcePrompt) {
     if (!promptCallbacks?.promptForFile) {
@@ -138,9 +139,9 @@ export async function handlePromptSelectionNode(
     return;
   }
 
-  const eventFileContent = context.variables.get("__eventFileContent__");
-  const eventFilePath = context.variables.get("__eventFilePath__");
-  const eventFile = context.variables.get("__eventFile__");
+  const eventFileContent = getEventVariable(context.variables, "_eventFileContent");
+  const eventFilePath = getEventVariable(context.variables, "_eventFilePath");
+  const eventFile = getEventVariable(context.variables, "_eventFile");
 
   if (eventFileContent !== undefined && eventFileContent !== "") {
     const fullContent = String(eventFileContent);

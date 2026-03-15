@@ -1,6 +1,7 @@
 import { type App, TFile, TFolder, parseYaml } from "obsidian";
 import { parseWorkflowFromMarkdown } from "src/workflow/parser";
 import { SKILLS_FOLDER } from "src/types";
+import { ALL_EVENT_VARIABLE_NAMES } from "src/workflow/eventVariables";
 
 export interface SkillWorkflowRef {
   path: string;            // relative path from skill folder (e.g. "workflows/lint.md")
@@ -208,7 +209,7 @@ export function collectSkillWorkflows(skills: LoadedSkill[]): Map<string, {
  * Input variables are {{variables}} used in node properties but not initialized
  * by any node (via saveTo, variable/set name, etc.) and not system variables.
  */
-function extractInputVariables(workflowContent: string, workflowName?: string): string[] {
+export function extractInputVariables(workflowContent: string, workflowName?: string): string[] {
   let workflow;
   try {
     workflow = parseWorkflowFromMarkdown(workflowContent, workflowName);
@@ -252,7 +253,7 @@ function extractInputVariables(workflowContent: string, workflowName?: string): 
   // System variables injected by the runtime
   const systemVars = new Set([
     "__hotkeyContent__", "__hotkeySelection__", "__hotkeyActiveFile__", "__hotkeySelectionInfo__",
-    "__eventType__", "__eventFilePath__", "__eventFile__", "__eventOldPath__", "__eventFileContent__",
+    ...ALL_EVENT_VARIABLE_NAMES,
     "__workflowName__", "__lastModel__", "__date__", "__time__", "__datetime__",
     "_clipboard",
   ]);

@@ -8,7 +8,7 @@ export const ja: Record<string, string> = {
 
   // Settings
   "settings.llm": "LLM接続",
-  "settings.llmDesc": "Ollama、LM Studio、またはAnythingLLMに接続",
+  "settings.llmDesc": "Ollama、LM Studio、vLLM、またはAnythingLLMに接続",
   "settings.llmConfigure": "LLM設定",
   "settings.llmVerifying": "接続確認中...",
   "settings.llmVerified": "LLM認証済み",
@@ -22,7 +22,7 @@ export const ja: Record<string, string> = {
 
   // Settings - LLM Modal
   "settings.llmModal.title": "LLM設定",
-  "settings.llmModal.desc": "Ollama、LM Studio、またはAnythingLLMの接続を設定します。",
+  "settings.llmModal.desc": "Ollama、LM Studio、vLLM、またはAnythingLLMの接続を設定します。",
   "settings.llmModal.framework": "フレームワーク",
   "settings.llmModal.frameworkDesc": "使用するLLMサーバーを選択",
   "settings.llmModal.baseUrl": "ベースURL",
