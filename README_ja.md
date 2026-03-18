@@ -174,9 +174,20 @@ AI による変更の自動追跡、差分表示、ワンクリック復元。
 | フレームワーク | チャットエンドポイント | ストリーミング | 思考 | Function Calling |
 |----------------|------------------------|----------------|------|------------------|
 | Ollama | `/api/chat`（ネイティブ） | リアルタイム | `message.thinking` フィールド | `tools` パラメータ |
-| LM Studio | `/v1/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
+| LM Studio（OpenAI 互換） | `/v1/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
 | vLLM | `/v1/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
 | AnythingLLM | `/v1/openai/chat/completions` | SSE | `<think>` タグ | `tools` パラメータ |
+
+### クラウド LLM の利用（OpenAI、Gemini 等）
+
+「LM Studio（OpenAI 互換）」フレームワークは、クラウドサービスを含むすべての OpenAI 互換 API エンドポイントで動作します:
+
+| サービス | ベース URL | API キー |
+|----------|-----------|----------|
+| OpenAI | `https://api.openai.com` | OpenAI API キー |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | Gemini API キー |
+
+**クラウド LLM で RAG を使う場合**: クラウド LLM はローカルの埋め込みモデルを直接利用できません。RAG を使うには、RAG 設定の **Embedding サーバー URL** にローカルの Ollama インスタンス（例: `http://localhost:11434`）を指定し、`nomic-embed-text` などの埋め込みモデルを選択してください。
 
 ---
 
@@ -209,7 +220,7 @@ npm run build
 
 | | Gemini Helper | Local LLM Hub |
 |---|---|---|
-| LLM バックエンド | Google Gemini API / CLI | Ollama / LM Studio / vLLM / AnythingLLM |
+| LLM バックエンド | Google Gemini API / CLI | Ollama / LM Studio / vLLM / AnythingLLM / OpenAI 互換 API |
 | データの送信先 | Google サーバー | `localhost` のみ |
 | ワークフローエンジン | ✅ | ✅（同一アーキテクチャ） |
 | RAG | Google File Search | ローカル埋め込み |

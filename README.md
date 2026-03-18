@@ -174,9 +174,20 @@ Automatic tracking of AI-made changes with diff view and one-click restore.
 | Framework | Chat Endpoint | Streaming | Thinking | Function Calling |
 |-----------|--------------|-----------|----------|-----------------|
 | Ollama | `/api/chat` (native) | Real-time | `message.thinking` field | `tools` parameter |
-| LM Studio | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
+| LM Studio (OpenAI compatible) | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
 | vLLM | `/v1/chat/completions` | SSE | `<think>` tags | `tools` parameter |
 | AnythingLLM | `/v1/openai/chat/completions` | SSE | `<think>` tags | `tools` parameter |
+
+### Using Cloud LLMs (OpenAI, Gemini, etc.)
+
+The "LM Studio (OpenAI compatible)" framework works with any OpenAI-compatible API endpoint, including cloud services:
+
+| Service | Base URL | API Key |
+|---------|----------|---------|
+| OpenAI | `https://api.openai.com` | Your OpenAI API key |
+| Google Gemini | `https://generativelanguage.googleapis.com/v1beta/openai` | Your Gemini API key |
+
+**RAG with cloud LLMs**: Cloud LLMs cannot use local embedding models directly. To use RAG, configure the **Embedding server URL** in RAG settings to point to a local Ollama instance (e.g. `http://localhost:11434`) and select an embedding model like `nomic-embed-text`.
 
 ---
 
@@ -209,7 +220,7 @@ This plugin is the **local-only sibling** of [obsidian-gemini-helper](https://gi
 
 | | Gemini Helper | Local LLM Hub |
 |---|---|---|
-| LLM Backend | Google Gemini API / CLI | Ollama / LM Studio / vLLM / AnythingLLM |
+| LLM Backend | Google Gemini API / CLI | Ollama / LM Studio / vLLM / AnythingLLM / OpenAI-compatible APIs |
 | Data destination | Google servers | `localhost` only |
 | Workflow engine | ✅ | ✅ (same architecture) |
 | RAG | Google File Search | Local embeddings |

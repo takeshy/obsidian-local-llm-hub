@@ -151,7 +151,6 @@ export async function fetchEmbeddingModels(config: LocalLlmConfig, embeddingBase
     }
 
     // LM Studio, AnythingLLM, vLLM, etc.: return all loaded models
-    // Also used when embeddingBaseUrl overrides Ollama's base URL
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (config.apiKey) {
       headers["Authorization"] = `Bearer ${config.apiKey}`;
@@ -163,7 +162,9 @@ export async function fetchEmbeddingModels(config: LocalLlmConfig, embeddingBase
       headers,
     });
     const data = response.json as OpenAiModelsResponse;
-    return data.data?.map((m: OpenAiModel) => m.id) || [];
+    return (data.data || [])
+      .filter((m: OpenAiModel) => isEmbeddingModelByName(m.id))
+      .map((m: OpenAiModel) => m.id);
   } catch {
     return [];
   }
