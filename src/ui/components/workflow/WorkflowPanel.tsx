@@ -277,7 +277,7 @@ function buildHistoryEntry(
 
 // Build workflow code block string from AI result
 function buildWorkflowCodeBlock(result: AIWorkflowResult): string {
-  return `\`\`\`workflow
+  return `\`\`\`llm-workflow
 name: ${result.name}
 nodes:
 ${result.nodes.map(node => {
@@ -598,7 +598,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
         if (view instanceof MarkdownView && view.file?.path === workflowFile.path) {
           const editor = view.editor;
           if (editor) {
-            // Move to the start of the workflow block (line after ```workflow)
+            // Move to the start of the workflow block (line after ```llm-workflow)
             editor.setCursor({ line: selectedOption.startLine + 1, ch: 0 });
             // Scroll to make it visible
             editor.scrollIntoView({ from: { line: selectedOption.startLine, ch: 0 }, to: { line: selectedOption.startLine + 5, ch: 0 } }, true);
@@ -660,7 +660,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
     let currentYaml: string;
     if (nodes.length === 0) {
       const content = await plugin.app.vault.read(workflowFile);
-      const match = content.match(/```workflow\n([\s\S]*?)\n```/);
+      const match = content.match(/```(?:llm-)?workflow\n([\s\S]*?)\n```/);
       if (!match) {
         new Notice(t("workflow.noWorkflowToModify"));
         return;
@@ -698,7 +698,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
           );
         } else {
           // Insert new history before the workflow code block
-          const workflowBlockMatch = content.match(/```workflow/);
+          const workflowBlockMatch = content.match(/```(?:llm-)?workflow/);
           if (workflowBlockMatch && workflowBlockMatch.index !== undefined) {
             const historyEntry = `> [!info] AI Workflow History\n${historyLine}\n\n`;
             newContent = content.slice(0, workflowBlockMatch.index) + historyEntry + content.slice(workflowBlockMatch.index);

@@ -584,7 +584,7 @@ export class AIWorkflowModal extends Modal {
 
   /**
    * Copy the full prompt (system + user) to clipboard for use with external LLMs.
-   * Create mode: asks for markdown with ```workflow code blocks.
+   * Create mode: asks for markdown with ```llm-workflow code blocks.
    * Modify mode: asks for YAML output (to apply to existing file).
    */
   private async exportPrompt(): Promise<void> {
@@ -694,11 +694,11 @@ export class AIWorkflowModal extends Modal {
         return;
       }
 
-      // Extract skill instructions from text before first ```workflow block
+      // Extract skill instructions from text before first ```llm-workflow block
       let skillInstructions: string | undefined;
       let workflowMarkdown = pastedText;
       if (isSkill) {
-        const workflowBlockMatch = pastedText.match(/^`{3,}workflow/m);
+        const workflowBlockMatch = pastedText.match(/^`{3,}llm-workflow/m);
         if (workflowBlockMatch && workflowBlockMatch.index !== undefined && workflowBlockMatch.index > 0) {
           const textBefore = pastedText.substring(0, workflowBlockMatch.index).trim();
           if (textBefore) {
@@ -1024,8 +1024,8 @@ An executable workflow in YAML format that the skill provides as a tool.
     if (isSkill && outputAsMarkdown) {
       outputRules = `1. Output a Markdown document with two parts:
    a. SKILL.md instructions body (detailed AI behavioral guidelines) as plain text
-   b. The workflow inside a \`\`\`workflow code block
-2. The text before the \`\`\`workflow code block will be used as the SKILL.md instructions body
+   b. The workflow inside a \`\`\`llm-workflow code block
+2. The text before the \`\`\`llm-workflow code block will be used as the SKILL.md instructions body
 3. The YAML inside the code block must be valid and parseable
 4. Include a descriptive "name" field
 5. Use unique, descriptive node IDs (e.g., "read-input", "process-data", "save-result")
@@ -1042,7 +1042,7 @@ An executable workflow in YAML format that the skill provides as a tool.
 7. Ensure all variables are initialized before use
 8. Use proper control flow (next, trueNext, falseNext)`;
     } else if (outputAsMarkdown) {
-      outputRules = `1. Output a Markdown document containing the workflow inside a \`\`\`workflow code block
+      outputRules = `1. Output a Markdown document containing the workflow inside a \`\`\`llm-workflow code block
 2. The YAML inside the code block must be valid and parseable
 3. Include a descriptive "name" field
 4. Use unique, descriptive node IDs (e.g., "read-input", "process-data", "save-result")

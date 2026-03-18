@@ -694,7 +694,7 @@ export const ja: Record<string, string> = {
   "aiWorkflow.copyPrompt": "プロンプトをコピー",
   "aiWorkflow.promptCopied": "プロンプトをクリップボードにコピーしました",
   "aiWorkflow.pasteLabel": "外部LLMからのレスポンスを貼り付け",
-  "aiWorkflow.pastePlaceholder": "Claude、GPT等が出力したMarkdown（```workflowブロック含む）またはYAMLを貼り付け...",
+  "aiWorkflow.pastePlaceholder": "Claude、GPT等が出力したMarkdown（```llm-workflowブロック含む）またはYAMLを貼り付け...",
   "aiWorkflow.applyPasted": "適用",
   "aiWorkflow.enterPastedYaml": "YAMLの内容を貼り付けてください",
 

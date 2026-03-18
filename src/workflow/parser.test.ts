@@ -1,5 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { normalizeYamlText } from "./parser";
+import { describe, it, expect, vi } from "vitest";
+import { findWorkflowBlocks, normalizeYamlText, parseWorkflowFromMarkdown, serializeWorkflowBlock } from "./parser";
+
+vi.mock("obsidian", async () => {
+  const yaml = await import("yaml");
+  return {
+    parseYaml: (source: string) => yaml.parse(source),
+    stringifyYaml: (value: unknown) => yaml.stringify(value),
+  };
+});
 
 describe("normalizeYamlText", () => {
   describe("list marker conversion", () => {
@@ -346,5 +354,75 @@ nodes:
       expect(result).toContain('  path: "{{fileInfo.name}}-infographic"');
       expect(result).toContain("  title: Done");
     });
+  });
+});
+
+describe("workflow code fence compatibility", () => {
+  const legacyMarkdown = `# Legacy workflow
+
+\`\`\`workflow
+name: legacy-flow
+nodes:
+  - id: step1
+    type: dialog
+    title: Hello
+    message: Legacy
+\`\`\`
+`;
+
+  const newMarkdown = `# New workflow
+
+\`\`\`llm-workflow
+name: modern-flow
+nodes:
+  - id: step1
+    type: dialog
+    title: Hello
+    message: Modern
+\`\`\`
+`;
+
+  it("finds legacy workflow code fences", () => {
+    const blocks = findWorkflowBlocks(legacyMarkdown);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].name).toBe("legacy-flow");
+  });
+
+  it("finds llm-workflow code fences", () => {
+    const blocks = findWorkflowBlocks(newMarkdown);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].name).toBe("modern-flow");
+  });
+
+  it("parses workflows from legacy workflow code fences", () => {
+    const workflow = parseWorkflowFromMarkdown(legacyMarkdown);
+    expect(workflow.startNode).toBe("step1");
+    expect(workflow.nodes.get("step1")?.type).toBe("dialog");
+    expect(workflow.nodes.get("step1")?.properties.title).toBe("Hello");
+  });
+
+  it("parses workflows from llm-workflow code fences", () => {
+    const workflow = parseWorkflowFromMarkdown(newMarkdown);
+    expect(workflow.startNode).toBe("step1");
+    expect(workflow.nodes.get("step1")?.type).toBe("dialog");
+    expect(workflow.nodes.get("step1")?.properties.message).toBe("Modern");
+  });
+
+  it("serializes new workflows using llm-workflow fences", () => {
+    const block = serializeWorkflowBlock({
+      name: "serialized-flow",
+      nodes: [
+        {
+          id: "step1",
+          type: "dialog",
+          title: "Done",
+          message: "Serialized",
+        },
+      ],
+    });
+
+    expect(block.startsWith("```llm-workflow\n")).toBe(true);
+    expect(block).toContain("name: serialized-flow");
+    expect(block).not.toContain("```workflow\n");
   });
 });

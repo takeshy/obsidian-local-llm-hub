@@ -662,7 +662,7 @@ export const en = {
   "aiWorkflow.copyPrompt": "Copy prompt",
   "aiWorkflow.promptCopied": "Prompt copied to clipboard",
   "aiWorkflow.pasteLabel": "Paste the response from external llm",
-  "aiWorkflow.pastePlaceholder": "Paste the markdown (with ```workflow blocks) or YAML from Claude, GPT, etc...",
+  "aiWorkflow.pastePlaceholder": "Paste the markdown (with ```llm-workflow blocks) or YAML from Claude, GPT, etc...",
   "aiWorkflow.applyPasted": "Apply",
   "aiWorkflow.enterPastedYaml": "Please paste YAML content",
 

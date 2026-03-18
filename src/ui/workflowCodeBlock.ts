@@ -1,4 +1,4 @@
-// Render ```workflow code blocks as Mermaid diagrams.
+// Render ```llm-workflow code blocks as Mermaid diagrams.
 // Uses the mermaid npm package directly (like gemihub) for reliable rendering.
 // In Live Preview, Obsidian natively toggles between rendered output (cursor outside)
 // and raw YAML source (cursor inside).
@@ -10,7 +10,7 @@ import { enqueueMermaidRender } from "src/ui/mermaidRender";
 
 function parseAndConvert(yamlSource: string): string | null {
   try {
-    const wrapped = "```workflow\n" + yamlSource + "\n```";
+    const wrapped = "```llm-workflow\n" + yamlSource + "\n```";
     const result = loadFromCodeBlock(wrapped);
     if (!result.data || result.data.nodes.length === 0) return null;
     return sidebarNodesToMermaid(result.data.nodes);
@@ -25,7 +25,7 @@ function isDarkMode(): boolean {
 }
 
 export function registerWorkflowCodeBlockProcessor(plugin: Plugin, _app: App): void {
-  plugin.registerMarkdownCodeBlockProcessor("workflow", (source, el) => {
+  const handler = (source: string, el: HTMLElement) => {
     try {
       const chart = parseAndConvert(source);
       if (!chart) {
@@ -78,5 +78,7 @@ export function registerWorkflowCodeBlockProcessor(plugin: Plugin, _app: App): v
       console.error("Local LLM Hub: Failed to render workflow code block:", e);
       el.textContent = "Failed to render workflow diagram";
     }
-  });
+  };
+
+  plugin.registerMarkdownCodeBlockProcessor("llm-workflow", handler);
 }
