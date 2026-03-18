@@ -55,7 +55,7 @@ export class LocalLlmModal extends Modal {
       .addDropdown((dropdown) => {
         dropdown
           .addOption("ollama", "Ollama")
-          .addOption("lm-studio", "LM Studio (OpenAI compatible)")
+          .addOption("lm-studio", "Lm studio (OpenAI compatible)")
           .addOption("anythingllm", "AnythingLLM")
           .addOption("vllm", "vLLM")
           .setValue(this.config.framework)
