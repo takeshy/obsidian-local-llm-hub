@@ -16,6 +16,7 @@ export interface RagIndex {
   meta: ChunkMeta[];
   dimension: number;
   fileChecksums: Record<string, string>; // filePath -> checksum
+  embeddingFormatVersion?: number;
 }
 
 const META_FILE = "rag-index.json";

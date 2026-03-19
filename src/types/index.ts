@@ -30,6 +30,7 @@ export interface RagConfig {
   chunkSize: number;            // characters per chunk
   chunkOverlap: number;         // overlap between chunks
   topK: number;                 // number of results to retrieve
+  minScore: number;             // minimum cosine similarity score to include (0.0-1.0)
 }
 
 export const DEFAULT_RAG_CONFIG: RagConfig = {
@@ -40,6 +41,7 @@ export const DEFAULT_RAG_CONFIG: RagConfig = {
   chunkSize: 1000,
   chunkOverlap: 200,
   topK: 5,
+  minScore: 0.3,
 };
 
 // Tool definitions (OpenAI-compatible format, shared by Ollama and LM Studio)

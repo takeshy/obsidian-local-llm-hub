@@ -172,21 +172,48 @@ export function displayRagSettings(containerEl: HTMLElement, ctx: SettingsContex
       text.inputEl.step = "1";
     });
 
-  // Status display
+  // Min score
+  new Setting(containerEl)
+    .setName(t("settings.ragMinScore"))
+    .setDesc(t("settings.ragMinScoreDesc"))
+    .addText((text) => {
+      text
+        .setValue(String(ragConfig.minScore ?? 0.3))
+        .onChange(async (value) => {
+          const num = parseFloat(value);
+          if (!isNaN(num) && num >= 0 && num <= 1) {
+            await updateRagConfig({ minScore: num });
+          }
+        });
+      text.inputEl.type = "number";
+      text.inputEl.min = "0";
+      text.inputEl.max = "1";
+      text.inputEl.step = "0.05";
+    });
+
+  // Status display — load from disk if not yet loaded, then update
   const store = getRagStore();
-  const status = store.getStatus();
   const statusSetting = new Setting(containerEl);
 
-  if (status.totalChunks > 0) {
-    statusSetting.setDesc(
-      t("settings.ragStatus", {
-        chunks: String(status.totalChunks),
-        files: String(status.indexedFiles),
-      })
-    );
-  } else {
-    statusSetting.setDesc(t("settings.ragNoIndex"));
-  }
+  const updateStatusDesc = () => {
+    const status = store.getStatus();
+    if (status.totalChunks > 0) {
+      statusSetting.setDesc(
+        t("settings.ragStatus", {
+          chunks: String(status.totalChunks),
+          files: String(status.indexedFiles),
+        })
+      );
+    } else {
+      statusSetting.setDesc(t("settings.ragNoIndex"));
+    }
+  };
+
+  // Show immediate status (may be empty if not loaded yet)
+  updateStatusDesc();
+
+  // Load from disk and refresh status
+  void store.load(plugin.app, WORKSPACE_FOLDER).then(updateStatusDesc);
 
   // Sync button
   statusSetting.addButton((btn) =>

@@ -14,6 +14,8 @@ import {
   type ChunkMeta,
 } from "./ragStorage";
 
+const EMBEDDING_FORMAT_VERSION = 2;
+
 export interface SyncResult {
   totalChunks: number;
   indexedFiles: number;
@@ -29,6 +31,7 @@ class RagStore {
   private index: RagIndex | null = null;
   private vectors: Float32Array | null = null;
   private loaded = false;
+  private incompatibleIndexLoaded = false;
 
   getStatus(): { totalChunks: number; indexedFiles: number } {
     if (!this.index) {
@@ -46,9 +49,16 @@ class RagStore {
   async load(app: App, workspaceFolder: string): Promise<void> {
     if (this.loaded) return;
     const result = await loadRagIndex(app, workspaceFolder);
+    this.incompatibleIndexLoaded = false;
     if (result) {
-      this.index = result.index;
-      this.vectors = result.vectors;
+      if (result.index.embeddingFormatVersion === EMBEDDING_FORMAT_VERSION) {
+        this.index = result.index;
+        this.vectors = result.vectors;
+      } else {
+        this.index = null;
+        this.vectors = null;
+        this.incompatibleIndexLoaded = true;
+      }
     }
     this.loaded = true;
   }
@@ -76,7 +86,8 @@ class RagStore {
       fileContents.set(file.path, content);
     }
 
-    // Load existing index
+    // Force fresh load (ignore loaded flag — clear() or version change may have invalidated it)
+    this.loaded = false;
     await this.load(app, workspaceFolder);
     const oldChecksums = this.index?.fileChecksums || {};
 
@@ -121,7 +132,10 @@ class RagStore {
 
         const chunks = chunkText(content, ragConfig.chunkSize, ragConfig.chunkOverlap);
         for (const chunk of chunks) {
-          allTexts.push(chunk.text);
+          const heading = findNearestHeading(content, chunk.startOffset);
+          const prefix = heading ? `[${filePath} > ${heading}]\n` : `[${filePath}]\n`;
+          const embeddingText = prefix + chunk.text;
+          allTexts.push(embeddingText);
           allMetas.push({
             filePath,
             startOffset: chunk.startOffset,
@@ -159,6 +173,7 @@ class RagStore {
       meta: allMeta,
       dimension,
       fileChecksums: newChecksums,
+      embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
     };
     this.vectors = vectors;
 
@@ -183,6 +198,15 @@ class RagStore {
     oldPath?: string,
   ): Promise<{ path: string; syncedAt: string }> {
     await this.load(app, workspaceFolder);
+
+    if (this.incompatibleIndexLoaded) {
+      await this.sync(app, ragConfig, llmConfig, workspaceFolder);
+      this.incompatibleIndexLoaded = false;
+      return {
+        path: filePath,
+        syncedAt: new Date().toISOString(),
+      };
+    }
 
     const dimension = this.index?.dimension || 0;
 
@@ -221,7 +245,11 @@ class RagStore {
 
       const chunks = chunkText(content, ragConfig.chunkSize, ragConfig.chunkOverlap);
       if (chunks.length > 0) {
-        const texts = chunks.map(c => c.text);
+        const texts = chunks.map(c => {
+          const heading = findNearestHeading(content, c.startOffset);
+          const prefix = heading ? `[${filePath} > ${heading}]\n` : `[${filePath}]\n`;
+          return prefix + c.text;
+        });
         const BATCH_SIZE = 32;
         const newEmbeddings: number[][] = [];
         for (let i = 0; i < texts.length; i += BATCH_SIZE) {
@@ -255,6 +283,7 @@ class RagStore {
       meta: keptMeta,
       dimension: newDimension,
       fileChecksums: checksums,
+      embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
     };
     this.vectors = vectors;
 
@@ -294,9 +323,12 @@ class RagStore {
       scores.push({ index: i, score });
     }
 
-    // Sort by score descending, take top K
+    // Sort by score descending, filter by minimum score, take top K
     scores.sort((a, b) => b.score - a.score);
-    const topK = scores.slice(0, ragConfig.topK);
+    const minScore = ragConfig.minScore ?? 0;
+    const topK = scores
+      .filter(s => s.score >= minScore)
+      .slice(0, ragConfig.topK);
 
     return topK.map(({ index, score }) => ({
       text: this.index!.meta[index].text,
@@ -312,6 +344,7 @@ class RagStore {
     this.index = null;
     this.vectors = null;
     this.loaded = false;
+    this.incompatibleIndexLoaded = false;
     await deleteRagIndex(app, workspaceFolder);
   }
 }
@@ -374,9 +407,17 @@ export function chunkText(
       if (paragraphBreak > start + chunkSize / 2) {
         end = paragraphBreak;
       } else {
-        const sentenceBreak = text.lastIndexOf(". ", end);
-        if (sentenceBreak > start + chunkSize / 2) {
-          end = sentenceBreak + 1;
+        // Find the best sentence boundary (English ". " or Japanese "。", "！", "？")
+        const halfPoint = start + chunkSize / 2;
+        const region = text.slice(halfPoint, end);
+        const sentencePattern = /[.]\s|[。！？]/g;
+        let lastMatch = -1;
+        let match: RegExpExecArray | null;
+        while ((match = sentencePattern.exec(region)) !== null) {
+          lastMatch = halfPoint + match.index + match[0].length;
+        }
+        if (lastMatch > 0) {
+          end = lastMatch;
         }
       }
     }
@@ -403,6 +444,23 @@ export function simpleChecksum(content: string): string {
     hash |= 0; // Convert to 32-bit integer
   }
   return hash.toString(36);
+}
+
+/**
+ * Find the nearest Markdown heading before a given offset.
+ * Returns the heading text (without the # prefix) or empty string if none.
+ */
+export function findNearestHeading(text: string, offset: number): string {
+  const headingPattern = /^(#{1,6})\s+(.+)$/gm;
+  let lastHeading = "";
+  let match: RegExpExecArray | null;
+  while ((match = headingPattern.exec(text)) !== null) {
+    if (match.index > offset) {
+      break;
+    }
+    lastHeading = match[2].trim();
+  }
+  return lastHeading;
 }
 
 export function cosineSimilarity(a: Float32Array, b: Float32Array): number {
