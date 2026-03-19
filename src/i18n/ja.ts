@@ -79,6 +79,8 @@ export const ja: Record<string, string> = {
   "settings.ragChunkOverlapDesc": "チャンク間のオーバーラップ（デフォルト: 200）",
   "settings.ragTopK": "上位K件",
   "settings.ragTopKDesc": "取得するチャンク数（デフォルト: 5）",
+  "settings.ragMinScore": "最低類似度スコア",
+  "settings.ragMinScoreDesc": "チャンクを含める最低コサイン類似度（0.0〜1.0、デフォルト: 0.3）。閾値以下のチャンクは無関係なコンテキスト防止のため除外されます。",
   "settings.ragSync": "今すぐ同期",
   "settings.ragSyncing": "同期中...",
   "settings.ragSynced": "{{files}}ファイルから{{count}}チャンクを同期しました",

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chunkText, cosineSimilarity, simpleChecksum } from "./ragStore";
+import { chunkText, cosineSimilarity, simpleChecksum, findNearestHeading } from "./ragStore";
 
 // --- chunkText ---
 
@@ -89,6 +89,55 @@ describe("chunkText", () => {
     for (const chunk of result) {
       expect(chunk.text.length).toBeGreaterThan(0);
     }
+  });
+
+  it("prefers Japanese sentence boundaries (。) for splitting", () => {
+    const text = "最初の文章です。二番目の文章です。三番目の文章です。四番目の文章です。五番目の文章です。六番目の文章です。七番目の文章です。八番目の文章です。";
+    const result = chunkText(text, 40, 5);
+    // Non-final chunks should end at 。
+    for (const chunk of result.slice(0, -1)) {
+      expect(chunk.text.endsWith("。") || chunk.text.endsWith("。\n")).toBeTruthy();
+    }
+    expect(result.length).toBeGreaterThan(1);
+  });
+
+  it("prefers Japanese exclamation/question marks for splitting", () => {
+    const text = "これは素晴らしい！本当にそう思いますか？はい、そうです。もっと詳しく教えてください！わかりました。";
+    const result = chunkText(text, 30, 5);
+    expect(result.length).toBeGreaterThan(1);
+  });
+});
+
+// --- findNearestHeading ---
+
+describe("findNearestHeading", () => {
+  it("includes a heading that starts exactly at the offset", () => {
+    const text = "# Title\n\nContent";
+    expect(findNearestHeading(text, 0)).toBe("Title");
+  });
+
+  it("finds the nearest heading before the offset", () => {
+    const text = "# Title\n\nSome text\n\n## Section A\n\nContent A\n\n## Section B\n\nContent B";
+    // Offset in "Content A" area
+    const offset = text.indexOf("Content A");
+    expect(findNearestHeading(text, offset)).toBe("Section A");
+  });
+
+  it("returns top-level heading when offset is before any sub-heading", () => {
+    const text = "# My Note\n\nIntro text here\n\n## First Section\n\nDetails";
+    const offset = text.indexOf("Intro");
+    expect(findNearestHeading(text, offset)).toBe("My Note");
+  });
+
+  it("returns empty string when no heading exists before offset", () => {
+    const text = "No headings here, just plain text.";
+    expect(findNearestHeading(text, 10)).toBe("");
+  });
+
+  it("handles Japanese headings", () => {
+    const text = "# メモ\n\n概要テキスト\n\n## 議事録\n\n会議の内容";
+    const offset = text.indexOf("会議の内容");
+    expect(findNearestHeading(text, offset)).toBe("議事録");
   });
 });
 

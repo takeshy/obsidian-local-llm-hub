@@ -79,6 +79,8 @@ export const en = {
   "settings.ragChunkOverlapDesc": "Overlap between chunks (default: 200)",
   "settings.ragTopK": "Top k results",
   "settings.ragTopKDesc": "Number of chunks to retrieve (default: 5)",
+  "settings.ragMinScore": "Min similarity score",
+  "settings.ragMinScoreDesc": "Minimum cosine similarity to include a chunk (0.0–1.0, default: 0.3). Chunks below this threshold are discarded to prevent irrelevant context.",
   "settings.ragSync": "Sync now",
   "settings.ragSyncing": "Syncing...",
   "settings.ragSynced": "Synced {{count}} chunks from {{files}} files",
