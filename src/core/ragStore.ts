@@ -43,8 +43,10 @@ export interface RagSearchResult {
   text: string;
   filePath: string;
   score: number;
-  contentType?: string; // "pdf" for PDF-origin chunks
-  pageLabel?: string;   // PDF page range (e.g. "pages 1-6 of 24")
+  startOffset: number;        // chunk start offset in the source document
+  heading?: string;           // nearest Markdown heading (omitted for PDFs)
+  contentType?: string;       // "pdf" for PDF-origin chunks
+  pageLabel?: string;         // PDF page range (e.g. "pages 1-6 of 24")
 }
 
 export interface RagStatus {
@@ -676,13 +678,48 @@ class RagStore {
       .filter(s => s.score >= minScore)
       .slice(0, ragSetting.topK);
 
-    return topK.map(({ index: idx, score }) => ({
-      text: index.meta[idx].text,
-      filePath: index.meta[idx].filePath,
-      score,
-      ...(index.meta[idx].contentType && { contentType: index.meta[idx].contentType }),
-      ...(index.meta[idx].pageLabel && { pageLabel: index.meta[idx].pageLabel }),
-    }));
+    // Compute headings at search time for markdown results (topK is small).
+    // PDFs have no Markdown headings -> heading is omitted; pageLabel is used instead.
+    // Read each unique markdown source file once, then resolve the nearest heading
+    // per chunk from the full document content + the chunk's startOffset.
+    const markdownPaths = new Set<string>();
+    for (const { index: idx } of topK) {
+      const meta = index.meta[idx];
+      if (!meta.contentType && !meta.pageLabel) {
+        markdownPaths.add(meta.filePath);
+      }
+    }
+    const contentByFile = new Map<string, string>();
+    for (const filePath of markdownPaths) {
+      try {
+        const file = app.vault.getAbstractFileByPath(filePath);
+        if (file) {
+          const content = await app.vault.cachedRead(file as TFile);
+          contentByFile.set(filePath, content);
+        }
+      } catch {
+        // File read failed — heading falls back to undefined (chip shows filename only).
+      }
+    }
+
+    return topK.map(({ index: idx, score }) => {
+      const meta = index.meta[idx];
+      const isPdf = !!meta.contentType || !!meta.pageLabel;
+      let heading: string | undefined;
+      if (!isPdf && contentByFile.has(meta.filePath)) {
+        const fullContent = contentByFile.get(meta.filePath)!;
+        heading = findNearestHeading(fullContent, meta.startOffset);
+      }
+      return {
+        text: meta.text,
+        filePath: meta.filePath,
+        score,
+        startOffset: meta.startOffset,
+        ...(!isPdf && heading !== undefined && heading !== "" ? { heading } : {}),
+        ...(meta.contentType && { contentType: meta.contentType }),
+        ...(meta.pageLabel && { pageLabel: meta.pageLabel }),
+      };
+    });
   }
 
   /** Return indexed files with per-file chunk counts, sorted by file path. */
@@ -754,6 +791,7 @@ class RagStore {
         filePath: meta.filePath,
         text: meta.text,
         score: r.score,
+        startOffset: meta.startOffset,
         ...(meta.contentType && { contentType: meta.contentType }),
         ...(meta.pageLabel && { pageLabel: meta.pageLabel }),
       };
@@ -786,6 +824,7 @@ class RagStore {
       filePath: meta.filePath,
       text: meta.text,
       score: 0,
+      startOffset: meta.startOffset,
       ...(meta.contentType && { contentType: meta.contentType }),
       ...(meta.pageLabel && { pageLabel: meta.pageLabel }),
     };
