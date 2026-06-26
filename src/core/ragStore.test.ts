@@ -3,12 +3,14 @@ import {
   chunkText,
   chunkBySentence,
   chunkByBlock,
+  chunkContent,
   cosineSimilarity,
   simpleChecksum,
   simpleChecksumBytes,
   findNearestHeading,
   parseExternalIndexPaths,
 } from "./ragStore";
+import { DEFAULT_RAG_SETTING } from "../types";
 
 // --- chunkText ---
 
@@ -421,5 +423,41 @@ describe("chunkByBlock", () => {
     expect(result.length).toBe(2);
     expect(result[0].text).toBe("block-A");
     expect(result[1].text).toBe("block-B");
+  });
+});
+
+// --- chunkContent dispatcher ---
+
+describe("chunkContent", () => {
+  it("uses chunkText for the fixed strategy (default)", () => {
+    const text = "a".repeat(2500);
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: "fixed" as const, chunkSize: 1000, chunkOverlap: 200 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkText(text, 1000, 200);
+    expect(viaDispatcher).toEqual(direct);
+  });
+
+  it("uses chunkBySentence for the sentence strategy", () => {
+    const text = "One. Two. Three. Four. Five.";
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: "sentence" as const, chunkSize: 12, chunkOverlap: 0 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkBySentence(text, 12, 0);
+    expect(viaDispatcher).toEqual(direct);
+  });
+
+  it("uses chunkByBlock for the block strategy", () => {
+    const text = "alpha\n\nbeta\n\ngamma";
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: "block" as const, chunkSize: 5, chunkOverlap: 0 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkByBlock(text, 5, 0);
+    expect(viaDispatcher).toEqual(direct);
+  });
+
+  it("falls back to fixed when chunkStrategy is undefined", () => {
+    const text = "a".repeat(2500);
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: undefined, chunkSize: 1000, chunkOverlap: 200 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkText(text, 1000, 200);
+    expect(viaDispatcher).toEqual(direct);
   });
 });

@@ -5,7 +5,7 @@
  */
 
 import { type App, TFile, loadPdfJs } from "obsidian";
-import type { LocalLlmConfig, RagSetting } from "../types";
+import type { LocalLlmConfig, RagSetting, ChunkStrategy } from "../types";
 import { WORKSPACE_FOLDER } from "../types";
 import { generateEmbeddings, generateEmbedding } from "./embeddingProvider";
 import {
@@ -147,6 +147,7 @@ function mergeLoadedIndexes(loadedIndexes: { index: RagIndex; vectors: Float32Ar
       embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
       chunkSize: compatibleIndexes[0].index.chunkSize,
       chunkOverlap: compatibleIndexes[0].index.chunkOverlap,
+      chunkStrategy: compatibleIndexes[0].index.chunkStrategy,
     },
     vectors: mergedVectors,
   };
@@ -242,7 +243,8 @@ class RagStore {
     // Check if chunk params changed → full rebuild needed
     const needsFullRebuild = !incompatible && index !== null && (
       index.chunkSize !== ragSetting.chunkSize ||
-      index.chunkOverlap !== ragSetting.chunkOverlap
+      index.chunkOverlap !== ragSetting.chunkOverlap ||
+      index.chunkStrategy !== (ragSetting.chunkStrategy ?? "fixed")
     );
 
     if (incompatible || needsFullRebuild) {
@@ -375,7 +377,7 @@ class RagStore {
 
         const isPdf = filePath.endsWith(".pdf");
         const pdfInfo = isPdf ? pdfInfoMap.get(filePath) : undefined;
-        const chunks = chunkText(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+        const chunks = chunkContent(content, ragSetting);
         for (const chunk of chunks) {
           const heading = isPdf ? null : findNearestHeading(content, chunk.startOffset);
           const prefix = heading ? `[${filePath} > ${heading}]\n` : `[${filePath}]\n`;
@@ -454,6 +456,7 @@ class RagStore {
       embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
       chunkSize: ragSetting.chunkSize,
       chunkOverlap: ragSetting.chunkOverlap,
+      chunkStrategy: ragSetting.chunkStrategy ?? "fixed",
     };
 
     this.entries.set(settingName, {
@@ -554,7 +557,7 @@ class RagStore {
       if (content) {
         checksums[filePath] = checksum;
 
-        const chunks = chunkText(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+        const chunks = chunkContent(content, ragSetting);
         if (chunks.length > 0) {
           const texts = chunks.map(c => {
             const heading = isPdf ? null : findNearestHeading(content, c.startOffset);
@@ -607,6 +610,7 @@ class RagStore {
       embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
       chunkSize: ragSetting.chunkSize,
       chunkOverlap: ragSetting.chunkOverlap,
+      chunkStrategy: ragSetting.chunkStrategy ?? "fixed",
     };
 
     this.entries.set(settingName, {
@@ -1208,6 +1212,24 @@ export function chunkByBlock(
   }
 
   return chunks;
+}
+
+/**
+ * Dispatch chunking based on the RagSetting's chunkStrategy.
+ * Falls back to the fixed `chunkText` strategy for unknown/missing values.
+ */
+export function chunkContent(
+  content: string,
+  ragSetting: RagSetting,
+): { text: string; startOffset: number }[] {
+  switch (ragSetting.chunkStrategy ?? "fixed") {
+    case "sentence":
+      return chunkBySentence(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+    case "block":
+      return chunkByBlock(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+    default:
+      return chunkText(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+  }
 }
 
 export function simpleChecksum(content: string): string {
