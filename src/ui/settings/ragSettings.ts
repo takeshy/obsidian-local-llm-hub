@@ -1,7 +1,7 @@
 import { Setting, Notice, Modal } from "obsidian";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import type { RagSetting } from "src/types";
+import type { RagSetting, ChunkStrategy } from "src/types";
 import { DEFAULT_RAG_SETTING } from "src/types";
 import { getRagStore } from "src/core/ragStore";
 import { deleteRagIndex } from "src/core/ragStorage";
@@ -356,6 +356,21 @@ function displaySelectedRagSetting(
             void updateSetting({ excludePatterns: patterns }).catch((err) => new Notice(String(err)));
           });
         text.inputEl.addClass("llm-hub-wide-input");
+      });
+
+    // Chunking strategy (vault sync only)
+    new Setting(containerEl)
+      .setName(t("settings.ragChunkStrategy"))
+      .setDesc(t("settings.ragChunkStrategyDesc"))
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption("fixed", t("settings.ragChunkStrategyFixed"))
+          .addOption("sentence", t("settings.ragChunkStrategySentence"))
+          .addOption("block", t("settings.ragChunkStrategyBlock"))
+          .setValue(ragSetting.chunkStrategy ?? "fixed")
+          .onChange((value) => {
+            void updateSetting({ chunkStrategy: value as ChunkStrategy }).catch((err) => new Notice(String(err)));
+          });
       });
 
     // Chunk size (vault sync only)
