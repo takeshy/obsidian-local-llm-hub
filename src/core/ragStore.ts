@@ -5,7 +5,7 @@
  */
 
 import { type App, TFile, loadPdfJs } from "obsidian";
-import type { LocalLlmConfig, RagSetting, ChunkStrategy } from "../types";
+import type { LocalLlmConfig, RagSetting } from "../types";
 import { WORKSPACE_FOLDER } from "../types";
 import { generateEmbeddings, generateEmbedding } from "./embeddingProvider";
 import {
@@ -693,8 +693,8 @@ class RagStore {
     for (const filePath of markdownPaths) {
       try {
         const file = app.vault.getAbstractFileByPath(filePath);
-        if (file) {
-          const content = await app.vault.cachedRead(file as TFile);
+        if (file instanceof TFile) {
+          const content = await app.vault.cachedRead(file);
           contentByFile.set(filePath, content);
         }
       } catch {
@@ -1082,7 +1082,7 @@ export function chunkBySentence(
   if (text.length === 0) return chunks;
 
   // Find all sentence boundary end indices (index just past the terminator).
-  const terminatorPattern = /[。\.]\s*/g;
+  const terminatorPattern = /[。.]\s*/g;
   const boundaries: number[] = [];
   let match: RegExpExecArray | null;
   while ((match = terminatorPattern.exec(text)) !== null) {
@@ -1205,7 +1205,7 @@ export function chunkByBlock(
     // Only re-split when the block is more than twice the chunk size, so
     // slightly-oversized blocks stay whole and preserve block boundaries.
     if (blockTrimmed.length > chunkSize * 2) {
-      const hasTerminator = /[。\.]\s/.test(block.text) || /[。]/.test(block.text);
+      const hasTerminator = /[。.]\s/.test(block.text) || /[。]/.test(block.text);
       const sub = hasTerminator
         ? chunkBySentence(block.text, chunkSize, chunkOverlap)
         : chunkText(block.text, chunkSize, chunkOverlap);
@@ -1229,7 +1229,7 @@ export function chunkByBlock(
 
     // Small block: greedily merge consecutive blocks within budget
     let accText = block.text;
-    let accStart = block.startOffset;
+    const accStart = block.startOffset;
     let j = i + 1;
     while (j < blocks.length) {
       const next = blocks[j];
