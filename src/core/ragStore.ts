@@ -43,8 +43,10 @@ export interface RagSearchResult {
   text: string;
   filePath: string;
   score: number;
-  contentType?: string; // "pdf" for PDF-origin chunks
-  pageLabel?: string;   // PDF page range (e.g. "pages 1-6 of 24")
+  startOffset: number;        // chunk start offset in the source document
+  heading?: string;           // nearest Markdown heading (omitted for PDFs)
+  contentType?: string;       // "pdf" for PDF-origin chunks
+  pageLabel?: string;         // PDF page range (e.g. "pages 1-6 of 24")
 }
 
 export interface RagStatus {
@@ -147,6 +149,7 @@ function mergeLoadedIndexes(loadedIndexes: { index: RagIndex; vectors: Float32Ar
       embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
       chunkSize: compatibleIndexes[0].index.chunkSize,
       chunkOverlap: compatibleIndexes[0].index.chunkOverlap,
+      chunkStrategy: compatibleIndexes[0].index.chunkStrategy,
     },
     vectors: mergedVectors,
   };
@@ -242,7 +245,8 @@ class RagStore {
     // Check if chunk params changed → full rebuild needed
     const needsFullRebuild = !incompatible && index !== null && (
       index.chunkSize !== ragSetting.chunkSize ||
-      index.chunkOverlap !== ragSetting.chunkOverlap
+      index.chunkOverlap !== ragSetting.chunkOverlap ||
+      index.chunkStrategy !== (ragSetting.chunkStrategy ?? "fixed")
     );
 
     if (incompatible || needsFullRebuild) {
@@ -375,7 +379,7 @@ class RagStore {
 
         const isPdf = filePath.endsWith(".pdf");
         const pdfInfo = isPdf ? pdfInfoMap.get(filePath) : undefined;
-        const chunks = chunkText(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+        const chunks = chunkContent(content, ragSetting);
         for (const chunk of chunks) {
           const heading = isPdf ? null : findNearestHeading(content, chunk.startOffset);
           const prefix = heading ? `[${filePath} > ${heading}]\n` : `[${filePath}]\n`;
@@ -454,6 +458,7 @@ class RagStore {
       embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
       chunkSize: ragSetting.chunkSize,
       chunkOverlap: ragSetting.chunkOverlap,
+      chunkStrategy: ragSetting.chunkStrategy ?? "fixed",
     };
 
     this.entries.set(settingName, {
@@ -554,7 +559,7 @@ class RagStore {
       if (content) {
         checksums[filePath] = checksum;
 
-        const chunks = chunkText(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+        const chunks = chunkContent(content, ragSetting);
         if (chunks.length > 0) {
           const texts = chunks.map(c => {
             const heading = isPdf ? null : findNearestHeading(content, c.startOffset);
@@ -607,6 +612,7 @@ class RagStore {
       embeddingFormatVersion: EMBEDDING_FORMAT_VERSION,
       chunkSize: ragSetting.chunkSize,
       chunkOverlap: ragSetting.chunkOverlap,
+      chunkStrategy: ragSetting.chunkStrategy ?? "fixed",
     };
 
     this.entries.set(settingName, {
@@ -672,13 +678,48 @@ class RagStore {
       .filter(s => s.score >= minScore)
       .slice(0, ragSetting.topK);
 
-    return topK.map(({ index: idx, score }) => ({
-      text: index.meta[idx].text,
-      filePath: index.meta[idx].filePath,
-      score,
-      ...(index.meta[idx].contentType && { contentType: index.meta[idx].contentType }),
-      ...(index.meta[idx].pageLabel && { pageLabel: index.meta[idx].pageLabel }),
-    }));
+    // Compute headings at search time for markdown results (topK is small).
+    // PDFs have no Markdown headings -> heading is omitted; pageLabel is used instead.
+    // Read each unique markdown source file once, then resolve the nearest heading
+    // per chunk from the full document content + the chunk's startOffset.
+    const markdownPaths = new Set<string>();
+    for (const { index: idx } of topK) {
+      const meta = index.meta[idx];
+      if (!meta.contentType && !meta.pageLabel) {
+        markdownPaths.add(meta.filePath);
+      }
+    }
+    const contentByFile = new Map<string, string>();
+    for (const filePath of markdownPaths) {
+      try {
+        const file = app.vault.getAbstractFileByPath(filePath);
+        if (file instanceof TFile) {
+          const content = await app.vault.cachedRead(file);
+          contentByFile.set(filePath, content);
+        }
+      } catch {
+        // File read failed — heading falls back to undefined (chip shows filename only).
+      }
+    }
+
+    return topK.map(({ index: idx, score }) => {
+      const meta = index.meta[idx];
+      const isPdf = !!meta.contentType || !!meta.pageLabel;
+      let heading: string | undefined;
+      if (!isPdf && contentByFile.has(meta.filePath)) {
+        const fullContent = contentByFile.get(meta.filePath)!;
+        heading = findNearestHeading(fullContent, meta.startOffset);
+      }
+      return {
+        text: meta.text,
+        filePath: meta.filePath,
+        score,
+        startOffset: meta.startOffset,
+        ...(!isPdf && heading !== undefined && heading !== "" ? { heading } : {}),
+        ...(meta.contentType && { contentType: meta.contentType }),
+        ...(meta.pageLabel && { pageLabel: meta.pageLabel }),
+      };
+    });
   }
 
   /** Return indexed files with per-file chunk counts, sorted by file path. */
@@ -750,6 +791,7 @@ class RagStore {
         filePath: meta.filePath,
         text: meta.text,
         score: r.score,
+        startOffset: meta.startOffset,
         ...(meta.contentType && { contentType: meta.contentType }),
         ...(meta.pageLabel && { pageLabel: meta.pageLabel }),
       };
@@ -782,6 +824,7 @@ class RagStore {
       filePath: meta.filePath,
       text: meta.text,
       score: 0,
+      startOffset: meta.startOffset,
       ...(meta.contentType && { contentType: meta.contentType }),
       ...(meta.pageLabel && { pageLabel: meta.pageLabel }),
     };
@@ -1039,7 +1082,7 @@ export function chunkBySentence(
   if (text.length === 0) return chunks;
 
   // Find all sentence boundary end indices (index just past the terminator).
-  const terminatorPattern = /[。\.]\s*/g;
+  const terminatorPattern = /[。.]\s*/g;
   const boundaries: number[] = [];
   let match: RegExpExecArray | null;
   while ((match = terminatorPattern.exec(text)) !== null) {
@@ -1104,12 +1147,17 @@ export function chunkBySentence(
 
 /**
  * Split text into chunks by Obsidian blocks (text wrapped by blank lines).
- * - Small blocks are greedily merged into one chunk until chunkSize is exceeded.
- *   Only whole blocks are concatenated (joined by "\n\n"); a block is never split
- *   to merge with a different logical block's interior.
- * - A large block (length > chunkSize) is re-chunked with chunkBySentence,
+ * - At the default chunk size (>= 1000, matching DEFAULT_RAG_SETTING.chunkSize),
+ *   each non-empty block becomes its own chunk (block-level granularity); blocks
+ *   are not merged across blank lines.
+ * - At smaller chunk sizes, consecutive small blocks are greedily merged into one
+ *   chunk until adding the next would exceed chunkSize. Only whole blocks are
+ *   concatenated (joined by "\n\n"); a block is never split to merge with a
+ *   different logical block's interior.
+ * - A block more than twice the chunk size is re-chunked with chunkBySentence,
  *   falling back to chunkText when the block has no sentence terminators.
- *   Sub-chunks inherit offsets relative to the original text.
+ *   Sub-chunks inherit offsets relative to the original text. Slightly-oversized
+ *   blocks are kept whole to preserve block boundaries.
  * Each chunk records its startOffset in the original text.
  */
 export function chunkByBlock(
@@ -1153,9 +1201,11 @@ export function chunkByBlock(
       continue;
     }
 
-    // Large block: re-chunk it (sentence first, then fixed fallback)
-    if (blockTrimmed.length > chunkSize) {
-      const hasTerminator = /[。\.]\s/.test(block.text) || /[。]/.test(block.text);
+    // Large block: re-chunk it (sentence first, then fixed fallback).
+    // Only re-split when the block is more than twice the chunk size, so
+    // slightly-oversized blocks stay whole and preserve block boundaries.
+    if (blockTrimmed.length > chunkSize * 2) {
+      const hasTerminator = /[。.]\s/.test(block.text) || /[。]/.test(block.text);
       const sub = hasTerminator
         ? chunkBySentence(block.text, chunkSize, chunkOverlap)
         : chunkText(block.text, chunkSize, chunkOverlap);
@@ -1169,15 +1219,23 @@ export function chunkByBlock(
       continue;
     }
 
+    // At the default chunk size (1000, matching DEFAULT_RAG_SETTING.chunkSize),
+    // keep each block as its own chunk; smaller sizes pack consecutive blocks.
+    if (chunkSize >= 1000) {
+      chunks.push({ text: blockTrimmed, startOffset: block.startOffset });
+      i++;
+      continue;
+    }
+
     // Small block: greedily merge consecutive blocks within budget
     let accText = block.text;
-    let accStart = block.startOffset;
+    const accStart = block.startOffset;
     let j = i + 1;
     while (j < blocks.length) {
       const next = blocks[j];
       const nextTrimmed = next.text.trim();
       if (nextTrimmed.length === 0) { j++; continue; }
-      // Large block encountered while accumulating -> stop merging
+      // Oversized block encountered while accumulating -> stop merging
       if (nextTrimmed.length > chunkSize) break;
       const candidate = accText + "\n\n" + next.text;
       if (candidate.length > chunkSize) break;
@@ -1193,6 +1251,24 @@ export function chunkByBlock(
   }
 
   return chunks;
+}
+
+/**
+ * Dispatch chunking based on the RagSetting's chunkStrategy.
+ * Falls back to the fixed `chunkText` strategy for unknown/missing values.
+ */
+export function chunkContent(
+  content: string,
+  ragSetting: RagSetting,
+): { text: string; startOffset: number }[] {
+  switch (ragSetting.chunkStrategy ?? "fixed") {
+    case "sentence":
+      return chunkBySentence(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+    case "block":
+      return chunkByBlock(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+    default:
+      return chunkText(content, ragSetting.chunkSize, ragSetting.chunkOverlap);
+  }
 }
 
 export function simpleChecksum(content: string): string {

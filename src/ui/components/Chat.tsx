@@ -15,6 +15,7 @@ import {
   type VaultToolMode,
   type ToolCall,
   type ToolResult,
+  type RagCitation,
   WORKSPACE_FOLDER,
 } from "src/types";
 import { localLlmChatStream } from "src/core/localLlmProvider";
@@ -71,6 +72,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [currentModel, setCurrentModel] = useState(plugin.settings.llmConfig.model);
   const [ragSettingNames, setRagSettingNames] = useState<string[]>(plugin.getRagSettingNames());
   const [selectedRagSetting, setSelectedRagSetting] = useState<string | null>(plugin.getSelectedRagSettingName());
+  const [ragEnabled, setRagEnabled] = useState(true);
   const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>("all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
@@ -619,9 +621,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         systemPrompt += `\n\nAdditional instructions: ${plugin.settings.systemPrompt}`;
       }
 
-      // RAG context injection
+      // RAG context injection (only when a setting is selected AND RAG is enabled for this session)
       let ragSources: string[] | undefined;
-      if (selectedRagSetting) {
+      let ragCitations: RagCitation[] | undefined;
+      if (selectedRagSetting && ragEnabled) {
         const ragSetting = plugin.getRagSearchSetting(selectedRagSetting);
         if (ragSetting) {
           try {
@@ -634,9 +637,25 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               plugin.app,
             );
             if (results.length > 0) {
+              // Back-compat: deduped file paths for old saved chats.
               ragSources = [...new Set(results.map(r => r.filePath))];
+              // New: one citation per result chunk, preserving order.
+              ragCitations = results.map(r => ({
+                filePath: r.filePath,
+                ...(r.heading ? { heading: r.heading } : {}),
+                startOffset: r.startOffset,
+                snippet: r.text.slice(0, 120),
+                ...(r.pageLabel ? { pageLabel: r.pageLabel } : {}),
+              }));
               const ragContext = results
-                .map(r => `[Source: ${r.filePath}]\n${r.text}`)
+                .map(r => {
+                  const loc = r.pageLabel
+                    ? `[Source: ${r.filePath} (${r.pageLabel})]`
+                    : r.heading
+                      ? `[Source: ${r.filePath} > ${r.heading}]`
+                      : `[Source: ${r.filePath}]`;
+                  return `${loc}\n${r.text}`;
+                })
                 .join("\n\n---\n\n");
               systemPrompt += `\n\nRelevant context from user's notes (use this to answer the question):\n\n${ragContext}`;
             }
@@ -847,6 +866,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         thinking: thinkingContent || undefined,
         ragUsed: !!ragSources,
         ragSources,
+        ragCitations,
         skillsUsed: skillsUsedNames,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
         toolResults: allToolResults.length > 0 ? allToolResults : undefined,
@@ -879,7 +899,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, selectedRagSetting, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds]);
+  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds]);
 
   return (
     <div className="llm-hub-chat">
@@ -975,6 +995,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         onModelChange={handleModelChange}
         ragSettingNames={ragSettingNames}
         selectedRagSetting={selectedRagSetting}
+        ragEnabled={ragEnabled}
+        onRagToggle={setRagEnabled}
         onRagSettingChange={(setting) => {
           setSelectedRagSetting(setting);
           void plugin.selectRagSetting(setting);

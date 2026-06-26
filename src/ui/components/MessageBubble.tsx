@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { type App, MarkdownRenderer, Component, Notice } from "obsidian";
+import { type App, MarkdownRenderer, Component, Notice, MarkdownView } from "obsidian";
 import { Copy, Check } from "lucide-react";
-import type { Message, ToolCall, ToolResult } from "src/types";
+import type { Message, ToolCall, ToolResult, RagCitation } from "src/types";
 import { discoverSkills } from "src/core/skillsLoader";
 import { isBuiltinSkillPath } from "src/core/builtinSkills";
 import { SKILL_WORKFLOW_TOOL_NAME } from "src/core/tools";
@@ -148,21 +148,57 @@ export default function MessageBubble({
           <span className="llm-hub-rag-indicator">
             {t("message.ragUsed")}
           </span>
-          {message.ragSources && message.ragSources.length > 0 && (
-            <div className="llm-hub-rag-sources">
-              {message.ragSources.map((source, index) => (
-                <span
-                  key={index}
-                  className="llm-hub-rag-source"
-                  onClick={() => {
-                    void app.workspace.openLinkText(source, "", false);
-                  }}
-                >
-                  {source.split("/").pop() || source}
-                </span>
-              ))}
-            </div>
-          )}
+          {(() => {
+            // Prefer per-chunk citations; fall back to ragSources for old saved chats.
+            if (message.ragCitations && message.ragCitations.length > 0) {
+              return (
+                <div className="llm-hub-rag-sources">
+                  {message.ragCitations.map((citation, index) => (
+                    <span
+                      key={index}
+                      className="llm-hub-rag-source"
+                      title={citation.snippet}
+                      onClick={() => {
+                        const isPdf = citation.filePath.toLowerCase().endsWith(".pdf");
+                        if (isPdf) {
+                          // PDF viewer does not reliably expose scroll-to-page; just open.
+                          void app.workspace.openLinkText(citation.filePath, "", false);
+                        } else {
+                          void scrollEditorToOffset(
+                            app,
+                            citation.filePath,
+                            citation.heading,
+                            citation.startOffset,
+                          );
+                        }
+                      }}
+                    >
+                      {citationLabel(citation)}
+                    </span>
+                  ))}
+                </div>
+              );
+            }
+            if (message.ragSources && message.ragSources.length > 0) {
+              return (
+                <div className="llm-hub-rag-sources">
+                  {message.ragSources.map((source, index) => (
+                    <span
+                      key={index}
+                      className="llm-hub-rag-source"
+                      title={t("message.ragCitationOpen")}
+                      onClick={() => {
+                        void app.workspace.openLinkText(source, "", false);
+                      }}
+                    >
+                      {source.split("/").pop() || source}
+                    </span>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       )}
 
@@ -323,6 +359,62 @@ async function openWorkflowInPanel(app: App, workflowPath: string): Promise<void
       void app.workspace.revealLeaf(leaf);
     }
   }
+}
+
+/**
+ * Open a Markdown file and scroll the editor to the chunk location.
+ * Tries heading-line match first, then falls back to startOffset.
+ * Wrapped in try/catch so a failure to scroll still opens the file.
+ */
+async function scrollEditorToOffset(
+  app: App,
+  filePath: string,
+  heading: string | undefined,
+  startOffset: number,
+): Promise<void> {
+  try {
+    await app.workspace.openLinkText(filePath, "", false);
+    const view = app.workspace.getActiveViewOfType(MarkdownView);
+    if (!view) return;
+    const editor = view.editor;
+    const value = editor.getValue();
+
+    let line = -1;
+    if (heading && heading.trim().length > 0) {
+      // Match a Markdown heading line whose text equals `heading`.
+      const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const headingRe = new RegExp(`^#{1,6}\\s+${escaped}\\s*$`, "m");
+      const m = value.match(headingRe);
+      if (m && m.index !== undefined) {
+        line = value.slice(0, m.index).split("\n").length - 1;
+      }
+    }
+    if (line < 0) {
+      // Fallback: convert startOffset to a line number by counting newlines.
+      const upTo = value.slice(0, Math.min(startOffset, value.length));
+      line = upTo.split("\n").length - 1;
+      if (line < 0) line = 0;
+    }
+
+    const pos = { line, ch: 0 };
+    editor.setCursor(pos);
+    editor.scrollIntoView({ from: pos, to: { line, ch: 0 } }, true);
+  } catch (err) {
+    console.warn("Local LLM Hub: failed to scroll to citation:", err);
+  }
+}
+
+/** Build the display label for a citation chip. */
+function citationLabel(c: RagCitation): string {
+  const fileName = c.filePath.split("/").pop() || c.filePath;
+  const icon = c.filePath.toLowerCase().endsWith(".pdf") ? "📄" : "📃";
+  if (c.pageLabel) {
+    return `${icon} ${fileName} (${c.pageLabel})`;
+  }
+  if (c.heading && c.heading.trim().length > 0) {
+    return `${icon} ${fileName} > ${c.heading}`;
+  }
+  return `${icon} ${fileName}`;
 }
 
 function getFailedWorkflowPath(toolCall: ToolCall, toolResults?: ToolResult[]): string | null {
