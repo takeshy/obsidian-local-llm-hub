@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   chunkText,
   chunkBySentence,
+  chunkByBlock,
   cosineSimilarity,
   simpleChecksum,
   simpleChecksumBytes,
@@ -335,5 +336,90 @@ describe("chunkBySentence", () => {
     for (const chunk of result) {
       expect(text.startsWith(chunk.text, chunk.startOffset)).toBe(true);
     }
+  });
+});
+
+// --- chunkByBlock ---
+
+describe("chunkByBlock", () => {
+  it("returns empty array for empty text", () => {
+    expect(chunkByBlock("", 1000, 200)).toHaveLength(0);
+  });
+
+  it("returns a single chunk when no blank-line breaks", () => {
+    const text = "line one\nline two\nline three";
+    const result = chunkByBlock(text, 1000, 200);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe(text);
+    expect(result[0].startOffset).toBe(0);
+  });
+
+  it("splits into separate chunks on blank lines", () => {
+    const text = "block one line\nblock one line\n\nblock two line\n\nblock three";
+    const result = chunkByBlock(text, 1000, 0);
+    expect(result.length).toBe(3);
+    expect(result[0].text).toContain("block one");
+    expect(result[1].text).toContain("block two");
+    expect(result[2].text).toContain("block three");
+  });
+
+  it("merges consecutive small blocks until chunkSize is exceeded", () => {
+    const blockA = "aaaa";
+    const blockB = "bbbb";
+    const blockC = "cccc";
+    const text = `${blockA}\n\n${blockB}\n\n${blockC}`;
+    // chunkSize large enough to hold all three -> single merged chunk
+    const result = chunkByBlock(text, 100, 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toContain("aaaa");
+    expect(result[0].text).toContain("bbbb");
+    expect(result[0].text).toContain("cccc");
+  });
+
+  it("re-splits a large block using sentence chunking", () => {
+    const big = "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five.";
+    const text = `${big}\n\nsmall block`;
+    const result = chunkByBlock(text, 30, 0);
+    // The big block exceeds 30 chars and has sentence terminators -> re-split.
+    // Expect more than 2 chunks (big block split into multiple + small block).
+    expect(result.length).toBeGreaterThan(2);
+    for (const chunk of result) {
+      expect(chunk.text.length).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("re-splits a large block with no terminators using fixed chunking", () => {
+    const big = "x".repeat(80); // no terminators, exceeds chunkSize
+    const text = `${big}\n\ntiny`;
+    const result = chunkByBlock(text, 30, 0);
+    expect(result.length).toBeGreaterThan(1);
+    // Sub-chunks of the large block should each be <= 30 chars
+    for (const chunk of result) {
+      if (chunk.text !== "tiny") {
+        expect(chunk.text.length).toBeLessThanOrEqual(30);
+      }
+    }
+  });
+
+  it("records correct startOffset for each chunk", () => {
+    const text = "alpha\n\nbeta\n\ngamma";
+    const result = chunkByBlock(text, 1000, 0);
+    expect(result).toHaveLength(3);
+    for (const chunk of result) {
+      // The chunk text (trimmed) should be findable at its startOffset
+      expect(text.startsWith(chunk.text, chunk.startOffset)).toBe(true);
+    }
+    // Offsets should be strictly increasing
+    expect(result[0].startOffset).toBeLessThan(result[1].startOffset);
+    expect(result[1].startOffset).toBeLessThan(result[2].startOffset);
+  });
+
+  it("never merges content across a blank-line boundary beyond chunkSize", () => {
+    const text = "block-A\n\nblock-B";
+    // chunkSize too small to hold both -> they stay separate
+    const result = chunkByBlock(text, 5, 0);
+    expect(result.length).toBe(2);
+    expect(result[0].text).toBe("block-A");
+    expect(result[1].text).toBe("block-B");
   });
 });

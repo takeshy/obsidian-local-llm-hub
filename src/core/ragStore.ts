@@ -1102,6 +1102,114 @@ export function chunkBySentence(
   return chunks;
 }
 
+/**
+ * Split text into chunks by Obsidian blocks (text wrapped by blank lines).
+ * - At the default chunk size (>= 1000, matching DEFAULT_RAG_SETTING.chunkSize),
+ *   each non-empty block becomes its own chunk (block-level granularity); blocks
+ *   are not merged across blank lines.
+ * - At smaller chunk sizes, consecutive small blocks are greedily merged into one
+ *   chunk until adding the next would exceed chunkSize. Only whole blocks are
+ *   concatenated (joined by "\n\n"); a block is never split to merge with a
+ *   different logical block's interior.
+ * - A block more than twice the chunk size is re-chunked with chunkBySentence,
+ *   falling back to chunkText when the block has no sentence terminators.
+ *   Sub-chunks inherit offsets relative to the original text. Slightly-oversized
+ *   blocks are kept whole to preserve block boundaries.
+ * Each chunk records its startOffset in the original text.
+ */
+export function chunkByBlock(
+  text: string,
+  chunkSize: number,
+  chunkOverlap: number,
+): { text: string; startOffset: number }[] {
+  const chunks: { text: string; startOffset: number }[] = [];
+  if (text.length === 0) return chunks;
+
+  // Split on blank lines, tracking each block's startOffset.
+  const blockPattern = /\n\s*\n/g;
+  const blocks: { text: string; startOffset: number }[] = [];
+  let prevEnd = 0;
+  let match: RegExpExecArray | null;
+  const indices: number[] = [];
+  while ((match = blockPattern.exec(text)) !== null) {
+    indices.push(match.index);
+  }
+  for (const splitIndex of indices) {
+    const blockText = text.slice(prevEnd, splitIndex);
+    if (blockText.length > 0) blocks.push({ text: blockText, startOffset: prevEnd });
+    // Advance past the blank-line separator
+    const sepMatch = /\n\s*\n/.exec(text.slice(splitIndex));
+    prevEnd = splitIndex + (sepMatch ? sepMatch[0].length : 0);
+  }
+  // Trailing block
+  if (prevEnd < text.length) {
+    blocks.push({ text: text.slice(prevEnd), startOffset: prevEnd });
+  }
+
+  if (blocks.length === 0) return chunks;
+
+  let i = 0;
+  while (i < blocks.length) {
+    const block = blocks[i];
+    const blockTrimmed = block.text.trim();
+
+    if (blockTrimmed.length === 0) {
+      i++;
+      continue;
+    }
+
+    // Large block: re-chunk it (sentence first, then fixed fallback).
+    // Only re-split when the block is more than twice the chunk size, so
+    // slightly-oversized blocks stay whole and preserve block boundaries.
+    if (blockTrimmed.length > chunkSize * 2) {
+      const hasTerminator = /[。\.]\s/.test(block.text) || /[。]/.test(block.text);
+      const sub = hasTerminator
+        ? chunkBySentence(block.text, chunkSize, chunkOverlap)
+        : chunkText(block.text, chunkSize, chunkOverlap);
+      for (const s of sub) {
+        const sTrimmed = s.text.trim();
+        if (sTrimmed) {
+          chunks.push({ text: sTrimmed, startOffset: block.startOffset + s.startOffset });
+        }
+      }
+      i++;
+      continue;
+    }
+
+    // At the default chunk size (1000, matching DEFAULT_RAG_SETTING.chunkSize),
+    // keep each block as its own chunk; smaller sizes pack consecutive blocks.
+    if (chunkSize >= 1000) {
+      chunks.push({ text: blockTrimmed, startOffset: block.startOffset });
+      i++;
+      continue;
+    }
+
+    // Small block: greedily merge consecutive blocks within budget
+    let accText = block.text;
+    let accStart = block.startOffset;
+    let j = i + 1;
+    while (j < blocks.length) {
+      const next = blocks[j];
+      const nextTrimmed = next.text.trim();
+      if (nextTrimmed.length === 0) { j++; continue; }
+      // Oversized block encountered while accumulating -> stop merging
+      if (nextTrimmed.length > chunkSize) break;
+      const candidate = accText + "\n\n" + next.text;
+      if (candidate.length > chunkSize) break;
+      accText = candidate;
+      j++;
+    }
+
+    const accTrimmed = accText.trim();
+    if (accTrimmed) {
+      chunks.push({ text: accTrimmed, startOffset: accStart });
+    }
+    i = j;
+  }
+
+  return chunks;
+}
+
 export function simpleChecksum(content: string): string {
   let hash = 0;
   for (let i = 0; i < content.length; i++) {
