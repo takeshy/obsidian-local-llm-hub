@@ -6,6 +6,7 @@
 
 import type { App } from "obsidian";
 import { WORKSPACE_FOLDER } from "../types";
+import type { ChunkStrategy } from "../types";
 
 export interface ChunkMeta {
   filePath: string;
@@ -22,6 +23,7 @@ export interface RagIndex {
   embeddingFormatVersion?: number;
   chunkSize?: number;
   chunkOverlap?: number;
+  chunkStrategy?: ChunkStrategy;
 }
 
 interface ExternalChunkMeta {

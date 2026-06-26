@@ -1,4 +1,4 @@
-import type { Message } from "src/types";
+import type { Message, RagCitation } from "src/types";
 import { t } from "src/i18n";
 
 // Convert messages to Markdown format
@@ -31,6 +31,7 @@ export function messagesToMarkdown(
     if (msg.llmContent && msg.llmContent !== msg.content) metadata.llmContent = msg.llmContent;
     if (msg.ragUsed) metadata.ragUsed = msg.ragUsed;
     if (msg.ragSources) metadata.ragSources = msg.ragSources;
+    if (msg.ragCitations) metadata.ragCitations = msg.ragCitations;
     if (msg.skillsUsed) metadata.skillsUsed = msg.skillsUsed;
     if (msg.toolCalls && msg.toolCalls.length > 0) {
       metadata.toolCallNames = [...new Set(msg.toolCalls.map(tc => tc.name))];
@@ -103,6 +104,7 @@ export function parseMarkdownToMessages(content: string): { messages: Message[];
             if (meta.llmContent) message.llmContent = meta.llmContent as string;
             if (meta.ragUsed) message.ragUsed = meta.ragUsed as boolean;
             if (meta.ragSources) message.ragSources = meta.ragSources as string[];
+            if (meta.ragCitations) message.ragCitations = meta.ragCitations as RagCitation[];
             if (meta.skillsUsed) message.skillsUsed = meta.skillsUsed as string[];
             if (meta.toolCallNames) {
               message.toolCalls = (meta.toolCallNames as string[]).map(name => ({

@@ -29,6 +29,8 @@ interface InputAreaProps {
   ragSettingNames: string[];
   selectedRagSetting: string | null;
   onRagSettingChange: (setting: string | null) => void;
+  ragEnabled: boolean;
+  onRagToggle: (enabled: boolean) => void;
   vaultToolMode: VaultToolMode;
   onVaultToolModeChange: (mode: VaultToolMode) => void;
   mcpServerInfos: McpServerInfo[];
@@ -76,6 +78,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   onModelChange,
   ragSettingNames,
   selectedRagSetting,
+  ragEnabled,
+  onRagToggle,
   onRagSettingChange,
   vaultToolMode,
   onVaultToolModeChange,
@@ -606,7 +610,18 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           )}
           {ragSettingNames.length > 0 && (
             <>
-              <label className="llm-hub-model-label">RAG</label>
+              <label
+                className="llm-hub-rag-toggle"
+                title={t("input.ragToggleTooltip")}
+              >
+                <input
+                  type="checkbox"
+                  checked={ragEnabled}
+                  onChange={(e) => onRagToggle(e.target.checked)}
+                  disabled={isLoading}
+                />
+                {t("input.ragToggle")}
+              </label>
               <select
                 className="llm-hub-model-dropdown"
                 value={selectedRagSetting || ""}

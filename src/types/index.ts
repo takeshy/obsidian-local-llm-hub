@@ -20,12 +20,29 @@ export const DEFAULT_LOCAL_LLM_CONFIG: LocalLlmConfig = {
   model: "",
 };
 
+// RAG chunking strategy
+export type ChunkStrategy = "fixed" | "sentence" | "block";
+
+// One cited RAG chunk with its location in the source document.
+// NOTE: note-content excerpts (e.g. `snippet`) are intentionally NOT persisted
+// here, because ragCitations are serialized into saved chat history. Only the
+// location fields needed for navigation are kept; tooltip previews are derived
+// at runtime from the chunk text.
+export interface RagCitation {
+  filePath: string;
+  heading?: string;      // nearest Markdown heading ("" when none)
+  startOffset: number;   // chunk start offset in the source document
+  snippet?: string;      // optional preview; NOT populated for persisted citations
+  pageLabel?: string;    // PDF page range, e.g. "pages 2-5 of 24"
+}
+
 // Named RAG setting (one per index)
 export interface RagSetting {
   embeddingModel: string;       // e.g. "nomic-embed-text"
   embeddingBaseUrl: string;     // separate embedding server URL (empty = same as LLM)
   chunkSize: number;            // characters per chunk
   chunkOverlap: number;         // overlap between chunks
+  chunkStrategy: ChunkStrategy;   // chunking strategy (default: "fixed")
   topK: number;                 // number of results to retrieve
   minScore: number;             // minimum cosine similarity score to include (0.0-1.0)
   targetFolders: string[];      // folders to index (empty = all)
@@ -40,6 +57,7 @@ export const DEFAULT_RAG_SETTING: RagSetting = {
   embeddingBaseUrl: "",
   chunkSize: 1000,
   chunkOverlap: 200,
+  chunkStrategy: "fixed",
   topK: 5,
   minScore: 0.3,
   targetFolders: [],
@@ -128,6 +146,7 @@ export interface Message {
   thinking?: string;            // thinking content (thinking models)
   ragUsed?: boolean;            // whether RAG was used
   ragSources?: string[];        // source files from RAG
+  ragCitations?: RagCitation[];   // per-chunk citation locations (new chats)
   skillsUsed?: string[];        // names of skills used
   toolCalls?: ToolCall[];       // tool calls made by assistant
   toolResults?: ToolResult[];   // results of tool calls (keyed by toolCallId)

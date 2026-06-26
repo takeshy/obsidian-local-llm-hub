@@ -1,12 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
   chunkText,
+  chunkBySentence,
+  chunkByBlock,
+  chunkContent,
   cosineSimilarity,
   simpleChecksum,
   simpleChecksumBytes,
   findNearestHeading,
   parseExternalIndexPaths,
 } from "./ragStore";
+import { DEFAULT_RAG_SETTING } from "../types";
 
 // --- chunkText ---
 
@@ -256,5 +260,204 @@ describe("simpleChecksumBytes", () => {
   it("returns different results for different bytes", () => {
     expect(simpleChecksumBytes(new Uint8Array([1, 2, 3]).buffer))
       .not.toBe(simpleChecksumBytes(new Uint8Array([1, 2, 4]).buffer));
+  });
+});
+
+// --- chunkBySentence ---
+
+describe("chunkBySentence", () => {
+  it("returns empty array for empty text", () => {
+    expect(chunkBySentence("", 1000, 200)).toHaveLength(0);
+  });
+
+  it("returns a single chunk when text fits chunkSize", () => {
+    const text = "Hello world. Foo bar.";
+    const result = chunkBySentence(text, 1000, 200);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe("Hello world. Foo bar.");
+    expect(result[0].startOffset).toBe(0);
+  });
+
+  it("splits on English period followed by whitespace", () => {
+    const text = "First sentence. Second sentence. Third sentence.";
+    const result = chunkBySentence(text, 25, 0);
+    expect(result.length).toBeGreaterThan(1);
+    // Each emitted chunk (except possibly the last) should not exceed chunkSize
+    for (const chunk of result) {
+      expect(chunk.text.length).toBeLessThanOrEqual(25);
+    }
+    // startOffset values must be valid indices into the original text
+    for (const chunk of result) {
+      expect(chunk.startOffset).toBeGreaterThanOrEqual(0);
+      expect(chunk.startOffset).toBeLessThan(text.length);
+      expect(text.startsWith(chunk.text.trimStart(), chunk.startOffset)).toBe(true);
+    }
+  });
+
+  it("splits on Chinese full-width period 。", () => {
+    const text = "这是第一句话。这是第二句话。这是第三句话。";
+    const result = chunkBySentence(text, 12, 0);
+    expect(result.length).toBeGreaterThan(1);
+    for (const chunk of result) {
+      expect(chunk.text.length).toBeLessThanOrEqual(12);
+    }
+  });
+
+  it("groups multiple sentences into one chunk until chunkSize is exceeded", () => {
+    const text = "A. B. C. D. E. F. G. H.";
+    const result = chunkBySentence(text, 8, 0);
+    // Each chunk holds as many whole sentences as fit within 8 chars
+    expect(result.length).toBeGreaterThan(1);
+    for (const chunk of result) {
+      expect(chunk.text.length).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it("carries overlap into the next chunk", () => {
+    const text = "Sentence one here. Sentence two here. Sentence three here. Sentence four here.";
+    const result = chunkBySentence(text, 25, 10);
+    expect(result.length).toBeGreaterThan(1);
+    // With overlap, a later chunk should start before the previous chunk ended
+    expect(result[1].startOffset).toBeLessThan(result[0].startOffset + result[0].text.length);
+  });
+
+  it("falls back to a single chunk when no terminators present", () => {
+    const text = "no terminators here just plain words running on and on";
+    const result = chunkBySentence(text, 30, 5);
+    // No sentence boundary -> one chunk (length may exceed chunkSize since no split point)
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe(text);
+    expect(result[0].startOffset).toBe(0);
+  });
+
+  it("records correct startOffset for each chunk", () => {
+    const text = "One. Two. Three. Four. Five.";
+    const result = chunkBySentence(text, 12, 0);
+    // The concatenation of slice(text, startOffset, startOffset + text.length)
+    // must reproduce the chunk text (trimmed-end tolerance handled by checking startsWith)
+    for (const chunk of result) {
+      expect(text.startsWith(chunk.text, chunk.startOffset)).toBe(true);
+    }
+  });
+});
+
+// --- chunkByBlock ---
+
+describe("chunkByBlock", () => {
+  it("returns empty array for empty text", () => {
+    expect(chunkByBlock("", 1000, 200)).toHaveLength(0);
+  });
+
+  it("returns a single chunk when no blank-line breaks", () => {
+    const text = "line one\nline two\nline three";
+    const result = chunkByBlock(text, 1000, 200);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe(text);
+    expect(result[0].startOffset).toBe(0);
+  });
+
+  it("splits into separate chunks on blank lines", () => {
+    const text = "block one line\nblock one line\n\nblock two line\n\nblock three";
+    const result = chunkByBlock(text, 1000, 0);
+    expect(result.length).toBe(3);
+    expect(result[0].text).toContain("block one");
+    expect(result[1].text).toContain("block two");
+    expect(result[2].text).toContain("block three");
+  });
+
+  it("merges consecutive small blocks until chunkSize is exceeded", () => {
+    const blockA = "aaaa";
+    const blockB = "bbbb";
+    const blockC = "cccc";
+    const text = `${blockA}\n\n${blockB}\n\n${blockC}`;
+    // chunkSize large enough to hold all three -> single merged chunk
+    const result = chunkByBlock(text, 100, 0);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toContain("aaaa");
+    expect(result[0].text).toContain("bbbb");
+    expect(result[0].text).toContain("cccc");
+  });
+
+  it("re-splits a large block using sentence chunking", () => {
+    const big = "Sentence one. Sentence two. Sentence three. Sentence four. Sentence five.";
+    const text = `${big}\n\nsmall block`;
+    const result = chunkByBlock(text, 30, 0);
+    // The big block exceeds 30 chars and has sentence terminators -> re-split.
+    // Expect more than 2 chunks (big block split into multiple + small block).
+    expect(result.length).toBeGreaterThan(2);
+    for (const chunk of result) {
+      expect(chunk.text.length).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("re-splits a large block with no terminators using fixed chunking", () => {
+    const big = "x".repeat(80); // no terminators, exceeds chunkSize
+    const text = `${big}\n\ntiny`;
+    const result = chunkByBlock(text, 30, 0);
+    expect(result.length).toBeGreaterThan(1);
+    // Sub-chunks of the large block should each be <= 30 chars
+    for (const chunk of result) {
+      if (chunk.text !== "tiny") {
+        expect(chunk.text.length).toBeLessThanOrEqual(30);
+      }
+    }
+  });
+
+  it("records correct startOffset for each chunk", () => {
+    const text = "alpha\n\nbeta\n\ngamma";
+    const result = chunkByBlock(text, 1000, 0);
+    expect(result).toHaveLength(3);
+    for (const chunk of result) {
+      // The chunk text (trimmed) should be findable at its startOffset
+      expect(text.startsWith(chunk.text, chunk.startOffset)).toBe(true);
+    }
+    // Offsets should be strictly increasing
+    expect(result[0].startOffset).toBeLessThan(result[1].startOffset);
+    expect(result[1].startOffset).toBeLessThan(result[2].startOffset);
+  });
+
+  it("never merges content across a blank-line boundary beyond chunkSize", () => {
+    const text = "block-A\n\nblock-B";
+    // chunkSize too small to hold both -> they stay separate
+    const result = chunkByBlock(text, 5, 0);
+    expect(result.length).toBe(2);
+    expect(result[0].text).toBe("block-A");
+    expect(result[1].text).toBe("block-B");
+  });
+});
+
+// --- chunkContent dispatcher ---
+
+describe("chunkContent", () => {
+  it("uses chunkText for the fixed strategy (default)", () => {
+    const text = "a".repeat(2500);
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: "fixed" as const, chunkSize: 1000, chunkOverlap: 200 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkText(text, 1000, 200);
+    expect(viaDispatcher).toEqual(direct);
+  });
+
+  it("uses chunkBySentence for the sentence strategy", () => {
+    const text = "One. Two. Three. Four. Five.";
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: "sentence" as const, chunkSize: 12, chunkOverlap: 0 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkBySentence(text, 12, 0);
+    expect(viaDispatcher).toEqual(direct);
+  });
+
+  it("uses chunkByBlock for the block strategy", () => {
+    const text = "alpha\n\nbeta\n\ngamma";
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: "block" as const, chunkSize: 5, chunkOverlap: 0 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkByBlock(text, 5, 0);
+    expect(viaDispatcher).toEqual(direct);
+  });
+
+  it("falls back to fixed when chunkStrategy is undefined", () => {
+    const text = "a".repeat(2500);
+    const setting = { ...DEFAULT_RAG_SETTING, chunkStrategy: undefined, chunkSize: 1000, chunkOverlap: 200 };
+    const viaDispatcher = chunkContent(text, setting);
+    const direct = chunkText(text, 1000, 200);
+    expect(viaDispatcher).toEqual(direct);
   });
 });
