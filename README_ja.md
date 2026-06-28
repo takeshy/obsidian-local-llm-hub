@@ -91,13 +91,15 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 
 ## Dashboard
 
-レスポンシブなウィジェットグリッドで、ライブな個人用ホーム / 概要ページを作成できます。Dashboard ファイル（`.dashboard`）には Obsidian Bases ビュー、ノート、Web ページ、ワークフロー出力、Kanban ボードを埋め込めます。通常のノートと同じように開き、表示モードでは誤操作を防ぎ、編集モードでドラッグ・リサイズによるレイアウト変更を行います。
+レスポンシブなウィジェットグリッドで、ライブな個人用ホーム / 概要ページを作成できます。Dashboard ファイル（`.dashboard`）には Obsidian Bases ビュー、ノート、Web ページ、Timeline、ワークフロー出力、Kanban ボードを埋め込めます。通常のノートと同じように開き、表示モードでは誤操作を防ぎ、編集モードでドラッグ・リサイズによるレイアウト変更を行います。
 
-Workflow ウィジェットは sidecar cache を表示するため、重い workflow が開くたびに再実行されることはありません。Base / Workflow ウィジェットには **Create with AI** もあり、組み込みの `dashboard` agent skill を使えば、チャットから Dashboard 全体と backing `.base` ファイルを作成できます。
+Workflow ウィジェットは `Dashboards/Data/` の cache ファイルを表示するため、重い workflow が開くたびに再実行されることはありません。Base / Workflow ウィジェットには **Create with AI** もあり、Timeline の下書きは AI でリライトできます。組み込みの `dashboard` agent skill を使えば、チャットから Dashboard 全体と backing `.base` ファイルを作成できます。
 
 ![Dashboard](docs/images/dashboard.png)
 
 ![Kanban dashboard settings](docs/images/kanban_edit.png)
+
+![Timeline input](docs/images/timeline_input.png)
 
 Dashboard の使い方とファイル形式の詳細は [DASHBOARD_ja.md](docs/DASHBOARD_ja.md) を参照してください。
 

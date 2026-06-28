@@ -1,6 +1,6 @@
 # Dashboard
 
-個人用の **ホーム / 概要ページ** を、レスポンシブなウィジェットグリッドで作成できます。Dashboard は `.dashboard` ファイルとして保存され、**Bases ビュー**、**ノート**、**Web ページ**、**ワークフロー出力**をドラッグ・リサイズ可能なグリッドに配置します。通常のノートと同じように開くと、ライブで編集できるボードとして表示されます。
+個人用の **ホーム / 概要ページ** を、レスポンシブなウィジェットグリッドで作成できます。Dashboard は `.dashboard` ファイルとして保存され、**Bases ビュー**、**ノート**、**Web ページ**、**Timeline**、**Kanban ボード**、**ワークフロー出力**をドラッグ・リサイズ可能なグリッドに配置します。通常のノートと同じように開くと、ライブで編集できるボードとして表示されます。
 
 ![Dashboard](images/dashboard.png)
 
@@ -13,6 +13,7 @@
   - [Web Embed](#web-embed--web-ページを埋め込む)
   - [Workflow](#workflow--ワークフロー出力を表示する)
   - [Kanban](#kanban--カードをドラッグしてステータスを変更する)
+  - [Timeline](#timeline--日付付き投稿を記録する)
 - [レスポンシブレイアウト](#レスポンシブレイアウト)
 - [AI でウィジェットを作成する](#ai-でウィジェットを作成する)
 - [`.dashboard` ファイル形式](#dashboard-ファイル形式)
@@ -26,7 +27,7 @@ Obsidian の **Canvas** と Dashboard は見た目が似ていますが、目的
 
 | | Dashboard | Canvas |
 |---|-----------|--------|
-| **コンテンツ** | **ライブ**。Bases ビュー、ワークフロー出力、ノートが自動的に更新される | **静的**。カードは手作業で配置したスナップショット |
+| **コンテンツ** | **ライブ**。Bases ビュー、Timeline、Kanban ボード、ワークフロー出力、ノートが自動的に更新される | **静的**。カードは手作業で配置したスナップショット |
 | **レイアウト** | レスポンシブグリッド（12 列。狭い画面では 1 列にリフロー） | 絶対座標の自由配置、無限キャンバス |
 | **用途** | タスク、生成ダイジェスト、埋め込みページなどを確認する **ホーム / 概要** ページ | アイデアを並べ、矢印でつなぐ **思考** のための空間 |
 | **AI** | チャットから作成可能（`dashboard` skill が `.dashboard` と backing `.base` を作成） | 基本は手動配置 |
@@ -43,7 +44,7 @@ Dashboard の作成方法は 2 つあります。
 1. **コマンド** — コマンドパレットから **"LLM Hub: Create dashboard"** を実行します。`Dashboards/` フォルダに `Dashboard`、`Dashboard 2`、... という名前で新しいファイルを作成して開きます。
 2. **AI に依頼** — このプラグインには組み込みの **`dashboard`** agent skill があります。チャットで有効にして、作りたい内容を説明します（例: "active tasks、welcome note、today's weather を含む home page"）。AI が `.dashboard` ファイルと、必要な backing `.base` ファイルを作成します。
 
-Dashboard は Vault 内の通常の `.dashboard` ファイルとして保存されるため、他のノートと同じように同期・バージョン管理できます。
+Dashboard は Vault 内の通常の `.dashboard` ファイルとして保存されるため、他のノートと同じように同期・バージョン管理できます。Workflow ウィジェットの結果は、通常の Vault ファイルとして `Dashboards/Data/` に別途保存されます。
 
 ---
 
@@ -72,9 +73,11 @@ Dashboard は最初 **表示モード** で開きます。ツールバーで切�
 |------|------|
 | **Base file** | `.base` ファイルの Vault パス |
 | **View** | 表示するビュー名。空の場合は base の最初のビュー |
-| **Create with AI** | パネルを離れずに新しい `.base` を作成、または選択中の `.base` を編集 |
+| **New Base** | `Dashboards/Bases/` 配下に新しい `.base` ファイルを作成 |
+| **View editor** | 選択したビューの名前、種類、順序、並び替え、上限、フィルター、カード画像、リストのインデント、Raw YAML を編集 |
+| **Create with AI / Edit with AI** | 新しい `.base` を作成、または選択中の `.base` への編集を差分確認付きで提案 |
 
-同じ `.base` ファイルを複数の Base ウィジェットから参照できます。たとえば 1 つの `.base` に Active / Done / Backlog などのビューを作り、それぞれ別ウィジェットで表示できます。
+同じ `.base` ファイルを複数の Base ウィジェットから参照できます。たとえば 1 つの `.base` に Active / Done / Backlog などのビューを作り、それぞれ別ウィジェットで表示できます。設定パネルの外で `.base` が変更された場合、保存前に再読み込みして古い状態で上書きしないようにします。
 
 ### Markdown — ノートを埋め込む
 
@@ -91,6 +94,7 @@ Web ページを iframe で埋め込みます。
 | 設定 | 説明 |
 |------|------|
 | **URL** | 埋め込むページの URL |
+| **Show header** | URL とブラウザで開くボタンを含むコンパクトなヘッダーを表示します。既存ウィジェットでは既定でオンです。 |
 
 > [!NOTE]
 > 一部のサイトは `X-Frame-Options` / `Content-Security-Policy` ヘッダーで埋め込みをブロックします。その場合は空白表示になることがあります。
@@ -115,11 +119,11 @@ Web ページを iframe で埋め込みます。
 > - Dashboard を開いたときに cache が auto-refresh interval より古いとき
 > - Dashboard を開いたまま auto-refresh interval が経過したとき
 >
-> 結果は Dashboard の隣にある hidden **sidecar file** に保存されます。そのため `.dashboard` ファイルを肥大化させず、再オープン後も出力が残ります。Workflow は Markdown/HTML の出力を文字列変数（既定: `result`）に保存する必要があります。card/table 出力は対応していません。無人実行されるため、interactive node（`prompt-*`, `dialog`）は使わないでください。
+> 結果は `Dashboards/Data/<encoded dashboard path>.json` に通常の Vault ファイルとして保存されます。そのため `.dashboard` ファイルを肥大化させず、再オープン後も出力が残り、他のファイルと同様に同期・レビュー・バージョン管理できます。Workflow は Markdown/HTML の出力を文字列変数（既定: `result`）に保存する必要があります。card/table 出力は対応していません。無人実行されるため、interactive node（`prompt-*`, `dialog`）は使わないでください。
 
 ### Kanban — カードをドラッグしてステータスを変更する
 
-**タグ**または**フォルダ**条件に一致するノートをカードとして表示し、frontmatter の **status property** ごとに列へグループ化します。カードを別の列へドラッグすると、そのノートのステータスが `processFrontMatter` で更新されます。カードをクリックするとノートのプレビュー modal が開き、open アイコンから新しいタブで元ノートを開けます。Kanban は **表示モード** でも操作できます。編集モードに入る必要はありません。
+**タグ**または**フォルダ**条件に一致するノートをカードとして表示し、frontmatter の **status property** ごとに列へグループ化します。カードを別の列へドラッグすると、そのノートのステータスが `processFrontMatter` で更新されます。カードを列内で上下にドラッグすると、そのボード専用の手動順序が保存されます。カードをクリックするとノートのプレビュー modal が開き、open アイコンから新しいタブで元ノートを開けます。Kanban は **表示モード** でも操作できます。編集モードに入る必要はありません。
 
 ![Kanban board](images/dashboard.png)
 
@@ -139,6 +143,29 @@ Web ページを iframe で埋め込みます。
 | **Columns** | ステータス値の順序付きリスト。各列には property と照合する **value** と、ヘッダー表示用の **label** があります。 |
 | **Display fields** | 各カードのタイトル下に表示する frontmatter property 名の順序付きリスト（例: `priority`, `due`）。`name: value` として表示され、空値は省略、list 値は comma join されます。 |
 | **Show unmatched cards column** | ON の場合、どの列にも一致しないカードを追加の "Unspecified" 列に表示します（既定 ON）。 |
+
+ボードは手動のカード順を `cardOrder` としてウィジェット設定に保存します。値はノートパスなので、`.dashboard` ファイルと一緒に round-trip します。
+
+### Timeline — 日付付き投稿を記録する
+
+短い日付付き投稿を `Dashboards/Timeline/<name>/` 配下に、1 日 1 Markdown ファイルとして保存します。投稿には `#タグ`、画像添付、ピン留めを含められます。ウィジェットは逆時系列フィード、本文/タグ/日付フィルター、新規投稿用 composer を表示します。長い投稿や埋め込みノートは既定で折り畳まれ、**もっと見る / 閉じる** で展開できます。composer とインライン編集欄には、画像添付ボタンの横に **AI で編集** ボタンがあります。指示を入力し、生成結果をモーダル内の差分で確認してから textarea に適用できます。
+
+![Timeline composer](images/timeline_input.png)
+
+| 設定 | 説明 |
+|------|------|
+| **Timeline name** | `Dashboards/Timeline/` 配下のフォルダ名 |
+| **Latest posts to show** | 古い投稿を読み込む前に最初に表示する最近の投稿数 |
+| **Collapse after lines** | 折り畳みプレビューを表示する推定表示行数のしきい値（既定 `8`） |
+| **Collapse after characters** | 折り畳みプレビューを表示する文字数のしきい値（既定 `440`） |
+
+各日付ファイルは `<YYYY-MM-DD>.md` です。投稿区切りの `---` は、その後に timeline marker または ISO timestamp が続く場合だけ区切りとして扱われるため、投稿本文中の通常の Markdown 水平線は保持されます。
+
+![Timeline inline editor](images/timeline_edit.png)
+
+composer とインライン編集欄のどちらからでも **AI で編集** を使えます。現在の下書き本文と指示をモデルに送り、生成されたリライトは差分で確認してから textarea に適用します。
+
+![Timeline AI rewrite](images/timeline_ai.png)
 
 未知のウィジェットタイプ（新しい plugin version で追加されたものなど）は **保存時に保持** され、placeholder として表示されます。未対応の Dashboard を編集してもデータは落ちません。
 
@@ -180,7 +207,7 @@ grid:
   gap: 8          # pixels between cells
 widgets:
   - id: <uuid>                            # unique id (UUID-like string)
-    type: base | markdown | web | workflow | kanban
+    type: base | markdown | web | workflow | kanban | timeline
     layout:
       lg: { x: 0, y: 0, w: 6, h: 4 }      # required: position on the wide grid
       sm: { x: 0, y: 0, w: 12, h: 4 }     # optional: auto-derived (stacked) if omitted
@@ -206,6 +233,7 @@ config:
 # web
 config:
   url: https://example.com
+  showHeader: true                    # optional; false hides the URL/open header
 
 # workflow
 config:
@@ -221,6 +249,7 @@ config:
   statusProperty: status              # frontmatter property holding the status
   titleProperty: ""                   # frontmatter property for card title (empty = file name)
   displayFields: [priority, due]      # frontmatter properties shown on each card
+  cardOrder: [Tasks/A.md, Tasks/B.md]  # optional manual order persisted by drag/drop
   columns:                            # ordered list of status values
     - value: todo
       label: To Do
@@ -229,6 +258,13 @@ config:
     - value: done
       label: Done
   showUnspecified: true               # show cards with no/unknown status
+
+# timeline
+config:
+  name: Journal                       # stores posts under Dashboards/Timeline/Journal/
+  latestCount: 20
+  collapseLineLimit: 8
+  collapseCharLimit: 440
 ```
 
 ### 完全な例
@@ -256,16 +292,25 @@ widgets:
     layout: { lg: { x: 0, y: 6, w: 12, h: 4 } }
     config:
       url: https://help.obsidian.md
+      showHeader: true
+  - id: journal
+    type: timeline
+    layout: { lg: { x: 0, y: 10, w: 6, h: 6 } }
+    config:
+      name: Journal
+      latestCount: 20
+      collapseLineLimit: 8
+      collapseCharLimit: 440
 ```
 
 ---
 
 ## Tips & Notes
 
-- **先にデータを作る。** Base ウィジェットでは、参照する前に `.base` ファイルとビューを作成します。AI dashboard skill はこれを一括で行います。
+- **先にデータを作成または編集する。** Base ウィジェットでは、設定パネルから `.base` ファイルとビューを作成/編集するか、AI dashboard skill に一括で作成させます。
 - **ビューで分ける。** Active / Done / Backlog などを表示する場合、`.base` を複製せず、1 つの `.base` に複数ビューを作って複数の Base ウィジェットから参照します。
 - **Workflow ウィジェットは軽く保つ。** 結果は cache されます。毎回実行するのではなく、適切な **Auto-refresh interval** を設定し、出力は `result` に保存してください。
 - **Desktop only.** Dashboard はこの plugin の他機能と同じく Obsidian desktop で動作します。
-- **ファイルは Vault に保存される。** Dashboard は `Dashboards/` 配下の `.dashboard` ファイルとして保存され、他のノートと同じように同期・バージョン管理できます。Workflow cache は各 Dashboard の隣に hidden sidecar file として保存されます。
+- **ファイルは Vault に保存される。** Dashboard は `Dashboards/` 配下の `.dashboard` ファイルとして、workflow 結果は `Dashboards/Data/`、Timeline 投稿は `Dashboards/Timeline/`、生成された Bases は `Dashboards/Bases/` に保存されます。これらは通常の Vault ファイルで、他のノートと同じように同期・バージョン管理できます。
 
 > 関連: [Workflow Nodes](WORKFLOW_NODES.md) · [Agent Skills](SKILLS.md)

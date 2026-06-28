@@ -4,14 +4,16 @@
 // the sidecar cache and never executes. Execution is triggered explicitly by the
 // refresh button, the config editor's test-run, or the interval auto-run (a
 // stale-on-open check plus a recurring timer while the dashboard view is open).
-// The cache lives in a hidden sidecar file next to the dashboard so
-// results survive reopen without bloating the `.dashboard` file.
+// The cache lives in a normal synced data file under Dashboards/Data so results
+// survive reopen without bloating the `.dashboard` file.
 
 import { TFile, type App } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { parseWorkflowFromMarkdown } from "src/workflow/parser";
 import { WorkflowExecutor } from "src/workflow/executor";
 import type { PromptCallbacks, WorkflowInput } from "src/workflow/types";
+import { ensureVaultFolder } from "../dashboardFile";
+import { DASHBOARD_FOLDER } from "../types";
 
 export interface WorkflowCacheRecord {
   ranAt: number;
@@ -23,8 +25,9 @@ export interface WorkflowCacheRecord {
 
 /**
  * Headless prompt callbacks: a dashboard run has no UI, so interactive prompts
- * resolve to null (their nodes then fail with a clear message) and edit
- * confirmations auto-approve so file-writing workflows can complete.
+ * resolve to null (their nodes then fail with a clear message). Edit
+ * confirmations are declined: a headless run must not silently write to the
+ * vault unless the workflow author explicitly disables confirmation.
  */
 function headlessCallbacks(): PromptCallbacks {
   return {
@@ -33,7 +36,7 @@ function headlessCallbacks(): PromptCallbacks {
     promptForNewFilePath: () => Promise.resolve(null),
     promptForSelection: () => Promise.resolve(null),
     promptForValue: () => Promise.resolve(null),
-    promptForConfirmation: () => Promise.resolve({ action: "save" as const }),
+    promptForConfirmation: () => Promise.resolve({ action: "cancel" as const }),
     promptForDialog: () => Promise.resolve(null),
     promptForPassword: () => Promise.resolve(null),
   };
@@ -68,14 +71,11 @@ export function extractString(
   return null;
 }
 
-/** Resolve a workflow file by exact path, then by basename. */
+/** Resolve a workflow file by exact vault path only. */
 export function resolveWorkflowFile(app: App, workflowPath: string): TFile | null {
   if (!workflowPath) return null;
   const direct = app.vault.getAbstractFileByPath(workflowPath);
-  if (direct instanceof TFile) return direct;
-  const base = workflowPath.split("/").pop();
-  const md = app.vault.getMarkdownFiles();
-  return md.find((f) => f.path === workflowPath) ?? md.find((f) => f.name === base) ?? null;
+  return direct instanceof TFile ? direct : null;
 }
 
 /**
@@ -113,18 +113,16 @@ export async function runWorkflowText(
   return text;
 }
 
-// --- Sidecar cache (hidden file next to the dashboard) ---
+// --- Sidecar cache (normal synced file under Dashboards/Data) ---
 
-function cachePath(dashboardPath: string): string {
-  const slash = dashboardPath.lastIndexOf("/");
-  const dir = slash >= 0 ? dashboardPath.slice(0, slash) : "";
-  const base = (slash >= 0 ? dashboardPath.slice(slash + 1) : dashboardPath).replace(/\.dashboard$/i, "");
-  const name = `.${base}.workflow.json`;
-  return dir ? `${dir}/${name}` : name;
+export const WORKFLOW_CACHE_FOLDER = `${DASHBOARD_FOLDER}/Data`;
+
+export function workflowCachePath(dashboardPath: string): string {
+  return `${WORKFLOW_CACHE_FOLDER}/${encodeURIComponent(dashboardPath)}.json`;
 }
 
 async function loadCacheFile(app: App, dashboardPath: string): Promise<Record<string, WorkflowCacheRecord>> {
-  const path = cachePath(dashboardPath);
+  const path = workflowCachePath(dashboardPath);
   try {
     if (!(await app.vault.adapter.exists(path))) return {};
     return JSON.parse(await app.vault.adapter.read(path)) as Record<string, WorkflowCacheRecord>;
@@ -188,13 +186,14 @@ export async function saveWidgetCache(
   record: WorkflowCacheRecord,
 ): Promise<void> {
   if (!dashboardPath || !widgetId) return;
-  const path = cachePath(dashboardPath);
+  const path = workflowCachePath(dashboardPath);
   const prev = saveQueues.get(path) ?? Promise.resolve();
   const next = prev
     .catch(() => undefined) // a prior failure must not break the chain
     .then(async () => {
       const caches = await loadCacheFile(app, dashboardPath);
       caches[widgetId] = record;
+      await ensureVaultFolder(app.vault, WORKFLOW_CACHE_FOLDER);
       await app.vault.adapter.write(path, JSON.stringify(caches, null, 2));
     });
   saveQueues.set(path, next);

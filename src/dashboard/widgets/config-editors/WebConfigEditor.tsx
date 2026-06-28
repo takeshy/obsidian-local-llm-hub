@@ -4,6 +4,7 @@ import type { ConfigEditorProps } from "../../types";
 
 interface WebConfig {
   url?: string;
+  showHeader?: boolean;
 }
 
 const isValidUrl = (value: string): boolean => {
@@ -36,10 +37,21 @@ export function WebConfigEditor({ config, onChange }: ConfigEditorProps) {
           />
         </div>
         {!valid && <p className="llm-hub-db-error">{t("dashboard.urlInvalid")}</p>}
-        <p className="llm-hub-db-hint">{t("dashboard.webHint")}</p>
-      </div>
+      <p className="llm-hub-db-hint">{t("dashboard.webHint")}</p>
+    </div>
 
-      {showPreview && (
+    <div className="llm-hub-db-field">
+      <label className="llm-hub-db-kanban-checkbox">
+        <input
+          type="checkbox"
+          checked={cfg.showHeader !== false}
+          onChange={(e) => onChange({ ...cfg, showHeader: e.target.checked })}
+        />
+        {t("dashboard.webShowHeader")}
+      </label>
+    </div>
+
+    {showPreview && (
         <a
           className="llm-hub-db-web-open"
           href={url}

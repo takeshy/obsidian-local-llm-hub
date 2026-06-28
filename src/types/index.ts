@@ -259,6 +259,8 @@ export interface LocalLlmHubSettings {
   enabledWorkflowEventTriggers: WorkflowEventTrigger[];
   hideWorkspaceFolder: boolean;
   lastSelectedWorkflowPath?: string;
+  /** Last used model for Timeline AI rewrite. */
+  lastTimelineAiModel?: string;
   mcpServers: McpServerConfig[];
 }
 

@@ -93,17 +93,21 @@ See [WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node reference.
 
 Build a live personal home / overview page from a responsive grid of widgets.
 Dashboard files (`.dashboard`) can embed Obsidian Bases views, notes, web pages,
-workflow output, and Kanban boards. They open like normal notes, start in a
-read-only view mode, and switch to edit mode for drag-and-resize layout changes.
+timelines, workflow output, and Kanban boards. They open like normal notes,
+start in a read-only view mode, and switch to edit mode for drag-and-resize
+layout changes.
 
-Workflow widgets render from a sidecar cache so heavy workflows do not rerun on
-every open. Base and Workflow widgets also include **Create with AI** actions,
-and the built-in `dashboard` agent skill can author an entire dashboard plus
-backing `.base` files from chat.
+Workflow widgets render from `Dashboards/Data/` cache files so heavy workflows
+do not rerun on every open. Base and Workflow widgets also include **Create with
+AI** actions, Timeline drafts can be rewritten with AI, and the built-in
+`dashboard` agent skill can author an entire dashboard plus backing `.base`
+files from chat.
 
 ![Dashboard](docs/images/dashboard.png)
 
 ![Kanban dashboard settings](docs/images/kanban_edit.png)
+
+![Timeline input](docs/images/timeline_input.png)
 
 See [DASHBOARD.md](docs/DASHBOARD.md) for the complete dashboard guide and file
 format.
