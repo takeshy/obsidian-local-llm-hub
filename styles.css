@@ -6948,6 +6948,7 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 .llm-hub-db-ai-row textarea,
 .llm-hub-db-ai-row select {
   width: 100%;
+  min-width: 0;
 }
 .llm-hub-db-ai-row textarea {
   resize: vertical;
@@ -6969,6 +6970,7 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 }
 .llm-hub-db-ai-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 12px;
@@ -6977,6 +6979,7 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  max-width: 100%;
 }
 
 /* Segmented toggle (output format) */
@@ -7383,6 +7386,65 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   overflow: auto;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
+}
+
+/* Widen the dashboard AI modals so the diff has room, and keep the footer
+   buttons in view: the modal fits the viewport and only the diff scrolls. */
+.modal:has(.llm-hub-db-ai-modal) {
+  width: min(860px, 92vw);
+  max-width: 92vw;
+}
+.llm-hub-db-ai-modal {
+  width: min(860px, 92vw);
+  max-width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+}
+.llm-hub-db-ai-modal .llm-hub-db-ai-diff {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  max-height: none;
+}
+.llm-hub-db-ai-modal .llm-hub-db-ai-row,
+.llm-hub-db-ai-modal .llm-hub-db-ai-difflabel,
+.llm-hub-db-ai-modal .llm-hub-db-ai-status,
+.llm-hub-db-ai-modal .llm-hub-db-ai-footer {
+  min-width: 0;
+  flex-shrink: 0;
+}
+.llm-hub-db-ai-modal .llm-hub-diff-view {
+  max-width: 100%;
+}
+
+/* Wrap long diff lines (prose posts) instead of clipping them off-screen */
+.llm-hub-db-ai-modal .llm-hub-diff-line,
+.llm-hub-db-ai-modal .llm-hub-diff-split-cell {
+  align-items: flex-start;
+}
+.llm-hub-db-ai-modal .llm-hub-diff-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .modal:has(.llm-hub-db-timeline-ai-modal) {
+    width: 96vw;
+    max-width: 96vw;
+  }
+  .llm-hub-db-timeline-ai-modal {
+    width: 96vw;
+  }
+  .llm-hub-db-timeline-ai-modal .llm-hub-db-ai-footer button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
 }
 
 .llm-hub-db-kanban-card-field {
