@@ -104,6 +104,13 @@ export class LocalLlmHubPlugin extends Plugin {
       (leaf) => new CryptView(leaf, this)
     );
 
+    // Register .encrypted extension so Obsidian opens these files in CryptView.
+    try {
+      this.registerExtensions(["encrypted"], CRYPT_VIEW_TYPE);
+    } catch {
+      // Extension already registered by another plugin - skip
+    }
+
     // Dashboard view (.dashboard files: widget grid over bases/notes/web)
     registerCoreWidgets();
     this.registerView(
