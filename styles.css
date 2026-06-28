@@ -7759,6 +7759,12 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   margin-top: 4px;
   z-index: auto;
 }
+.llm-hub-db-timeline-wiki-suggestions.is-floating {
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: 1000;
+}
 .llm-hub-db-timeline-wiki-suggestions button {
   width: 100%;
   height: auto;
