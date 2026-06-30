@@ -426,6 +426,9 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.enabledWorkflowEventTriggers) {
       this.settings.enabledWorkflowEventTriggers = [];
     }
+    if (!this.settings.knowledgeSources) {
+      this.settings.knowledgeSources = [];
+    }
     // Clean up legacy settings from saved data
     const raw = this.settings as unknown as Record<string, unknown>;
     let needsSave = false;

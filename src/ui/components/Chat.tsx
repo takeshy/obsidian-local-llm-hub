@@ -26,6 +26,7 @@ import { GET_WORKFLOW_SPEC_TOOL, GET_WORKFLOW_SPEC_TOOL_NAME, handleGetWorkflowS
 import { getRagStore } from "src/core/ragStore";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
 import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
+import { buildOkfSystemPrompt, discoverOkfBundles, type OkfBundle } from "src/core/okfLoader";
 import { parseWorkflowFromMarkdown } from "src/workflow/parser";
 import { WorkflowExecutor } from "src/workflow/executor";
 import type { McpServerInfo } from "src/core/mcpManager";
@@ -80,6 +81,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [activeSkillPaths, setActiveSkillPaths] = useState<string[]>(
     () => DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)
   );
+  const [okfBundles, setOkfBundles] = useState<OkfBundle[]>([]);
+  const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
   const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
 
@@ -235,6 +238,50 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       prev.includes(folderPath)
         ? prev.filter(p => p !== folderPath)
         : [...prev, folderPath]
+    );
+  }, []);
+
+  const getOkfRoot = useCallback((): string | null => {
+    const source = (plugin.settings.knowledgeSources || []).find(s => s.enabled && s.type === "okf" && s.path.trim());
+    return source?.path.trim() || null;
+  }, [plugin]);
+
+  const refreshOkfBundles = useCallback(() => {
+    const root = getOkfRoot();
+    if (!root) {
+      setOkfBundles([]);
+      setActiveOkfBundleIds([]);
+      return;
+    }
+    void discoverOkfBundles(plugin.app, root)
+      .then((bundles) => {
+        setOkfBundles(bundles);
+        setActiveOkfBundleIds(prev => {
+          const validIds = new Set(bundles.map(bundle => bundle.id));
+          const kept = prev.filter(id => validIds.has(id));
+          return kept.length > 0 ? kept : bundles.map(bundle => bundle.id);
+        });
+      })
+      .catch((e) => {
+        console.warn("Failed to discover OKF bundles:", e);
+        setOkfBundles([]);
+        setActiveOkfBundleIds([]);
+      });
+  }, [getOkfRoot, plugin]);
+
+  useEffect(() => {
+    refreshOkfBundles();
+    plugin.settingsEmitter.on("settings-updated", refreshOkfBundles);
+    return () => {
+      plugin.settingsEmitter.off("settings-updated", refreshOkfBundles);
+    };
+  }, [plugin, refreshOkfBundles]);
+
+  const handleToggleOkfBundle = useCallback((bundleId: string) => {
+    setActiveOkfBundleIds(prev =>
+      prev.includes(bundleId)
+        ? prev.filter(id => id !== bundleId)
+        : [...prev, bundleId]
     );
   }, []);
 
@@ -621,6 +668,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         systemPrompt += `\n\nAdditional instructions: ${plugin.settings.systemPrompt}`;
       }
 
+      const okfRoot = getOkfRoot();
+      if (okfRoot && activeOkfBundleIds.length > 0) {
+        systemPrompt += await buildOkfSystemPrompt(plugin.app, okfRoot, activeOkfBundleIds);
+      }
+
       // RAG context injection (only when a setting is selected AND RAG is enabled for this session)
       let ragSources: string[] | undefined;
       let ragCitations: RagCitation[] | undefined;
@@ -901,7 +953,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds]);
+  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
   return (
     <div className="llm-hub-chat">
@@ -1014,6 +1066,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         availableSkills={availableSkills}
         activeSkillPaths={activeSkillPaths}
         onToggleSkill={handleToggleSkill}
+        okfBundles={okfBundles}
+        activeOkfBundleIds={activeOkfBundleIds}
+        onToggleOkfBundle={handleToggleOkfBundle}
         slashCommands={[
           ...plugin.settings.slashCommands.map(cmd => ({
             name: cmd.name,

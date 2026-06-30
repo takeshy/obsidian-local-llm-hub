@@ -4339,6 +4339,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   font-size: 11px;
   color: var(--text-muted);
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .llm-hub-model-dropdown {
@@ -4357,6 +4360,26 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   background-position: right 4px center;
   background-size: 8px 5px;
   cursor: pointer;
+}
+
+.llm-hub-okf-bundles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.llm-hub-okf-bundle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.llm-hub-okf-bundle input[type="checkbox"] {
+  margin: 0;
 }
 
 /* Skills Selector */

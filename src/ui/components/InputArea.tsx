@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
-import { Send, Paperclip, StopCircle, Database } from "lucide-react";
+import { Send, Paperclip, StopCircle, Database, BookOpen } from "lucide-react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
 import type { McpServerInfo } from "src/core/mcpManager";
 import type { SkillMetadata } from "src/core/skillsLoader";
+import type { OkfBundle } from "src/core/okfLoader";
 import { RagSourceModal } from "./RagSourceModal";
 import SkillSelector from "./SkillSelector";
 import { t } from "src/i18n";
@@ -43,6 +44,9 @@ interface InputAreaProps {
   availableSkills?: SkillMetadata[];
   activeSkillPaths?: string[];
   onToggleSkill?: (folderPath: string) => void;
+  okfBundles?: OkfBundle[];
+  activeOkfBundleIds?: string[];
+  onToggleOkfBundle?: (bundleId: string) => void;
 }
 
 export interface InputAreaHandle {
@@ -93,6 +97,9 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   availableSkills,
   activeSkillPaths,
   onToggleSkill,
+  okfBundles = [],
+  activeOkfBundleIds = [],
+  onToggleOkfBundle,
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -626,7 +633,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       </div>
 
       {/* Model & RAG selector */}
-      {(availableModels.length > 1 || ragSettingNames.length > 0) && (
+      {(availableModels.length > 1 || ragSettingNames.length > 0 || okfBundles.length > 0) && (
         <div className="llm-hub-model-selector">
           {availableModels.length > 1 && (
             <>
@@ -669,6 +676,25 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                 ))}
               </select>
             </>
+          )}
+          {okfBundles.length > 0 && onToggleOkfBundle && (
+            <div className="llm-hub-okf-bundles">
+              <span className="llm-hub-model-label">
+                <BookOpen size={14} />
+                OKF
+              </span>
+              {okfBundles.map((bundle) => (
+                <label key={bundle.id} className="llm-hub-okf-bundle">
+                  <input
+                    type="checkbox"
+                    checked={activeOkfBundleIds.includes(bundle.id)}
+                    onChange={() => onToggleOkfBundle(bundle.id)}
+                    disabled={isLoading}
+                  />
+                  {bundle.name}
+                </label>
+              ))}
+            </div>
           )}
         </div>
       )}

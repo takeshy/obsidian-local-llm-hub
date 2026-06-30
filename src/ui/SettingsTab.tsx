@@ -3,6 +3,8 @@ import type { LocalLlmHubPlugin } from "src/plugin";
 import { displayLlmSettings } from "src/ui/settings/llmSettings";
 import { displayWorkspaceSettings } from "src/ui/settings/workspaceSettings";
 import { displayRagSettings } from "src/ui/settings/ragSettings";
+import { displayKnowledgeSettings } from "src/ui/settings/knowledgeSettings";
+import { displayExternalSkillSettings } from "src/ui/settings/externalSkillSettings";
 import { displayEncryptionSettings } from "src/ui/settings/encryptionSettings";
 import { displaySlashCommandSettings } from "src/ui/settings/slashCommandSettings";
 import { displayMcpSettings } from "src/ui/settings/mcpSettings";
@@ -27,6 +29,8 @@ export class SettingsTab extends PluginSettingTab {
     displayLlmSettings(containerEl, ctx);
     displayWorkspaceSettings(containerEl, ctx);
     displayRagSettings(containerEl, ctx);
+    displayKnowledgeSettings(containerEl, ctx);
+    displayExternalSkillSettings(containerEl, ctx);
     displaySlashCommandSettings(containerEl, ctx);
     displayMcpSettings(containerEl, ctx);
     displayEncryptionSettings(containerEl, ctx);

@@ -243,6 +243,14 @@ export interface McpServerConfig {
   enabled: boolean;
 }
 
+export interface KnowledgeSource {
+  id: string;
+  name: string;
+  path: string;
+  type: "okf";
+  enabled: boolean;
+}
+
 // Plugin settings
 export interface LocalLlmHubSettings {
   llmConfig: LocalLlmConfig;
@@ -261,6 +269,7 @@ export interface LocalLlmHubSettings {
   lastSelectedWorkflowPath?: string;
   /** Last used model for Timeline AI rewrite. */
   lastTimelineAiModel?: string;
+  knowledgeSources: KnowledgeSource[];
   mcpServers: McpServerConfig[];
 }
 
@@ -285,5 +294,6 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   enabledWorkflowHotkeys: [],
   enabledWorkflowEventTriggers: [],
   hideWorkspaceFolder: true,
+  knowledgeSources: [],
   mcpServers: [],
 };
