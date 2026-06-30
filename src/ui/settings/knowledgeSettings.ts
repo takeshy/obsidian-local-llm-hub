@@ -9,6 +9,7 @@ const DEFAULT_OKF_PATH = "Knowledge";
 function getOkfSource(ctx: SettingsContext): KnowledgeSource {
   const existing = (ctx.plugin.settings.knowledgeSources || [])[0];
   return {
+    ...existing,
     id: existing?.id || DEFAULT_OKF_SOURCE_ID,
     name: "OKF",
     path: existing?.path || DEFAULT_OKF_PATH,

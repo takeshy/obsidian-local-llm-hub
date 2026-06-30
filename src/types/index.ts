@@ -249,6 +249,7 @@ export interface KnowledgeSource {
   path: string;
   type: "okf";
   enabled: boolean;
+  activeBundleIds?: string[];
 }
 
 // Plugin settings

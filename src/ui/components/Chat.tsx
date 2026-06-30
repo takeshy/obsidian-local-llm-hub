@@ -12,6 +12,7 @@ import type { LocalLlmHubPlugin } from "src/plugin";
 import {
   type Message,
   type Attachment,
+  type KnowledgeSource,
   type VaultToolMode,
   type ToolCall,
   type ToolResult,
@@ -241,23 +242,41 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     );
   }, []);
 
-  const getOkfRoot = useCallback((): string | null => {
+  const getOkfSource = useCallback((): KnowledgeSource | null => {
     const source = (plugin.settings.knowledgeSources || []).find(s => s.enabled && s.type === "okf" && s.path.trim());
-    return source?.path.trim() || null;
+    return source ?? null;
   }, [plugin]);
 
+  const getOkfRoot = useCallback((): string | null => {
+    return getOkfSource()?.path.trim() || null;
+  }, [getOkfSource]);
+
+  const saveActiveOkfBundleIds = useCallback((activeBundleIds: string[]) => {
+    const source = getOkfSource();
+    if (!source) return;
+    plugin.settings.knowledgeSources = plugin.settings.knowledgeSources.map(item =>
+      item.id === source.id ? { ...item, activeBundleIds } : item
+    );
+    void plugin.saveSettings();
+  }, [getOkfSource, plugin]);
+
   const refreshOkfBundles = useCallback(() => {
-    const root = getOkfRoot();
-    if (!root) {
+    const source = getOkfSource();
+    if (!source) {
       setOkfBundles([]);
       setActiveOkfBundleIds([]);
       return;
     }
+    const root = source.path.trim();
+    const savedActiveBundleIds = source.activeBundleIds;
     void discoverOkfBundles(plugin.app, root)
       .then((bundles) => {
         setOkfBundles(bundles);
         setActiveOkfBundleIds(prev => {
           const validIds = new Set(bundles.map(bundle => bundle.id));
+          if (savedActiveBundleIds) {
+            return savedActiveBundleIds.filter(id => validIds.has(id));
+          }
           const kept = prev.filter(id => validIds.has(id));
           return kept.length > 0 ? kept : bundles.map(bundle => bundle.id);
         });
@@ -267,7 +286,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         setOkfBundles([]);
         setActiveOkfBundleIds([]);
       });
-  }, [getOkfRoot, plugin]);
+  }, [getOkfSource, plugin]);
 
   useEffect(() => {
     refreshOkfBundles();
@@ -278,12 +297,14 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   }, [plugin, refreshOkfBundles]);
 
   const handleToggleOkfBundle = useCallback((bundleId: string) => {
-    setActiveOkfBundleIds(prev =>
-      prev.includes(bundleId)
+    setActiveOkfBundleIds(prev => {
+      const next = prev.includes(bundleId)
         ? prev.filter(id => id !== bundleId)
-        : [...prev, bundleId]
-    );
-  }, []);
+        : [...prev, bundleId];
+      saveActiveOkfBundleIds(next);
+      return next;
+    });
+  }, [saveActiveOkfBundleIds]);
 
   const handleModelChange = useCallback((model: string) => {
     setCurrentModel(model);
