@@ -307,7 +307,7 @@ export class McpClient {
       if (!line) continue;
 
       try {
-        const message = JSON.parse(line) as JsonRpcResponse;
+        const message = JSON.parse(line) as unknown as JsonRpcResponse;
         this.dispatchMessage(message);
       } catch {
         // Skip unparseable lines
@@ -338,7 +338,7 @@ export class McpClient {
       this.readBuffer = this.readBuffer.subarray(bodyStart + contentLength);
 
       try {
-        const message = JSON.parse(body) as JsonRpcResponse;
+        const message = JSON.parse(body) as unknown as JsonRpcResponse;
         this.dispatchMessage(message);
       } catch {
         // Skip unparseable messages

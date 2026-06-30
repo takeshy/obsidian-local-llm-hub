@@ -42,7 +42,7 @@ export function dashboardDisplayName(fileName: string): string {
 export function parseDashboard(content: string): DashboardData | null {
   if (!content || !content.trim()) return null;
   try {
-    const parsed = parseYaml(content);
+    const parsed = parseYaml(content) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
     const data = parsed as DashboardData;
     // Defensive defaults so a hand-edited / partial file still renders.

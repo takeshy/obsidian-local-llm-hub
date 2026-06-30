@@ -99,7 +99,7 @@ export function parseMarkdownToMessages(content: string): { messages: Message[];
         const metadataMatch = block.match(/<!-- msg-meta:(.+?) -->/);
         if (metadataMatch) {
           try {
-            const meta = JSON.parse(metadataMatch[1]) as Record<string, unknown>;
+            const meta = JSON.parse(metadataMatch[1]) as unknown as Record<string, unknown>;
             if (meta.thinking) message.thinking = meta.thinking as string;
             if (meta.llmContent) message.llmContent = meta.llmContent as string;
             if (meta.ragUsed) message.ragUsed = meta.ragUsed as boolean;

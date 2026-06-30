@@ -7,7 +7,8 @@ export function normalizePathSeparators(path: string): string {
 }
 
 export function getNodeFs(): typeof import("fs") | null {
-  const requireFn = (window as unknown as { require?: NodeJS.Require }).require;
+  const runtimeWindow = window as Window & { require?: (id: string) => unknown };
+  const requireFn = runtimeWindow.require;
   if (!requireFn) return null;
   try {
     return requireFn("fs") as typeof import("fs");

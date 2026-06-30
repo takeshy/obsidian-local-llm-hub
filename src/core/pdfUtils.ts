@@ -1,6 +1,10 @@
 import { App, TFile } from "obsidian";
 import { PDFDocument } from "pdf-lib";
 
+interface NodeFsReader {
+  promises: { readFile: (p: string) => Promise<Buffer> };
+}
+
 function parsePageLabel(label: string): { startPage: number; endPage: number; totalPages: number } | null {
   const match = label.match(/pages?\s+(\d+)\s*-\s*(\d+)\s+of\s+(\d+)/i);
   if (!match) return null;
@@ -22,7 +26,8 @@ export async function extractPdfPages(
   let pdfBytes: Uint8Array;
   const isAbsolute = filePath.startsWith("/") || /^[A-Z]:\\/i.test(filePath);
   if (isAbsolute) {
-    const fs = (activeWindow as unknown as { require?: (id: string) => { promises: { readFile: (p: string) => Promise<Buffer> } } }).require?.("fs");
+    const runtimeWindow = activeWindow as Window & { require?: (id: string) => unknown };
+    const fs = runtimeWindow.require?.("fs") as NodeFsReader | undefined;
     if (!fs) return null;
     const buffer = await fs.promises.readFile(filePath);
     pdfBytes = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);

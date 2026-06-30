@@ -46,6 +46,39 @@ interface OpenAiModelsResponse {
   data: OpenAiModel[];
 }
 
+interface OllamaStreamResponse {
+  message?: {
+    content?: string;
+    thinking?: string;
+    tool_calls?: {
+      function: { name: string; arguments: Record<string, unknown> };
+    }[];
+  };
+  done?: boolean;
+  total_duration?: number;
+  prompt_eval_count?: number;
+  eval_count?: number;
+}
+
+interface OpenAiStreamResponse {
+  choices?: {
+    delta?: {
+      content?: string;
+      reasoning_content?: string;
+      tool_calls?: {
+        index: number;
+        id?: string;
+        type?: string;
+        function?: { name?: string; arguments?: string };
+      }[];
+    };
+    finish_reason?: string | null;
+  }[];
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+  error?: { message?: string } | string;
+  message?: string;
+}
+
 /** Families that are embedding-only models (not usable for chat) */
 const EMBEDDING_FAMILIES = new Set(["nomic-bert", "bert", "snowflake-arctic-embed"]);
 
@@ -341,19 +374,7 @@ async function* ollamaChatStream(
           if (!trimmed) continue;
 
           try {
-            const parsed = JSON.parse(trimmed) as {
-              message?: {
-                content?: string;
-                thinking?: string;
-                tool_calls?: {
-                  function: { name: string; arguments: Record<string, unknown> };
-                }[];
-              };
-              done?: boolean;
-              total_duration?: number;
-              prompt_eval_count?: number;
-              eval_count?: number;
-            };
+            const parsed = JSON.parse(trimmed) as unknown as OllamaStreamResponse;
 
             // Log first few chunks to debug format
             if (!loggedFirst) {
@@ -590,7 +611,7 @@ async function* openaiChatStream(
             // Emit any remaining accumulated tool calls
             for (const [, tc] of pendingToolCalls) {
               try {
-                const args = JSON.parse(tc.args) as Record<string, unknown>;
+                const args = JSON.parse(tc.args) as unknown as Record<string, unknown>;
                 chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: args } });
               } catch {
                 chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });
@@ -608,24 +629,7 @@ async function* openaiChatStream(
           }
 
           try {
-            const parsed = JSON.parse(data) as {
-              choices?: {
-                delta?: {
-                  content?: string;
-                  reasoning_content?: string;
-                  tool_calls?: {
-                    index: number;
-                    id?: string;
-                    type?: string;
-                    function?: { name?: string; arguments?: string };
-                  }[];
-                };
-                finish_reason?: string | null;
-              }[];
-              usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-              error?: { message?: string } | string;
-              message?: string;
-            };
+            const parsed = JSON.parse(data) as unknown as OpenAiStreamResponse;
 
             // Some OpenAI-compatible servers (e.g. llama.cpp / LM Studio) report
             // runtime errors like context-length overflow as HTTP 200 with an
@@ -676,7 +680,7 @@ async function* openaiChatStream(
             if (choice?.finish_reason === "tool_calls" || choice?.finish_reason === "function_call") {
               for (const [, tc] of pendingToolCalls) {
                 try {
-                  const args = JSON.parse(tc.args) as Record<string, unknown>;
+                  const args = JSON.parse(tc.args) as unknown as Record<string, unknown>;
                   chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: args } });
                 } catch {
                   chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });
@@ -710,7 +714,7 @@ async function* openaiChatStream(
           // Emit any pending tool calls that weren't emitted via finish_reason or [DONE]
           for (const [, tc] of pendingToolCalls) {
             try {
-              const args = JSON.parse(tc.args) as Record<string, unknown>;
+              const args = JSON.parse(tc.args) as unknown as Record<string, unknown>;
               chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: args } });
             } catch {
               chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });

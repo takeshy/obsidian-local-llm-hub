@@ -26,7 +26,7 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, unknow
   if (!match) return { frontmatter: {}, body: content };
   try {
     return {
-      frontmatter: (parseYaml(match[1]) as Record<string, unknown>) || {},
+      frontmatter: (parseYaml(match[1]) as unknown as Record<string, unknown>) || {},
       body: match[2],
     };
   } catch {
