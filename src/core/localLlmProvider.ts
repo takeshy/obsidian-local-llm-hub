@@ -13,6 +13,7 @@
 import { requestUrl } from "obsidian";
 import type { Message, StreamChunk, LocalLlmConfig, ToolDefinition, ToolCall } from "../types";
 import { extractInlineToolCalls } from "./toolCallParser";
+import type { NodeHttpModule } from "./nodeCompat";
 
 // OpenAI-compatible API types
 interface OpenAiMessage {
@@ -352,7 +353,7 @@ async function* ollamaChatStream(
     (res) => {
       if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
         let errorBody = "";
-        res.on("data", (chunk: Buffer) => { errorBody += chunk.toString(); });
+        res.on("data", (chunk: Uint8Array) => { errorBody += chunk.toString(); });
         res.on("end", () => {
           chunks.push({ type: "error", error: `HTTP ${res.statusCode}: ${errorBody.slice(0, 200) || res.statusMessage}` });
           streamDone = true;
@@ -364,7 +365,7 @@ async function* ollamaChatStream(
       let buffer = "";
       let loggedFirst = false;
 
-      res.on("data", (chunk: Buffer) => {
+      res.on("data", (chunk: Uint8Array) => {
         buffer += chunk.toString();
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
@@ -581,7 +582,7 @@ async function* openaiChatStream(
     (res) => {
       if (res.statusCode && (res.statusCode < 200 || res.statusCode >= 300)) {
         let errorBody = "";
-        res.on("data", (chunk: Buffer) => { errorBody += chunk.toString(); });
+        res.on("data", (chunk: Uint8Array) => { errorBody += chunk.toString(); });
         res.on("end", () => {
           chunks.push({ type: "error", error: `HTTP ${res.statusCode}: ${errorBody.slice(0, 200) || res.statusMessage}` });
           streamDone = true;
@@ -597,7 +598,7 @@ async function* openaiChatStream(
       // Accumulate tool call arguments across SSE chunks
       const pendingToolCalls = new Map<number, { id: string; name: string; args: string }>();
 
-      res.on("data", (chunk: Buffer) => {
+      res.on("data", (chunk: Uint8Array) => {
         buffer += chunk.toString();
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
@@ -810,7 +811,7 @@ class StreamSignal {
 }
 
 /** Load Node.js http or https module (desktop only, bypasses CORS). */
-function getHttpModule(protocol: string): typeof import("http") {
+function getHttpModule(protocol: string): NodeHttpModule {
   const runtimeWindow = activeWindow as unknown as {
     require?: (id: string) => unknown;
     module?: { require?: (id: string) => unknown };
@@ -822,7 +823,7 @@ function getHttpModule(protocol: string): typeof import("http") {
     throw new Error("Node.js http module is not available in this environment");
   }
   const moduleName = protocol === "https:" ? "https" : "http";
-  return loader(moduleName) as typeof import("http");
+  return loader(moduleName) as NodeHttpModule;
 }
 
 /**

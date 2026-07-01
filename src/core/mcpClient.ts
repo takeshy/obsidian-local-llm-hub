@@ -1,5 +1,12 @@
-import { spawn, type ChildProcess } from "child_process";
+import { spawn } from "child_process";
 import type { McpFraming, ToolDefinition } from "../types";
+import {
+  getNodeBuffer,
+  getNodeProcessEnv,
+  type NodeBuffer,
+  type NodeChildProcess,
+  type NodeSpawn,
+} from "./nodeCompat";
 
 // JSON-RPC 2.0 types
 interface JsonRpcRequest {
@@ -40,13 +47,13 @@ interface McpCallResult {
 }
 
 export class McpClient {
-  private process: ChildProcess | null = null;
+  private process: NodeChildProcess | null = null;
   private nextId = 1;
   private pending = new Map<number, {
     resolve: (value: unknown) => void;
     reject: (reason: Error) => void;
   }>();
-  private readBuffer = Buffer.alloc(0);
+  private readBuffer: NodeBuffer = getNodeBuffer().alloc(0);
   private tools: McpToolInfo[] = [];
   private _ready = false;
   private stderrLog: string[] = [];
@@ -66,17 +73,17 @@ export class McpClient {
   }
 
   async start(): Promise<void> {
-    const childEnv = { ...process.env, ...this.env };
-    this.process = spawn(this.command, this.args, {
+    const childEnv = { ...getNodeProcessEnv(), ...this.env };
+    this.process = (spawn as unknown as NodeSpawn)(this.command, this.args, {
       stdio: ["pipe", "pipe", "pipe"],
       env: childEnv,
     });
 
-    this.process.stdout!.on("data", (data: Buffer) => {
+    this.process.stdout!.on("data", (data: Uint8Array) => {
       this.handleData(data);
     });
 
-    this.process.stderr!.on("data", (data: Buffer) => {
+    this.process.stderr!.on("data", (data: NodeBuffer) => {
       const msg = data.toString("utf8").trim();
       console.debug("[MCP stderr]", msg);
       this.stderrLog.push(msg);
@@ -221,7 +228,7 @@ export class McpClient {
       return json + "\n";
     }
     // Content-Length framing (LSP-style)
-    return `Content-Length: ${Buffer.byteLength(json)}\r\n\r\n${json}`;
+    return `Content-Length: ${getNodeBuffer().byteLength(json)}\r\n\r\n${json}`;
   }
 
   private writeToStdin(data: string): void {
@@ -286,8 +293,8 @@ export class McpClient {
     this.writeToStdin(this.serializeMessage(notification));
   }
 
-  private handleData(data: Buffer): void {
-    this.readBuffer = Buffer.concat([this.readBuffer, data]);
+  private handleData(data: Uint8Array): void {
+    this.readBuffer = getNodeBuffer().concat([this.readBuffer, data]);
     if (this.framing === "newline") {
       this.parseNewlineDelimited();
     } else {

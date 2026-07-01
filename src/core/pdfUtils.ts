@@ -2,7 +2,7 @@ import { App, TFile } from "obsidian";
 import { PDFDocument } from "pdf-lib";
 
 interface NodeFsReader {
-  promises: { readFile: (p: string) => Promise<Buffer> };
+  promises: { readFile: (p: string) => Promise<Uint8Array> };
 }
 
 function parsePageLabel(label: string): { startPage: number; endPage: number; totalPages: number } | null {

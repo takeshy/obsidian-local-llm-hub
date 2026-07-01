@@ -271,7 +271,7 @@ export async function loadExternalRagIndex(dirPath: string): Promise<RagIndex | 
 export async function loadExternalRagVectors(dirPath: string): Promise<Float32Array | null> {
   try {
     const loader = getNodeRequire();
-    const fs = loader?.("fs") as { promises: { readFile: (p: string) => Promise<Buffer> } } | undefined;
+    const fs = loader?.("fs") as { promises: { readFile: (p: string) => Promise<Uint8Array> } } | undefined;
     const path = loader?.("path") as { join: (...args: string[]) => string } | undefined;
     if (!fs || !path) return null;
     const buffer = await fs.promises.readFile(path.join(dirPath, VECTORS_FILE));
