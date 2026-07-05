@@ -6408,6 +6408,520 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   color: var(--text-faint);
 }
 
+.llm-hub-db-grid.is-maximized {
+  display: block;
+  min-height: 100%;
+}
+
+.llm-hub-db-cell.is-maximized {
+  min-height: 70vh;
+  height: calc(100vh - 180px);
+}
+
+.llm-hub-db-cell[data-widget-type="file"] .llm-hub-db-cell-content,
+.llm-hub-db-cell[data-widget-type="memo-list"] .llm-hub-db-cell-content {
+  overflow: hidden;
+}
+
+.llm-hub-db-file-wrap,
+.llm-hub-db-file-main,
+.llm-hub-db-file-content,
+.llm-hub-db-pdf-viewer,
+.llm-hub-db-memolist {
+  height: 100%;
+  min-height: 0;
+}
+
+.llm-hub-db-file-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
+  background: var(--background-primary);
+}
+
+.llm-hub-db-file-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  /* Right padding reserves room for the cell's maximize/settings buttons,
+     which are absolutely positioned at the cell's top-right corner. */
+  padding: 4px 64px 4px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-db-file-main {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.llm-hub-db-file-content {
+  flex: 1;
+  overflow: auto;
+}
+
+.llm-hub-db-file-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.llm-hub-db-file-editorbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-db-file-textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  resize: none;
+  border: 0;
+  border-radius: 0;
+  padding: 12px;
+  font-family: var(--font-monospace);
+  background: var(--background-primary);
+}
+
+.llm-hub-db-file-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: white;
+}
+
+.llm-hub-db-file-imagewrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 12px;
+}
+
+.llm-hub-db-file-imagewrap img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.llm-hub-db-pdf-viewer {
+  display: flex;
+  flex-direction: column;
+}
+
+.llm-hub-db-pdf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-db-pdf-pages {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  background: var(--background-secondary);
+}
+
+.llm-hub-db-pdf-page {
+  position: relative;
+  margin: 0 auto 12px;
+  background: white;
+  box-shadow: 0 1px 5px rgb(0 0 0 / 0.25);
+}
+
+.llm-hub-db-pdf-page canvas,
+.llm-hub-db-pdf-text-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.llm-hub-db-pdf-text-layer {
+  color-scheme: only light;
+  text-align: initial;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  z-index: 1;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.llm-hub-db-pdf-text-layer :is(span, br) {
+  position: absolute;
+  white-space: pre;
+  color: transparent;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-db-pdf-text-layer > :not(.markedContent),
+.llm-hub-db-pdf-text-layer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.llm-hub-db-pdf-text-layer .markedContent {
+  display: contents;
+}
+
+.llm-hub-db-pdf-text-layer span[role="img"] {
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.llm-hub-db-pdf-text-layer ::selection {
+  background: rgb(59 130 246 / 0.35);
+  color: transparent;
+}
+
+.llm-hub-db-pdf-text-layer.selectionRendering ::selection,
+.llm-hub-db-pdf-text-layer br::selection {
+  background: transparent;
+  color: transparent;
+}
+
+.llm-hub-db-pdf-text-layer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.llm-hub-db-pdf-text-layer.selecting .endOfContent {
+  top: 0;
+}
+
+.llm-hub-db-pdf-page-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.llm-hub-db-memo-panel {
+  width: min(360px, 42%);
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.llm-hub-db-memo-header,
+.llm-hub-db-memo-item-head,
+.llm-hub-db-memo-edit-actions,
+.llm-hub-db-memolist-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.llm-hub-db-memo-header {
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-weight: 600;
+}
+
+.llm-hub-db-memo-header-actions,
+.llm-hub-db-memo-item-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.llm-hub-db-memo-rail {
+  width: 28px;
+  border-left: 1px solid var(--background-modifier-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  cursor: pointer;
+}
+
+.llm-hub-db-memo-list {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+
+.llm-hub-db-memo-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 10px;
+}
+
+.llm-hub-db-memo-item {
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+}
+
+.llm-hub-db-memo-item + .llm-hub-db-memo-item {
+  margin-top: 8px;
+}
+
+.llm-hub-db-memo-item-head {
+  justify-content: space-between;
+}
+
+.llm-hub-db-memo-item time,
+.llm-hub-db-memolist-row time {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.llm-hub-db-memo-item blockquote,
+.llm-hub-db-memo-relation blockquote {
+  margin: 0 0 6px;
+  padding: 4px 6px;
+  border-left: 3px solid var(--interactive-accent);
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  font-size: 10px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-db-memo-quote-link {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: 96px;
+  margin: 0 0 6px;
+  padding: 4px 6px;
+  border: none;
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: 0;
+  background: var(--background-secondary);
+  box-shadow: none;
+  color: var(--text-accent);
+  font-size: 10px;
+  line-height: 1.35;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  text-align: left;
+  white-space: pre-wrap;
+  cursor: pointer;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-db-memo-quote-link:hover {
+  background: var(--background-modifier-hover);
+  text-decoration: underline;
+}
+
+.llm-hub-db-memo-item p {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
+.llm-hub-db-memo-compose,
+.llm-hub-db-memo-edit,
+.llm-hub-db-memo-relation {
+  display: flex;
+  gap: 6px;
+}
+
+.llm-hub-db-memo-compose,
+.llm-hub-db-memo-edit {
+  flex-direction: column;
+}
+
+.llm-hub-db-memo-compose {
+  padding: 10px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-db-memo-compose textarea,
+.llm-hub-db-memo-edit textarea {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+}
+
+.llm-hub-db-memo-edit textarea.llm-hub-db-memo-edit-quote {
+  min-height: 44px;
+}
+
+.llm-hub-db-selection-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-popover, 1000);
+}
+
+.llm-hub-db-selection-menu {
+  position: fixed;
+  min-width: 160px;
+  max-width: 260px;
+  padding: 4px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  box-shadow: var(--shadow-l);
+}
+
+/* Mobile: the menu floats without a backdrop so the selection handles stay
+   usable; it needs its own stacking level. */
+.llm-hub-db-selection-menu-floating .llm-hub-db-selection-menu {
+  z-index: var(--layer-popover, 1000);
+}
+
+.llm-hub-db-selection-menu-quote {
+  max-height: 96px;
+  overflow: auto;
+  margin: 2px 4px 4px;
+  padding: 4px 6px;
+  border-left: 3px solid var(--interactive-accent);
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.llm-hub-db-selection-menu button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: var(--font-ui-smaller);
+  text-align: left;
+  cursor: pointer;
+}
+
+.llm-hub-db-selection-menu button:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-db-memolist {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 8px;
+}
+
+.llm-hub-db-memolist-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.llm-hub-db-memolist-search input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+}
+
+.llm-hub-db-memolist-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.llm-hub-db-memolist-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+}
+
+.llm-hub-db-memolist-row:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-db-memolist-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.llm-hub-db-memolist-text strong,
+.llm-hub-db-memolist-text small,
+.llm-hub-db-memolist-text em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llm-hub-db-memolist-text small,
+.llm-hub-db-memolist-text em {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.llm-hub-db-memolist-pager {
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .llm-hub-db-file-main {
+    flex-direction: column;
+  }
+
+  .llm-hub-db-memo-panel {
+    width: 100%;
+    min-width: 0;
+    max-height: 50%;
+    border-left: 0;
+    border-top: 1px solid var(--background-modifier-border);
+  }
+}
+
 /* Grid cell */
 .llm-hub-db-cell {
   position: relative;
@@ -6427,8 +6941,31 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 }
 .llm-hub-db-cell-content {
   height: 100%;
+  min-height: 0;
   width: 100%;
+  min-width: 0;
   overflow: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+/* Mobile: iOS long-press selection keeps expanding until it hits a
+   user-select: none boundary, so a selectable dashboard chrome means one
+   long-press can select the whole board. Obsidian's own styles (e.g. the
+   native Bases table) re-enable selection at the element level inside
+   widgets, so this needs !important on both sides: everything under the
+   dashboard is non-selectable, then reading surfaces and text inputs are
+   switched back on (the later rule wins the equal-importance tie). */
+.is-mobile .llm-hub-db-root,
+.is-mobile .llm-hub-db-root * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.is-mobile .llm-hub-db-file-content,
+.is-mobile .llm-hub-db-file-content *,
+.is-mobile .llm-hub-db-root textarea,
+.is-mobile .llm-hub-db-root input {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 /* Snap preview */
@@ -6445,17 +6982,22 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 .llm-hub-db-drag {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  width: 48px;
   height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
+  transform: translateX(-50%);
   background: var(--background-secondary);
-  border-bottom: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--background-modifier-border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
   color: var(--text-faint);
   opacity: 0;
+  pointer-events: none;
+  z-index: 12;
   transition: opacity 0.15s ease;
 }
 .llm-hub-db-drag:active {
@@ -6463,6 +7005,15 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 }
 .llm-hub-db-cell:hover .llm-hub-db-drag {
   opacity: 1;
+  pointer-events: auto;
+}
+.llm-hub-db-cell:focus-within .llm-hub-db-drag {
+  opacity: 0;
+  pointer-events: none;
+}
+.is-mobile .llm-hub-db-cell[data-widget-type="file"]:focus-within .llm-hub-db-drag {
+  opacity: 1;
+  pointer-events: auto;
 }
 .llm-hub-db-actions {
   position: absolute;
@@ -6472,10 +7023,6 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   align-items: center;
   gap: 2px;
   z-index: 10;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.llm-hub-db-cell:hover .llm-hub-db-actions {
   opacity: 1;
 }
 .llm-hub-db-iconbtn {
@@ -6506,10 +7053,17 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   cursor: se-resize;
   color: var(--text-faint);
   opacity: 0;
+  pointer-events: none;
+  z-index: 12;
   transition: opacity 0.15s ease;
 }
 .llm-hub-db-cell:hover .llm-hub-db-resize {
   opacity: 1;
+  pointer-events: auto;
+}
+.llm-hub-db-cell:focus-within .llm-hub-db-resize {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Widget bodies */
@@ -7071,6 +7625,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   padding: 3px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
+.llm-hub-db-cell[data-widget-type="workflow"] .llm-hub-db-wf-header {
+  padding-right: 72px;
+}
 .llm-hub-db-wf-meta {
   display: flex;
   align-items: center;
@@ -7153,6 +7710,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   gap: 8px;
   padding: 4px 8px;
   flex: 0 0 auto;
+}
+.llm-hub-db-cell[data-widget-type="kanban"] .llm-hub-db-kanban-header {
+  padding-right: 72px;
 }
 .llm-hub-db-kanban-board-title {
   font-weight: 600;
@@ -7643,6 +8203,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   flex: 0 0 auto;
   padding: 5px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
+}
+.llm-hub-db-cell[data-widget-type="timeline"] .llm-hub-db-timeline-header {
+  padding-right: 64px;
 }
 .llm-hub-db-timeline-title,
 .llm-hub-db-timeline-error,
