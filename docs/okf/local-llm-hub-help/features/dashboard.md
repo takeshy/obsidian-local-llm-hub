@@ -5,6 +5,7 @@ description: Editable dashboard files that arrange live widgets in a responsive 
 tags:
   - dashboard
   - widgets
+timestamp: 2026-07-05
 ---
 
 # Dashboard

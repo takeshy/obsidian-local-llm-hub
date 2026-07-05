@@ -6442,7 +6442,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  /* Right padding reserves room for the cell's maximize/settings buttons,
+     which are absolutely positioned at the cell's top-right corner. */
+  padding: 8px 64px 8px 10px;
   border-bottom: 1px solid var(--background-modifier-border);
   min-height: 34px;
 }
@@ -7517,6 +7519,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   padding: 3px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
+.llm-hub-db-cell[data-widget-type="workflow"] .llm-hub-db-wf-header {
+  padding-right: 72px;
+}
 .llm-hub-db-wf-meta {
   display: flex;
   align-items: center;
@@ -7599,6 +7604,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   gap: 8px;
   padding: 4px 8px;
   flex: 0 0 auto;
+}
+.llm-hub-db-cell[data-widget-type="kanban"] .llm-hub-db-kanban-header {
+  padding-right: 72px;
 }
 .llm-hub-db-kanban-board-title {
   font-weight: 600;
@@ -8089,6 +8097,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   flex: 0 0 auto;
   padding: 5px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
+}
+.llm-hub-db-cell[data-widget-type="timeline"] .llm-hub-db-timeline-header {
+  padding-right: 64px;
 }
 .llm-hub-db-timeline-title,
 .llm-hub-db-timeline-error,

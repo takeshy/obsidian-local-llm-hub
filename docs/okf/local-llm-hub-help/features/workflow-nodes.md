@@ -6,6 +6,7 @@ tags:
   - workflows
   - nodes
   - reference
+timestamp: 2026-07-05
 ---
 
 # Workflow nodes

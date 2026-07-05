@@ -6,6 +6,7 @@ tags:
   - vault
   - tools
   - function-calling
+timestamp: 2026-07-05
 ---
 
 # Vault tools

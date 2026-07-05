@@ -5,6 +5,7 @@ description: Reusable YAML workflows that can run model prompts and vault action
 tags:
   - workflows
   - automation
+timestamp: 2026-07-05
 ---
 
 # Workflows

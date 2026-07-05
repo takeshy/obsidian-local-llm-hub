@@ -6,6 +6,7 @@ tags:
   - dashboard
   - widgets
   - memos
+timestamp: 2026-07-05
 ---
 
 # Dashboard widgets

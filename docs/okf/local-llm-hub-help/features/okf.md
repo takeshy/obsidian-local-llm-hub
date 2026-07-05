@@ -5,6 +5,7 @@ description: Markdown knowledge bundles available to chat.
 tags:
   - okf
   - knowledge
+timestamp: 2026-07-05
 ---
 
 # OKF knowledge sources

@@ -6,6 +6,7 @@ tags:
   - skills
   - workflows
   - chat
+timestamp: 2026-07-05
 ---
 
 # Agent skills

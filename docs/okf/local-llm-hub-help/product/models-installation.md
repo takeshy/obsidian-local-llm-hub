@@ -7,6 +7,7 @@ tags:
   - setup
   - ollama
   - lm-studio
+timestamp: 2026-07-05
 ---
 
 # Model setup

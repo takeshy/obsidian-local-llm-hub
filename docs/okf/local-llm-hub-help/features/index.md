@@ -1,12 +1,3 @@
----
-type: Index
-title: Features
-description: Feature reference index for Local LLM Hub.
-tags:
-  - index
-  - features
----
-
 # Features
 
 - [[chat]]

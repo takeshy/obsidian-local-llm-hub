@@ -1,11 +1,5 @@
 ---
-type: Product
-title: Local LLM Hub help
-description: Built-in help knowledge for the Obsidian Local LLM Hub plugin.
-tags:
-  - local-llm-hub
-  - obsidian
-  - help
+okf_version: "0.1"
 ---
 
 # Local LLM Hub help

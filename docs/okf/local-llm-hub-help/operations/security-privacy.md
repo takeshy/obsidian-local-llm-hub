@@ -6,6 +6,7 @@ tags:
   - security
   - privacy
   - local
+timestamp: 2026-07-05
 ---
 
 # Security and privacy

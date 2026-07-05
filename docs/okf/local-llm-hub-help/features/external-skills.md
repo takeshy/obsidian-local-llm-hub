@@ -5,6 +5,7 @@ description: Installing trusted skill packages into the vault skills folder.
 tags:
   - skills
   - import
+timestamp: 2026-07-05
 ---
 
 # External skills

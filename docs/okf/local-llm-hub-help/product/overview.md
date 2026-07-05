@@ -5,6 +5,7 @@ description: Local-first Obsidian AI assistant overview.
 tags:
   - local-llm-hub
   - overview
+timestamp: 2026-07-05
 ---
 
 # Local LLM Hub overview

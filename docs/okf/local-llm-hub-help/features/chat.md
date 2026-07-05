@@ -5,6 +5,7 @@ description: Chat with configured local or OpenAI-compatible models inside Obsid
 tags:
   - chat
   - local-models
+timestamp: 2026-07-05
 ---
 
 # Chat

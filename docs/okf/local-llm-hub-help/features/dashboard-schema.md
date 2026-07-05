@@ -1,11 +1,12 @@
 ---
 type: Reference
 title: Dashboard schema
-description: `.dashboard` YAML structure.
+description: "`.dashboard` YAML structure."
 tags:
   - dashboard
   - schema
   - yaml
+timestamp: 2026-07-05
 ---
 
 # Dashboard schema

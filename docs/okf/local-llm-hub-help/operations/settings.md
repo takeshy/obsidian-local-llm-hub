@@ -5,6 +5,7 @@ description: Important Local LLM Hub settings and where users configure them.
 tags:
   - settings
   - configuration
+timestamp: 2026-07-05
 ---
 
 # Settings

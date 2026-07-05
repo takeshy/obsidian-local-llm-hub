@@ -6,6 +6,7 @@ tags:
   - rag
   - embeddings
   - search
+timestamp: 2026-07-05
 ---
 
 # Local RAG
