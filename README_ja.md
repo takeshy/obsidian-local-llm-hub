@@ -85,7 +85,7 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 - **ホットキー対応** — 任意の名前付きワークフローにキーボードショートカットを割り当て
 - **実行履歴** — 過去のワークフロー実行をステップごとに確認
 
-完全なノードリファレンスは [WORKFLOW_NODES_ja.md](docs/WORKFLOW_NODES_ja.md) を参照してください。
+ノードリファレンスは OKF 版の [workflow-nodes.md](docs/okf/local-llm-hub-help/features/workflow-nodes.md) を参照してください。
 
 ---
 
@@ -101,7 +101,7 @@ Workflow ウィジェットは `Dashboards/Data/` の cache ファイルを表�
 
 ![Timeline input](docs/images/timeline_input.png)
 
-Dashboard の使い方とファイル形式の詳細は [DASHBOARD_ja.md](docs/DASHBOARD_ja.md) を参照してください。
+Dashboard の詳細は OKF 版の [dashboard.md](docs/okf/local-llm-hub-help/features/dashboard.md)、[dashboard-widgets.md](docs/okf/local-llm-hub-help/features/dashboard-widgets.md)、[dashboard-schema.md](docs/okf/local-llm-hub-help/features/dashboard-schema.md) を参照してください。
 
 ---
 
@@ -141,7 +141,7 @@ Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral）で Vault を�
 - **チャンクエディター** — 結果テキストの編集、前後チャンクの読み込み（オーバーラップ自動除去）
 - **AI 整形** — ローカル LLM でコンテキストを自動拡張しテキストを整形
 
-詳細は [RAG_SEARCH_ja.md](docs/RAG_SEARCH_ja.md) を参照してください。
+詳細は OKF 版の [rag-search.md](docs/okf/local-llm-hub-help/features/rag-search.md) を参照してください。
 
 ### エージェントスキル
 
@@ -155,7 +155,7 @@ Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral）で Vault を�
 
 ![エージェントスキル](docs/images/skill.png)
 
-詳細は [SKILLS_ja.md](docs/SKILLS_ja.md) を参照してください。
+詳細は OKF 版の [agent-skills.md](docs/okf/local-llm-hub-help/features/agent-skills.md) を参照してください。
 
 ### スラッシュコマンド & 会話の圧縮
 

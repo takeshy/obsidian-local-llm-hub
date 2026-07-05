@@ -3,16 +3,19 @@
 // registerWidget.
 
 import React from "react";
-import { Clock3, Database, FileText, Globe, Kanban, Puzzle, Workflow } from "lucide-react";
+import { Clock3, Database, FileText, Files, Globe, Kanban, NotebookTabs, Puzzle, Workflow } from "lucide-react";
 import type { WidgetDef } from "../types";
 import BaseWidget from "./BaseWidget";
+import FileWidget from "./FileWidget";
 import MarkdownWidget from "./MarkdownWidget";
+import MemoListWidget from "./MemoListWidget";
 import WebWidget from "./WebWidget";
 import WorkflowWidget from "./WorkflowWidget";
 import KanbanWidget from "./KanbanWidget";
 import TimelineWidget from "./TimelineWidget";
 import UnknownWidget from "./UnknownWidget";
 import { BaseConfigEditor } from "./config-editors/BaseConfigEditor";
+import { FileConfigEditor } from "./config-editors/FileConfigEditor";
 import { MarkdownConfigEditor } from "./config-editors/MarkdownConfigEditor";
 import { WebConfigEditor } from "./config-editors/WebConfigEditor";
 import { WorkflowConfigEditor } from "./config-editors/WorkflowConfigEditor";
@@ -84,6 +87,16 @@ export function registerCoreWidgets(): void {
   });
 
   registerWidget({
+    type: "file",
+    label: "File",
+    icon: React.createElement(Files, { size: 16 }),
+    defaultConfig: { path: "", showHeader: true },
+    render: (config, ctx) => React.createElement(FileWidget, { config, ctx }),
+    defaultSize: { w: 6, h: 5 },
+    ConfigEditor: FileConfigEditor,
+  });
+
+  registerWidget({
     type: "web",
     label: "Web Embed",
     icon: React.createElement(Globe, { size: 16 }),
@@ -134,5 +147,14 @@ export function registerCoreWidgets(): void {
     render: (config, ctx) => React.createElement(TimelineWidget, { config, ctx }),
     defaultSize: { w: 6, h: 6 },
     ConfigEditor: TimelineConfigEditor,
+  });
+
+  registerWidget({
+    type: "memo-list",
+    label: "MemoList",
+    icon: React.createElement(NotebookTabs, { size: 16 }),
+    defaultConfig: {},
+    render: (_config, ctx) => React.createElement(MemoListWidget, { ctx }),
+    defaultSize: { w: 6, h: 5 },
   });
 }

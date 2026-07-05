@@ -85,7 +85,8 @@ Load any workflow, click **AI Modify**, describe the change. The same plan → g
 - **Hotkey support** — assign keyboard shortcuts to any named workflow
 - **Execution history** — review past runs with step-by-step details
 
-See [WORKFLOW_NODES.md](docs/WORKFLOW_NODES.md) for the complete node reference.
+See the OKF workflow node reference at
+[docs/okf/local-llm-hub-help/features/workflow-nodes.md](docs/okf/local-llm-hub-help/features/workflow-nodes.md).
 
 ---
 
@@ -109,8 +110,10 @@ files from chat.
 
 ![Timeline input](docs/images/timeline_input.png)
 
-See [DASHBOARD.md](docs/DASHBOARD.md) for the complete dashboard guide and file
-format.
+See the OKF dashboard references at
+[docs/okf/local-llm-hub-help/features/dashboard.md](docs/okf/local-llm-hub-help/features/dashboard.md),
+[dashboard-widgets.md](docs/okf/local-llm-hub-help/features/dashboard-widgets.md), and
+[dashboard-schema.md](docs/okf/local-llm-hub-help/features/dashboard-schema.md).
 
 ---
 
@@ -150,7 +153,8 @@ A dedicated search interface for semantic vector search with keyword filtering, 
 - **Chunk editor** — Edit result text, load adjacent chunks with automatic overlap removal
 - **AI refine** — Automatically expand context and clean up text using your local LLM
 
-See [RAG_SEARCH.md](docs/RAG_SEARCH.md) for details.
+See the OKF RAG Search reference at
+[docs/okf/local-llm-hub-help/features/rag-search.md](docs/okf/local-llm-hub-help/features/rag-search.md).
 
 ### Agent Skills
 
@@ -164,7 +168,8 @@ Create skills the same way as workflows — click **Create skill with AI** in th
 
 ![Agent Skills](docs/images/skill.png)
 
-See [SKILLS.md](docs/SKILLS.md) for details.
+See the OKF agent skills reference at
+[docs/okf/local-llm-hub-help/features/agent-skills.md](docs/okf/local-llm-hub-help/features/agent-skills.md).
 
 ### Slash Commands & Compact History
 
