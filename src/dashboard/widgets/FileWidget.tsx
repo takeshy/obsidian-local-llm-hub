@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Bot, ChevronsLeft, ChevronsRight, Copy, ExternalLink, FileText, Loader2, NotebookPen, Save, SquarePen, Trash2, X } from "lucide-react";
-import { Component, MarkdownRenderer, Notice, TFile } from "obsidian";
+import { Component, MarkdownRenderer, Notice, Platform, TFile } from "obsidian";
 import { t } from "src/i18n";
 import type { WidgetContext } from "../types";
 import { memoPathFor, readMemos, writeMemos, type DocumentMemo } from "../memo";
@@ -371,7 +371,11 @@ function SelectionMenu({
       </button>
     </div>
   );
-  const menu = (
+  // Mobile: no backdrop, so the user can keep adjusting the native selection
+  // handles while the menu is visible; it closes when the selection clears.
+  const menu = Platform.isMobile ? (
+    <div className="llm-hub-db-selection-menu-floating">{inner}</div>
+  ) : (
     <div className="llm-hub-db-selection-menu-backdrop" onMouseDown={onClose}>
       {inner}
     </div>

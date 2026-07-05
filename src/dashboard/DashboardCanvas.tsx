@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type ReactNode } from "react";
-import { Plus, Pencil, Check, Undo2, Redo2, Columns3, Rows3 } from "lucide-react";
+import { Plus, Undo2, Redo2, Columns3, Rows3 } from "lucide-react";
 import type { App } from "obsidian";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
@@ -17,8 +17,6 @@ interface DashboardCanvasProps {
   data: DashboardData;
   /** Called with the next data on every mutation (add/update/delete/move/resize). */
   onChange: (next: DashboardData) => void;
-  editMode: boolean;
-  onEditModeChange: (v: boolean) => void;
   app: App;
   plugin: LocalLlmHubPlugin;
   /** Path of the backing `.dashboard` file (link-resolution source path). */
@@ -68,8 +66,6 @@ function isWidgetConfigured(widget: Widget): boolean {
 export function DashboardCanvas({
   data,
   onChange,
-  editMode,
-  onEditModeChange,
   app,
   plugin,
   sourcePath,
@@ -196,12 +192,11 @@ export function DashboardCanvas({
       };
       commit({ ...data, widgets: [...data.widgets, newWidget] });
       setShowPalette(false);
-      onEditModeChange(true);
       setMaximizedWidgetId(null);
       setEditingWidgetId(newWidget.id);
       setPendingNewWidgetId(newWidget.id);
     },
-    [data, commit, onEditModeChange],
+    [data, commit],
   );
 
   // Close the settings panel. If the widget was just added and still has no
@@ -296,13 +291,13 @@ export function DashboardCanvas({
       plugin,
       sourcePath,
       size: { w: pos.w, h: pos.h },
-      editMode,
+      editMode: false,
       widgetId: widget.id,
       onConfigChange: (config) => handleUpdateWidgetConfig(widget.id, config),
       requestMaximize: (onRestore) => requestWidgetMaximize(widget.id, onRestore),
       restoreMaximized: () => restoreMaximizedWidget(widget.id),
     }),
-    [app, plugin, sourcePath, editMode, handleUpdateWidgetConfig, requestWidgetMaximize, restoreMaximizedWidget],
+    [app, plugin, sourcePath, handleUpdateWidgetConfig, requestWidgetMaximize, restoreMaximizedWidget],
   );
 
   return (
@@ -310,55 +305,44 @@ export function DashboardCanvas({
       <div className="llm-hub-db-toolbar">
         <div className="llm-hub-db-toolbar-left">{toolbarLeft}</div>
         <div className="llm-hub-db-toolbar-right">
-          {editMode && (
-            <>
-              <button
-                onClick={undo}
-                disabled={!canUndo}
-                title={t("dashboard.undo")}
-                className="llm-hub-db-toolbtn"
-              >
-                <Undo2 size={14} />
-              </button>
-              <button
-                onClick={redo}
-                disabled={!canRedo}
-                title={t("dashboard.redo")}
-                className="llm-hub-db-toolbtn"
-              >
-                <Redo2 size={14} />
-              </button>
-              <button
-                onClick={() => handleEqualize("horizontal")}
-                disabled={data.widgets.length === 0}
-                title={t("dashboard.alignHorizontal")}
-                className="llm-hub-db-toolbtn"
-              >
-                <Columns3 size={14} />
-              </button>
-              <button
-                onClick={() => handleEqualize("vertical")}
-                disabled={data.widgets.length === 0}
-                title={t("dashboard.alignVertical")}
-                className="llm-hub-db-toolbtn"
-              >
-                <Rows3 size={14} />
-              </button>
-              <button
-                onClick={() => setShowPalette(true)}
-                className="llm-hub-db-toolbtn is-accent"
-              >
-                <Plus size={14} />
-                {t("dashboard.addWidget")}
-              </button>
-            </>
-          )}
           <button
-            onClick={() => onEditModeChange(!editMode)}
-            className={`llm-hub-db-toolbtn${editMode ? " is-active" : ""}`}
+            onClick={undo}
+            disabled={!canUndo}
+            title={t("dashboard.undo")}
+            className="llm-hub-db-toolbtn"
           >
-            {editMode ? <Check size={14} /> : <Pencil size={14} />}
-            {editMode ? t("dashboard.done") : t("dashboard.edit")}
+            <Undo2 size={14} />
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            title={t("dashboard.redo")}
+            className="llm-hub-db-toolbtn"
+          >
+            <Redo2 size={14} />
+          </button>
+          <button
+            onClick={() => handleEqualize("horizontal")}
+            disabled={data.widgets.length === 0}
+            title={t("dashboard.alignHorizontal")}
+            className="llm-hub-db-toolbtn"
+          >
+            <Columns3 size={14} />
+          </button>
+          <button
+            onClick={() => handleEqualize("vertical")}
+            disabled={data.widgets.length === 0}
+            title={t("dashboard.alignVertical")}
+            className="llm-hub-db-toolbtn"
+          >
+            <Rows3 size={14} />
+          </button>
+          <button
+            onClick={() => setShowPalette(true)}
+            className="llm-hub-db-toolbtn is-accent"
+          >
+            <Plus size={14} />
+            {t("dashboard.addWidget")}
           </button>
         </div>
       </div>
@@ -400,14 +384,13 @@ export function DashboardCanvas({
                     grid={grid}
                     cellW={gridLayout.cellW}
                     cellH={gridLayout.cellH}
-                    editMode={editMode && !isMaximized}
+                    editMode={false}
                     ctx={makeCtx(widget, renderPos)}
                     onDragEnd={(newPos) => gridLayout.commitPos(widget.id, newPos)}
                     onResizeEnd={(newPos) => gridLayout.commitPos(widget.id, newPos)}
                     computeDragPos={gridLayout.computeDragPos}
                     computeResizePos={gridLayout.computeResizePos}
-                    onSettings={editMode ? () => setEditingWidgetId(widget.id) : undefined}
-                    onDelete={editMode ? () => { void handleDeleteWidget(widget.id); } : undefined}
+                    onSettings={() => setEditingWidgetId(widget.id)}
                     isMaximized={isMaximized}
                     onToggleMaximize={() => {
                       if (isMaximized) restoreMaximizedWidget(widget.id);

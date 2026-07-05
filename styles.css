@@ -6435,23 +6435,30 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 .llm-hub-db-file-wrap {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+  min-width: 0;
   background: var(--background-primary);
 }
 
 .llm-hub-db-file-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex: 0 0 auto;
   /* Right padding reserves room for the cell's maximize/settings buttons,
      which are absolutely positioned at the cell's top-right corner. */
-  padding: 8px 64px 8px 10px;
+  padding: 4px 64px 4px 8px;
   border-bottom: 1px solid var(--background-modifier-border);
-  min-height: 34px;
 }
 
 .llm-hub-db-file-main {
   display: flex;
   flex: 1;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -6702,21 +6709,46 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 
 .llm-hub-db-memo-item blockquote,
 .llm-hub-db-memo-relation blockquote {
-  margin: 8px 0;
-  padding-left: 8px;
+  margin: 0 0 6px;
+  padding: 4px 6px;
   border-left: 3px solid var(--interactive-accent);
   color: var(--text-muted);
+  background: var(--background-secondary);
+  font-size: 10px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .llm-hub-db-memo-quote-link {
   display: block;
   width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: 96px;
+  margin: 0 0 6px;
+  padding: 4px 6px;
+  border: none;
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: 0;
+  background: var(--background-secondary);
+  box-shadow: none;
+  color: var(--text-accent);
+  font-size: 10px;
+  line-height: 1.35;
+  overflow: auto;
+  overflow-wrap: anywhere;
   text-align: left;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  color: inherit;
+  white-space: pre-wrap;
   cursor: pointer;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.llm-hub-db-memo-quote-link:hover {
+  background: var(--background-modifier-hover);
+  text-decoration: underline;
 }
 
 .llm-hub-db-memo-item p {
@@ -6728,8 +6760,12 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 .llm-hub-db-memo-edit,
 .llm-hub-db-memo-relation {
   display: flex;
-  flex-direction: column;
   gap: 6px;
+}
+
+.llm-hub-db-memo-compose,
+.llm-hub-db-memo-edit {
+  flex-direction: column;
 }
 
 .llm-hub-db-memo-compose {
@@ -6751,26 +6787,56 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 .llm-hub-db-selection-menu-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--layer-popover, 1000);
 }
 
 .llm-hub-db-selection-menu {
   position: fixed;
-  z-index: 1001;
-  max-width: min(360px, calc(100vw - 24px));
-  padding: 8px;
+  min-width: 160px;
+  max-width: 260px;
+  padding: 4px;
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--background-primary);
   box-shadow: var(--shadow-l);
 }
 
+/* Mobile: the menu floats without a backdrop so the selection handles stay
+   usable; it needs its own stacking level. */
+.llm-hub-db-selection-menu-floating .llm-hub-db-selection-menu {
+  z-index: var(--layer-popover, 1000);
+}
+
 .llm-hub-db-selection-menu-quote {
-  max-height: 120px;
+  max-height: 96px;
   overflow: auto;
-  margin-bottom: 8px;
+  margin: 2px 4px 4px;
+  padding: 4px 6px;
+  border-left: 3px solid var(--interactive-accent);
   color: var(--text-muted);
-  font-size: 12px;
+  background: var(--background-secondary);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.llm-hub-db-selection-menu button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-normal);
+  font-size: var(--font-ui-smaller);
+  text-align: left;
+  cursor: pointer;
+}
+
+.llm-hub-db-selection-menu button:hover {
+  background: var(--background-modifier-hover);
 }
 
 .llm-hub-db-memolist {
@@ -6875,8 +6941,31 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 }
 .llm-hub-db-cell-content {
   height: 100%;
+  min-height: 0;
   width: 100%;
+  min-width: 0;
   overflow: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+/* Mobile: iOS long-press selection keeps expanding until it hits a
+   user-select: none boundary, so a selectable dashboard chrome means one
+   long-press can select the whole board. Obsidian's own styles (e.g. the
+   native Bases table) re-enable selection at the element level inside
+   widgets, so this needs !important on both sides: everything under the
+   dashboard is non-selectable, then reading surfaces and text inputs are
+   switched back on (the later rule wins the equal-importance tie). */
+.is-mobile .llm-hub-db-root,
+.is-mobile .llm-hub-db-root * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.is-mobile .llm-hub-db-file-content,
+.is-mobile .llm-hub-db-file-content *,
+.is-mobile .llm-hub-db-root textarea,
+.is-mobile .llm-hub-db-root input {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 /* Snap preview */
@@ -6893,17 +6982,22 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 .llm-hub-db-drag {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  width: 48px;
   height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
+  transform: translateX(-50%);
   background: var(--background-secondary);
-  border-bottom: 1px solid var(--background-modifier-border);
+  border: 1px solid var(--background-modifier-border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
   color: var(--text-faint);
   opacity: 0;
+  pointer-events: none;
+  z-index: 12;
   transition: opacity 0.15s ease;
 }
 .llm-hub-db-drag:active {
@@ -6911,6 +7005,15 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 }
 .llm-hub-db-cell:hover .llm-hub-db-drag {
   opacity: 1;
+  pointer-events: auto;
+}
+.llm-hub-db-cell:focus-within .llm-hub-db-drag {
+  opacity: 0;
+  pointer-events: none;
+}
+.is-mobile .llm-hub-db-cell[data-widget-type="file"]:focus-within .llm-hub-db-drag {
+  opacity: 1;
+  pointer-events: auto;
 }
 .llm-hub-db-actions {
   position: absolute;
@@ -6920,10 +7023,6 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   align-items: center;
   gap: 2px;
   z-index: 10;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.llm-hub-db-cell:hover .llm-hub-db-actions {
   opacity: 1;
 }
 .llm-hub-db-iconbtn {
@@ -6954,10 +7053,17 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   cursor: se-resize;
   color: var(--text-faint);
   opacity: 0;
+  pointer-events: none;
+  z-index: 12;
   transition: opacity 0.15s ease;
 }
 .llm-hub-db-cell:hover .llm-hub-db-resize {
   opacity: 1;
+  pointer-events: auto;
+}
+.llm-hub-db-cell:focus-within .llm-hub-db-resize {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Widget bodies */
