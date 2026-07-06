@@ -901,6 +901,7 @@ export const ja: Record<string, string> = {
   "ragSource.clickToView": "クリックしてRAGテキストを表示・編集",
   // Dashboard
   "command.createDashboard": "ダッシュボードを作成",
+  "dashboard.switchDashboard": "ダッシュボードを切り替え",
   "dashboard.edit": "編集",
   "dashboard.done": "完了",
   "dashboard.undo": "元に戻す",
@@ -926,7 +927,6 @@ export const ja: Record<string, string> = {
   "dashboard.url": "URL",
   "dashboard.urlInvalid": "有効な http(s) URL を入力してください。",
   "dashboard.fileSelectFile": "ファイルを選択",
-  "dashboard.markdownSelectFile": "Markdownノートを選択",
   "dashboard.fileNotFound": "ファイルが見つかりません",
   "dashboard.openFile": "ファイルを開く",
   "dashboard.showHeader": "ヘッダーを表示",

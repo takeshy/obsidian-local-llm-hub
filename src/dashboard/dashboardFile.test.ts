@@ -1,6 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TFolder, type Vault } from "obsidian";
-import { ensureVaultFolder } from "./dashboardFile";
+import { ensureVaultFolder, parseDashboard } from "./dashboardFile";
+
+vi.mock("obsidian", async () => {
+  const yaml = await import("yaml");
+  class MockTFolder {
+    path = "";
+    name = "";
+    children = [];
+  }
+  return {
+    TFolder: MockTFolder,
+    parseYaml: (source: string) => yaml.parse(source),
+    stringifyYaml: (value: unknown) => yaml.stringify(value),
+  };
+});
 
 function folder(path: string): TFolder {
   const f = new TFolder();
@@ -75,5 +89,31 @@ describe("ensureVaultFolder", () => {
 
     await expect(ensureVaultFolder(vault, "Dashboards/Data")).resolves.toBeUndefined();
     expect(created).toEqual(["Dashboards/Data"]);
+  });
+});
+
+describe("parseDashboard", () => {
+  it("treats legacy markdown widgets as file widgets", () => {
+    const parsed = parseDashboard(`
+version: 1
+grid:
+  cols: 12
+  rowHeight: 72
+  gap: 8
+widgets:
+  - id: note
+    type: markdown
+    layout:
+      lg:
+        x: 0
+        y: 0
+        w: 6
+        h: 3
+    config:
+      path: Notes/example.md
+`);
+
+    expect(parsed?.widgets[0]?.type).toBe("file");
+    expect(parsed?.widgets[0]?.config).toEqual({ path: "Notes/example.md" });
   });
 });

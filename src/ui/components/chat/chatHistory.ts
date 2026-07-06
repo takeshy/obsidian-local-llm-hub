@@ -111,7 +111,7 @@ export function parseMarkdownToMessages(content: string): { messages: Message[];
                 id: "", name, arguments: {},
               }));
             }
-            if (meta.usage) message.usage = meta.usage as Message["usage"];
+            if (meta.usage) message.usage = meta.usage;
             if (meta.elapsedMs) message.elapsedMs = meta.elapsedMs as number;
             if (meta.timestamp) message.timestamp = meta.timestamp as number;
           } catch {

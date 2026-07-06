@@ -101,13 +101,13 @@ export interface NodeHttpModule {
 
 /** The Node `Buffer` constructor from the desktop (Electron) global scope. */
 export function getNodeBuffer(): NodeBufferConstructor {
-  return (globalThis as unknown as { Buffer: NodeBufferConstructor }).Buffer;
+  return (window as unknown as { Buffer: NodeBufferConstructor }).Buffer;
 }
 
 /** The Node `process.env` object from the desktop (Electron) global scope. */
 export function getNodeProcessEnv(): Record<string, string | undefined> {
   return (
-    (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } })
+    (window as unknown as { process?: { env?: Record<string, string | undefined> } })
       .process?.env ?? {}
   );
 }

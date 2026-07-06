@@ -905,6 +905,7 @@ export const en = {
   "ragSource.clickToView": "Click to view/edit rag text",
   // Dashboard
   "command.createDashboard": "Create dashboard",
+  "dashboard.switchDashboard": "Switch dashboard",
   "dashboard.edit": "Edit",
   "dashboard.done": "Done",
   "dashboard.undo": "Undo",
@@ -930,7 +931,6 @@ export const en = {
   "dashboard.url": "URL",
   "dashboard.urlInvalid": "Enter a valid URL.",
   "dashboard.fileSelectFile": "Select a file",
-  "dashboard.markdownSelectFile": "Select a Markdown note",
   "dashboard.fileNotFound": "File not found",
   "dashboard.openFile": "Open file",
   "dashboard.showHeader": "Show header",
