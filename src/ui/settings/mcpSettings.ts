@@ -141,7 +141,7 @@ class McpServerModal extends Modal {
           name: "",
           command: "",
           args: [],
-          framing: "content-length" as McpFraming,
+          framing: "content-length",
           enabled: true,
         };
     this.onSave = onSave;

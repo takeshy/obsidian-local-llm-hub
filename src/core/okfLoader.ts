@@ -21,12 +21,17 @@ export interface OkfBundle {
 const MAX_DOCS_PER_BUNDLE = 24;
 const MAX_BODY_CHARS = 1400;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function parseFrontmatter(content: string): { frontmatter: Record<string, unknown>; body: string } {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!match) return { frontmatter: {}, body: content };
   try {
+    const frontmatter: unknown = parseYaml(match[1]);
     return {
-      frontmatter: (parseYaml(match[1]) as unknown as Record<string, unknown>) || {},
+      frontmatter: isRecord(frontmatter) ? frontmatter : {},
       body: match[2],
     };
   } catch {

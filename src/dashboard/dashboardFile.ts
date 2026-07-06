@@ -59,7 +59,13 @@ export function parseDashboard(content: string): DashboardData | null {
         gap: Number.isFinite(grid.gap) && grid.gap! >= 0 ? grid.gap! : DEFAULT_GRID.gap,
       };
     }
-    if (!Array.isArray(data.widgets)) data.widgets = [];
+    if (!Array.isArray(data.widgets)) {
+      data.widgets = [];
+    } else {
+      data.widgets = data.widgets.map((widget) =>
+        widget?.type === "markdown" ? { ...widget, type: "file" } : widget,
+      );
+    }
     return data;
   } catch {
     return null;
