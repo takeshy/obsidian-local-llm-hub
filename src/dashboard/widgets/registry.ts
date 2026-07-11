@@ -3,11 +3,10 @@
 // registerWidget.
 
 import React from "react";
-import { Clock3, Database, FileText, Files, Globe, Kanban, NotebookTabs, Puzzle, Workflow } from "lucide-react";
+import { Clock3, Database, FileKey2, Files, Globe, Kanban, NotebookTabs, Puzzle, Workflow } from "lucide-react";
 import type { WidgetDef } from "../types";
 import BaseWidget from "./BaseWidget";
 import FileWidget from "./FileWidget";
-import MarkdownWidget from "./MarkdownWidget";
 import MemoListWidget from "./MemoListWidget";
 import WebWidget from "./WebWidget";
 import WorkflowWidget from "./WorkflowWidget";
@@ -16,11 +15,12 @@ import TimelineWidget from "./TimelineWidget";
 import UnknownWidget from "./UnknownWidget";
 import { BaseConfigEditor } from "./config-editors/BaseConfigEditor";
 import { FileConfigEditor } from "./config-editors/FileConfigEditor";
-import { MarkdownConfigEditor } from "./config-editors/MarkdownConfigEditor";
 import { WebConfigEditor } from "./config-editors/WebConfigEditor";
 import { WorkflowConfigEditor } from "./config-editors/WorkflowConfigEditor";
 import { KanbanConfigEditor } from "./config-editors/KanbanConfigEditor";
 import { TimelineConfigEditor } from "./config-editors/TimelineConfigEditor";
+import SecretManagerWidget from "./SecretManagerWidget";
+import { SecretManagerConfigEditor } from "./config-editors/SecretManagerConfigEditor";
 
 const registry = new Map<string, WidgetDef>();
 
@@ -40,7 +40,7 @@ export function registerWidget(def: WidgetDef): void {
  * types so the config is preserved on round-trip.
  */
 export function getWidgetDef(type: string): WidgetDef {
-  return registry.get(type) ?? {
+  return registry.get(type === "markdown" ? "file" : type) ?? {
     type: "__unknown__",
     label: `Unknown (${type})`,
     icon: React.createElement(Puzzle, { size: 16 }),
@@ -74,16 +74,6 @@ export function registerCoreWidgets(): void {
     render: (config, ctx) => React.createElement(BaseWidget, { config, ctx }),
     defaultSize: { w: 6, h: 5 },
     ConfigEditor: BaseConfigEditor,
-  });
-
-  registerWidget({
-    type: "markdown",
-    label: "Markdown",
-    icon: React.createElement(FileText, { size: 16 }),
-    defaultConfig: { path: "" },
-    render: (config, ctx) => React.createElement(MarkdownWidget, { config, ctx }),
-    defaultSize: { w: 6, h: 3 },
-    ConfigEditor: MarkdownConfigEditor,
   });
 
   registerWidget({
@@ -137,6 +127,16 @@ export function registerCoreWidgets(): void {
     render: (config, ctx) => React.createElement(KanbanWidget, { config, ctx }),
     defaultSize: { w: 12, h: 6 },
     ConfigEditor: KanbanConfigEditor,
+  });
+
+  registerWidget({
+    type: "secret-manager",
+    label: "Secret Manager",
+    icon: React.createElement(FileKey2, { size: 16 }),
+    defaultConfig: { folder: "Secrets" },
+    render: (config, ctx) => React.createElement(SecretManagerWidget, { config, ctx }),
+    defaultSize: { w: 6, h: 5 },
+    ConfigEditor: SecretManagerConfigEditor,
   });
 
   registerWidget({

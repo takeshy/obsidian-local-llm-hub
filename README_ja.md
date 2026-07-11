@@ -91,7 +91,9 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 
 ## Dashboard
 
-レスポンシブなウィジェットグリッドで、ライブな個人用ホーム / 概要ページを作成できます。Dashboard ファイル（`.dashboard`）には Obsidian Bases ビュー、ノート、Web ページ、Timeline、ワークフロー出力、Kanban ボードを埋め込めます。通常のノートと同じように開き、表示モードでは誤操作を防ぎ、編集モードでドラッグ・リサイズによるレイアウト変更を行います。
+レスポンシブなウィジェットグリッドで、ライブな個人用ホーム / 概要ページを作成できます。Dashboard ファイル（`.dashboard`）には Obsidian Bases ビュー、ノート、Web ページ、Timeline、ワークフロー出力、Kanban ボード、暗号化シークレットを埋め込めます。通常のノートと同じように開き、表示モードでは誤操作を防ぎ、編集モードでドラッグ・リサイズによるレイアウト変更を行います。
+
+Dashboard タイトルのメニューから別の `.dashboard` ファイルへ切り替えられます。Kanban 定義は `Dashboards/Kanbans/*.kanban` として複数の Dashboard で共有でき、一時的なタグ絞り込みや frontmatter / file 項目の表示設定に対応します。Secret Manager ウィジェットは Vault 内の `.encrypted` ファイルを作成・検索・復号・コピーします。説明と明示した公開メタデータだけを検索可能にし、シークレット値は暗号化したまま保持します。
 
 Workflow ウィジェットは `Dashboards/Data/` の cache ファイルを表示するため、重い workflow が開くたびに再実行されることはありません。Base / Workflow ウィジェットには **Create with AI** もあり、Timeline の下書きは AI でリライトできます。組み込みの `dashboard` agent skill を使えば、チャットから Dashboard 全体と backing `.base` ファイルを作成できます。
 

@@ -14,13 +14,18 @@ timestamp: 2026-07-05
 Built-in dashboard widgets include:
 
 - Base: embeds a `.base` file view.
-- Markdown: embeds a Markdown note.
 - File: displays Markdown, text/code, HTML, images, PDF, and EPUB files.
 - Web Embed: embeds a web page in an iframe.
 - Workflow: runs or displays workflow output.
-- Kanban: groups notes by a frontmatter status property.
+- Kanban: groups notes by a frontmatter status property and can share its definition through a `.kanban` file under `Dashboards/Kanbans`.
+- Secret Manager: creates, searches, decrypts, and copies `.encrypted` vault secrets from an optional folder.
 - Timeline: stores short dated posts under the dashboard data folders.
 - MemoList: lists files that have dashboard reading memos.
+
+The dashboard title opens a switcher for other `.dashboard` files in the vault.
+Legacy Markdown widgets are migrated to File widgets when their dashboard is loaded.
+
+Kanban widgets support temporary tag filtering, reusable board definitions, and configurable frontmatter or explicit `file.*` display fields. Secret Manager uses the plugin encryption settings; descriptions and public metadata are searchable, while secret values are decrypted only for editing or copying and are never stored as plaintext.
 
 The File widget can keep memos beside a source document. Memos are stored as Markdown files under `Dashboards/Memos`, with frontmatter pointing back to the source file. For rendered text, PDF, and EPUB content, selected text can be attached as a quote so the memo remains tied to the reading context.
 

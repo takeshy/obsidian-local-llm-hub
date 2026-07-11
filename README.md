@@ -94,9 +94,15 @@ See the OKF workflow node reference at
 
 Build a live personal home / overview page from a responsive grid of widgets.
 Dashboard files (`.dashboard`) can embed Obsidian Bases views, notes, web pages,
-timelines, workflow output, and Kanban boards. They open like normal notes,
+timelines, workflow output, Kanban boards, and encrypted secrets. They open like normal notes,
 start in a read-only view mode, and switch to edit mode for drag-and-resize
 layout changes.
+
+Use the dashboard title menu to switch between `.dashboard` files. Kanban
+definitions can be shared through `Dashboards/Kanbans/*.kanban`, with temporary
+tag filters and configurable frontmatter/file fields. The Secret Manager widget
+creates, searches, decrypts, and copies `.encrypted` vault files; descriptions
+and explicitly public metadata remain searchable while secret values stay encrypted.
 
 Workflow widgets render from `Dashboards/Data/` cache files so heavy workflows
 do not rerun on every open. Base and Workflow widgets also include **Create with
