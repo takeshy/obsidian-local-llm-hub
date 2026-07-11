@@ -16,14 +16,10 @@ export interface BuiltinOkfDocument {
 }
 
 function base64ToBytes(base64: string): Uint8Array {
-  if (typeof atob === "function") {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-    return bytes;
-  }
-  const buffer = Buffer.from(base64, "base64");
-  return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
 }
 
 function loadBuiltinOkfDocuments(): BuiltinOkfDocument[] {

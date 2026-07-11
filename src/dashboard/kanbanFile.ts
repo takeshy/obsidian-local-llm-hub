@@ -19,8 +19,10 @@ export interface KanbanBoardDefinition {
 export function kanbanDefinitionFromConfig(
   config: object & { kanban?: unknown; cardOrder?: unknown },
 ): KanbanBoardDefinition {
-  const { kanban: _kanban, cardOrder: _cardOrder, ...definition } = config;
-  return definition as KanbanBoardDefinition;
+  const definition: KanbanBoardDefinition = { ...config };
+  delete definition.kanban;
+  delete definition.cardOrder;
+  return definition;
 }
 
 export function parseKanbanFile(content: string): KanbanBoardDefinition | null {

@@ -58,7 +58,7 @@ function fieldNamesFromVault(app: ConfigEditorProps["app"], folder: string, tag:
       const tags = [
         ...cachedTags.map((entry) =>
           entry && typeof entry === "object" && "tag" in entry
-            ? String((entry as { tag: unknown }).tag)
+            ? String(entry.tag)
             : ""),
         ...frontmatterTags,
       ].map((value) => String(value).replace(/^#/, "").toLocaleLowerCase());
