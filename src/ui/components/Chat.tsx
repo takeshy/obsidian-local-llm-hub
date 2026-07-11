@@ -27,7 +27,7 @@ import { GET_WORKFLOW_SPEC_TOOL, GET_WORKFLOW_SPEC_TOOL_NAME, handleGetWorkflowS
 import { getRagStore } from "src/core/ragStore";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
 import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
-import { buildOkfSystemPrompt, discoverOkfBundles, type OkfBundle } from "src/core/okfLoader";
+import { buildBuiltinOkfSystemPrompt, buildOkfSystemPrompt, discoverOkfBundles, getBuiltinOkfBundle, isBuiltinOkfBundleId, type OkfBundle } from "src/core/okfLoader";
 import { parseWorkflowFromMarkdown } from "src/workflow/parser";
 import { WorkflowExecutor } from "src/workflow/executor";
 import type { McpServerInfo } from "src/core/mcpManager";
@@ -86,6 +86,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
   const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
+  const knownMcpServerIdsRef = useRef<Set<string>>(new Set());
+  const mcpSelectionInitializedRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -207,20 +209,18 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const refreshMcpServerInfos = useCallback(() => {
     const infos = plugin.mcpManager.getServerInfos();
     setMcpServerInfos(infos);
+    const connectedIds = new Set(infos.map(info => info.id));
+    const previouslyKnownIds = knownMcpServerIdsRef.current;
+    const firstLoad = !mcpSelectionInitializedRef.current;
+    knownMcpServerIdsRef.current = connectedIds;
+    mcpSelectionInitializedRef.current = true;
     setEnabledMcpServerIds(prev => {
-      // Keep existing selections, add newly connected servers
-      const next = new Set(prev);
-      for (const info of infos) {
-        if (!prev.has(info.id) && prev.size === 0) {
-          // First load: enable all
-          next.add(info.id);
-        } else if (!prev.has(info.id)) {
-          next.add(info.id);
-        }
-      }
-      // Remove disconnected servers
-      for (const id of next) {
-        if (!infos.find(i => i.id === id)) next.delete(id);
+      // Enable connected servers on first load, then preserve explicit opt-outs.
+      // Servers connected after the previous refresh start enabled.
+      if (firstLoad) return connectedIds;
+      const next = new Set([...prev].filter(id => connectedIds.has(id)));
+      for (const id of connectedIds) {
+        if (!previouslyKnownIds.has(id)) next.add(id);
       }
       return next;
     });
@@ -254,28 +254,32 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const saveActiveOkfBundleIds = useCallback((activeBundleIds: string[]) => {
     const source = getOkfSource();
     if (!source) return;
+    const externalBundleIds = activeBundleIds.filter(id => !isBuiltinOkfBundleId(id));
     plugin.settings.knowledgeSources = plugin.settings.knowledgeSources.map(item =>
-      item.id === source.id ? { ...item, activeBundleIds } : item
+      item.id === source.id ? { ...item, activeBundleIds: externalBundleIds } : item
     );
     void plugin.saveSettings();
   }, [getOkfSource, plugin]);
 
   const refreshOkfBundles = useCallback(() => {
+    const builtinBundle = getBuiltinOkfBundle();
     const source = getOkfSource();
     if (!source) {
-      setOkfBundles([]);
-      setActiveOkfBundleIds([]);
+      setOkfBundles([builtinBundle]);
+      setActiveOkfBundleIds(prev => prev.filter(isBuiltinOkfBundleId));
       return;
     }
     const root = source.path.trim();
     const savedActiveBundleIds = source.activeBundleIds;
     void discoverOkfBundles(plugin.app, root)
       .then((bundles) => {
-        setOkfBundles(bundles);
+        const allBundles = [builtinBundle, ...bundles];
+        setOkfBundles(allBundles);
         setActiveOkfBundleIds(prev => {
-          const validIds = new Set(bundles.map(bundle => bundle.id));
+          const validIds = new Set(allBundles.map(bundle => bundle.id));
           if (savedActiveBundleIds) {
-            return savedActiveBundleIds.filter(id => validIds.has(id));
+            const builtinSelection = prev.filter(isBuiltinOkfBundleId);
+            return [...builtinSelection, ...savedActiveBundleIds.filter(id => validIds.has(id))];
           }
           const kept = prev.filter(id => validIds.has(id));
           return kept.length > 0 ? kept : bundles.map(bundle => bundle.id);
@@ -283,8 +287,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       })
       .catch((e) => {
         console.warn("Failed to discover OKF bundles:", e);
-        setOkfBundles([]);
-        setActiveOkfBundleIds([]);
+        setOkfBundles([builtinBundle]);
+        setActiveOkfBundleIds(prev => prev.filter(isBuiltinOkfBundleId));
       });
   }, [getOkfSource, plugin]);
 
@@ -689,9 +693,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         systemPrompt += `\n\nAdditional instructions: ${plugin.settings.systemPrompt}`;
       }
 
+      if (activeOkfBundleIds.some(isBuiltinOkfBundleId)) {
+        systemPrompt += buildBuiltinOkfSystemPrompt();
+      }
       const okfRoot = getOkfRoot();
-      if (okfRoot && activeOkfBundleIds.length > 0) {
-        systemPrompt += await buildOkfSystemPrompt(plugin.app, okfRoot, activeOkfBundleIds);
+      const externalOkfBundleIds = activeOkfBundleIds.filter(id => !isBuiltinOkfBundleId(id));
+      if (okfRoot && externalOkfBundleIds.length > 0) {
+        systemPrompt += await buildOkfSystemPrompt(plugin.app, okfRoot, externalOkfBundleIds);
       }
 
       // RAG context injection (only when a setting is selected AND RAG is enabled for this session)
@@ -760,9 +768,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       // AnythingLLM does not support OpenAI function calling — skip tools entirely
       const isAnythingLlm = llmConfig.framework === "anythingllm";
       const vaultTools = isAnythingLlm ? [] : getVaultTools(vaultToolMode);
-      const mcpTools = isAnythingLlm ? [] : plugin.mcpManager.getAllTools(
-        enabledMcpServerIds.size > 0 ? Array.from(enabledMcpServerIds) : undefined,
-      );
+      const mcpTools = isAnythingLlm
+        ? []
+        : plugin.mcpManager.getAllTools(Array.from(enabledMcpServerIds));
       if (isAnythingLlm && (vaultToolMode !== "none" || enabledMcpServerIds.size > 0)) {
         new Notice(t("chat.anythingLlmToolsNotSupported"));
       }

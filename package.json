@@ -4,8 +4,9 @@
   "description": "Chat with local LLMs via OpenAI-compatible API, with local embeddings RAG and text processing commands",
   "main": "main.js",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "generate:builtin-okf": "node scripts/generate-builtin-okf.mjs",
+    "dev": "npm run generate:builtin-okf && node esbuild.config.mjs",
+    "build": "npm run generate:builtin-okf && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "INTEGRATION=1 vitest run src/core/ragStore.integration.test.ts",
