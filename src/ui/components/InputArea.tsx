@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
-import { Send, Paperclip, StopCircle, Database, BookOpen } from "lucide-react";
+import { Send, Paperclip, StopCircle, Database } from "lucide-react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
 import type { McpServerInfo } from "src/core/mcpManager";
@@ -7,6 +7,7 @@ import type { SkillMetadata } from "src/core/skillsLoader";
 import type { OkfBundle } from "src/core/okfLoader";
 import { RagSourceModal } from "./RagSourceModal";
 import SkillSelector from "./SkillSelector";
+import OkfSelector from "./OkfSelector";
 import { t } from "src/i18n";
 
 interface SlashCommandItem {
@@ -633,7 +634,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       </div>
 
       {/* Model & RAG selector */}
-      {(availableModels.length > 1 || ragSettingNames.length > 0 || okfBundles.length > 0) && (
+      {(availableModels.length > 1 || ragSettingNames.length > 0) && (
         <div className="llm-hub-model-selector">
           {availableModels.length > 1 && (
             <>
@@ -677,25 +678,6 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
               </select>
             </>
           )}
-          {okfBundles.length > 0 && onToggleOkfBundle && (
-            <div className="llm-hub-okf-bundles">
-              <span className="llm-hub-model-label">
-                <BookOpen size={14} />
-                OKF
-              </span>
-              {okfBundles.map((bundle) => (
-                <label key={bundle.id} className="llm-hub-okf-bundle">
-                  <input
-                    type="checkbox"
-                    checked={activeOkfBundleIds.includes(bundle.id)}
-                    onChange={() => onToggleOkfBundle(bundle.id)}
-                    disabled={isLoading}
-                  />
-                  {bundle.name}
-                </label>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
@@ -707,6 +689,14 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           onToggleSkill={onToggleSkill}
           disabled={isLoading}
           app={app}
+        />
+      )}
+      {okfBundles.length > 0 && onToggleOkfBundle && (
+        <OkfSelector
+          bundles={okfBundles}
+          activeBundleIds={activeOkfBundleIds}
+          onToggleBundle={onToggleOkfBundle}
+          disabled={isLoading}
         />
       )}
     </div>

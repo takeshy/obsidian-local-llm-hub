@@ -86,6 +86,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
   const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
+  const [currentDashboard, setCurrentDashboard] = useState<TFile | null>(null);
   const knownMcpServerIdsRef = useRef<Set<string>>(new Set());
   const mcpSelectionInitializedRef = useRef(false);
 
@@ -300,6 +301,42 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     };
   }, [plugin, refreshOkfBundles]);
 
+  useEffect(() => {
+    const refreshDashboard = () => {
+      const activeFile = plugin.app.workspace.getActiveFile();
+      if (activeFile?.extension === "dashboard") {
+        setCurrentDashboard(activeFile);
+        return;
+      }
+      let openDashboard: TFile | null = null;
+      plugin.app.workspace.iterateAllLeaves((leaf) => {
+        const file = (leaf.view as { file?: TFile | null }).file;
+        if (!openDashboard && file instanceof TFile && file.extension === "dashboard") {
+          openDashboard = file;
+        }
+      });
+      if (openDashboard) {
+        setCurrentDashboard(openDashboard);
+        return;
+      }
+      const dashboards = plugin.app.vault.getFiles()
+        .filter(file => file.extension === "dashboard")
+        .sort((a, b) => b.stat.mtime - a.stat.mtime);
+      setCurrentDashboard(dashboards[0] ?? null);
+    };
+    refreshDashboard();
+    plugin.app.vault.on("create", refreshDashboard);
+    plugin.app.vault.on("delete", refreshDashboard);
+    plugin.app.vault.on("rename", refreshDashboard);
+    plugin.app.workspace.on("active-leaf-change", refreshDashboard);
+    return () => {
+      plugin.app.vault.off("create", refreshDashboard);
+      plugin.app.vault.off("delete", refreshDashboard);
+      plugin.app.vault.off("rename", refreshDashboard);
+      plugin.app.workspace.off("active-leaf-change", refreshDashboard);
+    };
+  }, [plugin]);
+
   const handleToggleOkfBundle = useCallback((bundleId: string) => {
     setActiveOkfBundleIds(prev => {
       const next = prev.includes(bundleId)
@@ -326,6 +363,26 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       }
       return next;
     });
+  }, []);
+
+  const handleOpenDashboard = useCallback(() => {
+    if (currentDashboard) void plugin.app.workspace.getLeaf(true).openFile(currentDashboard);
+  }, [currentDashboard, plugin]);
+
+  const handleCreateDashboard = useCallback(() => {
+    void promptForValue(plugin.app, t("dashboard.createNamePrompt"), "Dashboard", false).then((name) => {
+      if (name === null) return;
+      void plugin.createDashboard(name).then((file) => {
+        if (file) setCurrentDashboard(file);
+      });
+    });
+  }, [plugin]);
+
+  const handleAskHelp = useCallback(() => {
+    const builtinBundle = getBuiltinOkfBundle();
+    setActiveOkfBundleIds(prev => prev.includes(builtinBundle.id) ? prev : [...prev, builtinBundle.id]);
+    inputAreaRef.current?.setInputValue(t("chat.helpQuestionDraft"));
+    inputAreaRef.current?.focus();
   }, []);
 
   // Check for selection
@@ -1062,6 +1119,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         streamingThinking={streamingThinking}
         isLoading={isLoading}
         app={plugin.app}
+        currentDashboard={currentDashboard ? {
+          basename: currentDashboard.basename,
+          path: currentDashboard.path,
+        } : null}
+        onOpenDashboard={currentDashboard ? handleOpenDashboard : undefined}
+        onCreateDashboard={handleCreateDashboard}
+        onAskHelp={handleAskHelp}
       />
 
       {/* Input */}

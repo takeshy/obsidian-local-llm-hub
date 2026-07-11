@@ -246,6 +246,59 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   margin-top: 4px;
 }
 
+.llm-hub-empty-dashboard {
+  width: min(100%, 420px);
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  text-align: left;
+}
+
+.llm-hub-empty-dashboard-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.llm-hub-empty-dashboard-description {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.llm-hub-empty-dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.llm-hub-empty-dashboard-link,
+.llm-hub-empty-dashboard-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+.llm-hub-empty-dashboard-link span,
+.llm-hub-empty-dashboard-create span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .llm-hub-empty-tips {
   margin-top: 16px;
   display: flex;

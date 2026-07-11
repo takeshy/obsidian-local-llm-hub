@@ -1,5 +1,8 @@
 import obsidianmd from 'eslint-plugin-obsidianmd';
 import tseslint from 'typescript-eslint';
+import { DEFAULT_BRANDS } from 'eslint-plugin-obsidianmd/dist/lib/rules/ui/brands.js';
+
+const BRANDS = [...DEFAULT_BRANDS, 'Local LLM Hub'];
 
 export default tseslint.config(
   {
@@ -51,7 +54,10 @@ export default tseslint.config(
       'obsidianmd/validate-manifest': 'error',
       'obsidianmd/validate-license': 'error',
       'obsidianmd/ui/sentence-case': 'error',
-      'obsidianmd/ui/sentence-case-locale-module': ['error', { ignoreWords: ['RAG'] }],
+      'obsidianmd/ui/sentence-case-locale-module': ['error', {
+        brands: BRANDS,
+        ignoreWords: ['RAG', 'OKF'],
+      }],
 
       'no-case-declarations': 'error',
       'no-useless-escape': 'error',
