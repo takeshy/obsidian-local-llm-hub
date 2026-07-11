@@ -46,6 +46,16 @@ export function groupSecretPaths(items: SecretPathItem[]): SecretPathRow[] {
     }
     container.push({ kind: "file", item });
   }
+  const sortRows = (itemsToSort: SecretPathRow[]): void => {
+    itemsToSort.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "group" ? -1 : 1;
+      return 0;
+    });
+    for (const row of itemsToSort) {
+      if (row.kind === "group") sortRows(row.children);
+    }
+  };
+  sortRows(rows);
   return rows;
 }
 

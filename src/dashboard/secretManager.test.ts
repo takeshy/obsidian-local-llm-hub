@@ -41,4 +41,20 @@ describe("secret manager helpers", () => {
       ] },
     ]);
   });
+
+  it("sorts directories before files at every level", () => {
+    const rootFile = { id: "root", path: "root.encrypted" };
+    const nestedFile = { id: "nested", path: "team/direct.encrypted" };
+    const deeperFile = { id: "deeper", path: "team/api/key.encrypted" };
+
+    expect(groupSecretPaths([rootFile, nestedFile, deeperFile])).toEqual([
+      { kind: "group", folderPath: "team", items: [nestedFile, deeperFile], children: [
+        { kind: "group", folderPath: "team/api", items: [deeperFile], children: [
+          { kind: "file", item: deeperFile },
+        ] },
+        { kind: "file", item: nestedFile },
+      ] },
+      { kind: "file", item: rootFile },
+    ]);
+  });
 });
