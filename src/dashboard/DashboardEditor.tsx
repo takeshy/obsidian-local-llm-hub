@@ -4,7 +4,12 @@ import { Menu, type TFile } from "obsidian";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { DashboardCanvas } from "./DashboardCanvas";
-import { parseDashboard, serializeDashboard, createEmptyDashboard } from "./dashboardFile";
+import {
+  parseDashboard,
+  serializeDashboard,
+  createEmptyDashboard,
+  migrateDashboardKanbanWidgetsToFiles,
+} from "./dashboardFile";
 import type { DashboardData } from "./types";
 
 interface DashboardEditorProps {
@@ -59,6 +64,21 @@ export function DashboardEditor({
     setData(initial);
   }, [initial]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const migrated = await migrateDashboardKanbanWidgetsToFiles(plugin.app.vault, initial);
+        if (!migrated || cancelled) return;
+        setData(migrated);
+        onYamlChange(serializeDashboard(migrated));
+      } catch (error) {
+        console.error("Dashboard: failed to migrate kanban widgets", error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [plugin.app.vault, initial, onYamlChange]);
+
   const handleChange = (next: DashboardData) => {
     setData(next);
     onYamlChange(serializeDashboard(next));
@@ -66,14 +86,12 @@ export function DashboardEditor({
 
   const showDashboardMenu = (event: MouseEvent<HTMLButtonElement>) => {
     const menu = new Menu();
-
     if (dashboards.length === 0) {
       menu.addItem((item) => {
         item.setTitle(t("dashboard.noFiles"));
         item.setDisabled(true);
       });
     }
-
     for (const file of dashboards) {
       menu.addItem((item) => {
         item.setTitle(getDashboardLabel(file, duplicateDashboardBasenames));
@@ -83,7 +101,6 @@ export function DashboardEditor({
         });
       });
     }
-
     menu.showAtMouseEvent(event.nativeEvent);
   };
 

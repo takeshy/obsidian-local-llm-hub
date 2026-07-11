@@ -4,11 +4,12 @@ import type { LocalLlmHubPlugin } from "src/plugin";
 import CryptEditor from "./components/CryptEditor";
 import {
   isEncryptedFile,
-  encryptFileContent,
+  encryptPlaintextFileContent,
+  type EncryptedFileMetadata,
 } from "src/core/crypto";
 import { formatError } from "src/utils/error";
 
-export const CRYPT_VIEW_TYPE = "llm-hub-crypt-view";
+export const CRYPT_VIEW_TYPE = "hub-crypt-view";
 
 export class CryptView extends TextFileView {
   plugin: LocalLlmHubPlugin;
@@ -25,13 +26,15 @@ export class CryptView extends TextFileView {
   }
 
   getDisplayText(): string {
-    return this.file?.name || "Encrypted";
+    const fileName = this.file?.name || "Encrypted";
+    return fileName;
   }
 
   getIcon(): IconName {
     return "lock";
   }
 
+  // TextFileView required methods
   getViewData(): string {
     return this.currentData;
   }
@@ -63,7 +66,7 @@ export class CryptView extends TextFileView {
     container.addClass("llm-hub-crypt-container");
 
     if (!this.currentData) {
-      container.createDiv( {
+      container.createEl("div", {
         text: "No content",
         cls: "llm-hub-crypt-error",
       });
@@ -71,7 +74,7 @@ export class CryptView extends TextFileView {
     }
 
     if (!isEncryptedFile(this.currentData)) {
-      container.createDiv( {
+      container.createEl("div", {
         text: "File is not encrypted",
         cls: "llm-hub-crypt-error",
       });
@@ -86,8 +89,8 @@ export class CryptView extends TextFileView {
         plugin={this.plugin}
         filePath={filePath}
         encryptedContent={this.currentData}
-        onSave={async (newContent: string) => {
-          await this.saveEncrypted(newContent);
+        onSave={async (newContent: string, metadata: EncryptedFileMetadata) => {
+          await this.saveEncrypted(newContent, metadata);
         }}
         onDecrypt={async (decryptedContent: string) => {
           await this.saveDecrypted(decryptedContent);
@@ -102,7 +105,7 @@ export class CryptView extends TextFileView {
     await Promise.resolve();
   }
 
-  private async saveEncrypted(content: string): Promise<void> {
+  private async saveEncrypted(content: string, metadata: EncryptedFileMetadata): Promise<void> {
     if (!this.file) return;
 
     const encryption = this.plugin.settings.encryption;
@@ -112,11 +115,12 @@ export class CryptView extends TextFileView {
     }
 
     try {
-      const encryptedContent = await encryptFileContent(
+      const encryptedContent = await encryptPlaintextFileContent(
         content,
         encryption.publicKey,
         encryption.encryptedPrivateKey,
-        encryption.salt
+        encryption.salt,
+        metadata,
       );
       this.currentData = encryptedContent;
       this.requestSave();
@@ -134,6 +138,7 @@ export class CryptView extends TextFileView {
       this.currentData = content;
       this.requestSave();
 
+      // Remove .encrypted extension if present
       let openPath = this.file.path;
       if (this.file.path.endsWith(".encrypted")) {
         const newPath = this.file.path.slice(0, -".encrypted".length);
@@ -143,6 +148,7 @@ export class CryptView extends TextFileView {
 
       new Notice("File decrypted and saved");
 
+      // Close this view and open the file normally
       this.leaf.detach();
       await this.plugin.app.workspace.openLinkText(openPath, "", false);
     } catch (error) {

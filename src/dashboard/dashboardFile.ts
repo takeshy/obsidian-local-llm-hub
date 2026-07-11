@@ -8,10 +8,21 @@ import {
   type GridLayout,
   type LayoutPos,
   type Breakpoint,
+  type Widget,
   DEFAULT_GRID,
   DASHBOARD_FOLDER,
   DASHBOARD_EXT,
 } from "./types";
+import {
+  kanbanDefinitionFromConfig,
+  KANBAN_EXT,
+  KANBAN_FOLDER,
+  serializeKanbanFile,
+} from "./kanbanFile";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 /**
  * Build the storage path for a dashboard name:
@@ -43,7 +54,7 @@ export function parseDashboard(content: string): DashboardData | null {
   if (!content || !content.trim()) return null;
   try {
     const parsed = parseYaml(content) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    if (!isRecord(parsed)) return null;
     const data = parsed as DashboardData;
     // Defensive defaults so a hand-edited / partial file still renders.
     if (typeof data.version !== "number") data.version = 1;
@@ -59,17 +70,72 @@ export function parseDashboard(content: string): DashboardData | null {
         gap: Number.isFinite(grid.gap) && grid.gap! >= 0 ? grid.gap! : DEFAULT_GRID.gap,
       };
     }
-    if (!Array.isArray(data.widgets)) {
-      data.widgets = [];
-    } else {
-      data.widgets = data.widgets.map((widget) =>
-        widget?.type === "markdown" ? { ...widget, type: "file" } : widget,
-      );
-    }
+    if (!Array.isArray(data.widgets)) data.widgets = [];
+    data.widgets = migrateDashboardWidgets(data.widgets);
     return data;
   } catch {
     return null;
   }
+}
+
+/** Migrate dashboard widget records from older schema names to current types. */
+export function migrateDashboardWidgets(widgets: DashboardData["widgets"]): DashboardData["widgets"] {
+  return widgets.map((widget) => widget.type === "markdown" ? { ...widget, type: "file" } : widget);
+}
+
+function trimString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function sanitizeFileBase(name: string): string {
+  return name
+    .replace(/[\\/:*?"<>|#[\]]/g, "-")
+    .replace(/\s+/g, " ")
+    .replace(/^\.+/, "")
+    .trim() || "Board";
+}
+
+async function uniqueKanbanPath(vault: Vault, baseName: string): Promise<string> {
+  const base = sanitizeFileBase(baseName);
+  let path = `${KANBAN_FOLDER}/${base}${KANBAN_EXT}`;
+  let index = 2;
+  while (vault.getAbstractFileByPath(path) || await vault.adapter.exists(path)) {
+    path = `${KANBAN_FOLDER}/${base} ${index++}${KANBAN_EXT}`;
+  }
+  return path;
+}
+
+export async function createKanbanFileFromConfig(
+  vault: Vault,
+  config: Record<string, unknown>,
+  fallbackName: string,
+): Promise<string> {
+  await ensureVaultFolder(vault, KANBAN_FOLDER);
+  const path = await uniqueKanbanPath(vault, trimString(config.title) || fallbackName);
+  await vault.create(path, serializeKanbanFile(kanbanDefinitionFromConfig(config)));
+  return path;
+}
+
+/** Move legacy inline kanban widget definitions into reusable `.kanban` files. */
+export async function migrateDashboardKanbanWidgetsToFiles(
+  vault: Vault,
+  data: DashboardData,
+): Promise<DashboardData | null> {
+  const migratedWidgets: Widget[] = [];
+  let changed = false;
+  for (const widget of data.widgets) {
+    if (widget.type !== "kanban" || trimString(widget.config?.kanban)) {
+      migratedWidgets.push(widget);
+      continue;
+    }
+    const config = widget.config ?? {};
+    const path = await createKanbanFileFromConfig(vault, config, widget.id || "Board");
+    const nextConfig: Record<string, unknown> = { kanban: path };
+    if (Array.isArray(config.cardOrder)) nextConfig.cardOrder = config.cardOrder;
+    migratedWidgets.push({ ...widget, config: nextConfig });
+    changed = true;
+  }
+  return changed ? { ...data, widgets: migratedWidgets } : null;
 }
 
 /**
