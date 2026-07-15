@@ -28,6 +28,7 @@ import { getRagStore } from "src/core/ragStore";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
 import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
 import { buildBuiltinOkfSystemPrompt, buildOkfSystemPrompt, discoverOkfBundles, getBuiltinOkfBundle, isBuiltinOkfBundleId, type OkfBundle } from "src/core/okfLoader";
+import { executeReadOkfDocumentTool, READ_OKF_DOCUMENT_TOOL, READ_OKF_DOCUMENT_TOOL_NAME } from "src/core/okfDocumentTool";
 import { parseWorkflowFromMarkdown } from "src/workflow/parser";
 import { WorkflowExecutor } from "src/workflow/executor";
 import type { McpServerInfo } from "src/core/mcpManager";
@@ -866,6 +867,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         tools.push(GET_WORKFLOW_SPEC_TOOL);
       }
 
+      if (activeOkfBundleIds.length > 0 && !isAnythingLlm) {
+        tools.push(READ_OKF_DOCUMENT_TOOL);
+      }
+
       // Conversation messages for the API (includes tool call/result messages)
       const conversationMessages: Message[] = [...messages, userMessage];
       let fullContent = "";
@@ -951,7 +956,18 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
           const result = tc.name === GET_WORKFLOW_SPEC_TOOL_NAME
             ? { success: true, result: handleGetWorkflowSpec(tc.arguments, plugin) }
-            : await executeToolCall(tc, {
+            : tc.name === READ_OKF_DOCUMENT_TOOL_NAME
+              ? {
+                success: true,
+                result: JSON.stringify(await executeReadOkfDocumentTool(
+                  plugin.app,
+                  getOkfRoot(),
+                  activeOkfBundleIds,
+                  typeof tc.arguments.bundleId === "string" ? tc.arguments.bundleId : "",
+                  typeof tc.arguments.path === "string" ? tc.arguments.path : "",
+                )),
+              }
+              : await executeToolCall(tc, {
               app: plugin.app,
               mcpManager: plugin.mcpManager,
               onProposeEdit: async (path, oldContent, newContent) => {
