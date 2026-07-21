@@ -55,7 +55,7 @@ export class SelectionManager {
     this.selectionLocation = null;
 
     const activeView = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
-    if (activeView) {
+    if (activeView?.editor) {
       const editor = activeView.editor;
       const selection = editor.getSelection();
       if (selection) {

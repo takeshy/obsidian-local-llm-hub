@@ -597,7 +597,7 @@ export class LocalLlmHubPlugin extends Plugin {
   getSelection(): string | null {
     // First try live selection from active editor
     const view = this.lastActiveMarkdownView || this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (view) {
+    if (view?.editor) {
       const sel = view.editor.getSelection();
       if (sel) return sel;
     }
@@ -611,7 +611,7 @@ export class LocalLlmHubPlugin extends Plugin {
 
   getActiveNoteContent(): string | null {
     const view = this.lastActiveMarkdownView || this.app.workspace.getActiveViewOfType(MarkdownView);
-    if (!view) return null;
+    if (!view?.editor) return null;
     return view.editor.getValue() || null;
   }
 
