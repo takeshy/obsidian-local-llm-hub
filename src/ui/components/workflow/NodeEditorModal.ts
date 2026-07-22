@@ -524,12 +524,12 @@ export class NodeEditorModal extends Modal {
       if (suggestions.length === 0) return;
 
       currentSuggestions = suggestions;
-      suggestionContainer = activeDocument.createElement("div");
-      suggestionContainer.addClass("llm-hub-workflow-path-suggestions");
+      suggestionContainer = activeDocument.createDocumentFragment().createDiv({
+        cls: "llm-hub-workflow-path-suggestions",
+      });
 
       suggestions.forEach((suggestion, index) => {
-        const item = activeDocument.createElement("div");
-        item.addClass("llm-hub-workflow-path-suggestion-item");
+        const item = suggestionContainer!.createDiv({ cls: "llm-hub-workflow-path-suggestion-item" });
         if (index === selectedIndex) {
           item.addClass("is-selected");
         }
@@ -541,7 +541,6 @@ export class NodeEditorModal extends Modal {
           selectedIndex = index;
           updateSelection();
         });
-        suggestionContainer!.appendChild(item);
       });
 
       containerEl.appendChild(suggestionContainer);

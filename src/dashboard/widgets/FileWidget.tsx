@@ -185,17 +185,17 @@ function setCustomHighlights(win: Window, name: string, ranges: Range[]) {
 function ensureHighlightStyle(doc: Document, name: string) {
   const id = `llm-hub-db-memo-highlight-${name}`;
   if (doc.getElementById(id)) return;
-  const style = doc.createElement("style");
-  style.id = id;
-  style.textContent = `
+  (doc.head ?? doc.documentElement).createEl("style", {
+    attr: { id },
+    text: `
 ::highlight(${name}) {
   background-color: rgb(217 119 6 / 0.30);
 }
 ::highlight(${name}-flash) {
   background-color: rgb(217 119 6 / 0.58);
 }
-`;
-  (doc.head ?? doc.documentElement).appendChild(style);
+`,
+  });
 }
 
 function fileKind(path: string): "markdown" | "text" | "html" | "image" | "pdf" | "epub" | "other" {

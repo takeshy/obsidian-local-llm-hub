@@ -155,8 +155,7 @@ function textareaCaretMenuPosition(textarea: HTMLTextAreaElement, cursorPos: num
   const doc = textarea.ownerDocument;
   const win = doc.defaultView ?? window;
   const style = win.getComputedStyle(textarea);
-  const mirror = doc.createElement("div");
-  const marker = doc.createElement("span");
+  const mirror = doc.createDocumentFragment().createDiv();
   const copyProps = [
     "boxSizing",
     "fontFamily",
@@ -193,8 +192,8 @@ function textareaCaretMenuPosition(textarea: HTMLTextAreaElement, cursorPos: num
     mirror.style[prop] = style[prop];
   });
   mirror.textContent = textarea.value.slice(0, cursorPos);
+  const marker = mirror.createSpan();
   marker.textContent = "\u200b";
-  mirror.appendChild(marker);
   doc.body.appendChild(mirror);
 
   const markerTop = marker.offsetTop;

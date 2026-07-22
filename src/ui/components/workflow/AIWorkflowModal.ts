@@ -2018,10 +2018,8 @@ ${formattedSteps}
   private addResizeHandles(modalEl: HTMLElement): void {
     const directions = ["n", "e", "s", "w", "ne", "nw", "se", "sw"];
     for (const dir of directions) {
-      const handle = activeDocument.createElement("div");
-      handle.className = `llm-hub-resize-handle llm-hub-resize-${dir}`;
+      const handle = modalEl.createDiv({ cls: `llm-hub-resize-handle llm-hub-resize-${dir}` });
       handle.dataset.direction = dir;
-      modalEl.appendChild(handle);
       this.setupResize(handle, modalEl, dir);
     }
   }
