@@ -16,6 +16,7 @@ import { cryptoCache } from "src/core/cryptoCache";
 import { registerWorkflowCodeBlockProcessor } from "src/ui/workflowCodeBlock";
 import { generateDashboardBase, generateDashboardWorkflow, listDashboardModels, rewriteDashboardText, runDashboardWorkflow } from "src/integrations/dashboardHubCapabilities";
 import { REGISTER_RUNTIME_SKILL_EVENT, REQUEST_RUNTIME_SKILLS_EVENT, UNREGISTER_RUNTIME_SKILL_EVENT, registerRuntimeSkill, unregisterRuntimeSkill } from "src/core/runtimeSkills";
+import { registerDiscussionHubIntegration } from "src/integrations/discussionHubCapabilities";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -123,6 +124,7 @@ export class LocalLlmHubPlugin extends Plugin {
     this.addSettingTab(new SettingsTab(this.app, this));
     this.registerRuntimeSkillContributions();
     this.registerDashboardHubIntegration();
+    registerDiscussionHubIntegration(this);
     this.notifyDashboardHubMigration();
     // Compatibility command for existing hotkeys; Dashboard Hub performs the
     // actual creation and remains the sole owner of .dashboard files.

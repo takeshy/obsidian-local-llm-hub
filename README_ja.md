@@ -97,6 +97,14 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 
 ---
 
+## Discussion Hub 連携
+
+[Discussion Hub](https://github.com/takeshy/obsidian-discussion-hub) は、複数の AI プロバイダーを 1 つの共有会話に参加させるプラグインです。両方のプラグインを有効にすると、Local LLM Hub で設定済みのテキストモデルが Discussion Hub へ自動登録されます。モデルの応答はディスカッションへストリーミングされ、メッセージの添付ファイルとディスカッションのシステムプロンプトも選択したモデルへ渡されます。
+
+Local LLM Hub で LLM サーバーとモデルを設定し、Discussion Hub のディスカッション作成・編集時に Local LLM Hub のモデルを選択してください。連携専用の追加設定は不要です。
+
+---
+
 ## AI チャット
 
 ローカル LLM とのストリーミングチャット。思考プロセス表示、ファイル添付、`@` メンションによる Vault ノート参照、複数セッション管理。

@@ -98,6 +98,14 @@ Existing `.dashboard` files remain compatible. See the [Dashboard Hub documentat
 
 ---
 
+## Discussion Hub Integration
+
+[Discussion Hub](https://github.com/takeshy/obsidian-discussion-hub) brings multiple AI providers into a shared conversation. When both plugins are enabled, Local LLM Hub automatically registers its configured text models with Discussion Hub. Responses are streamed into the discussion, and message attachments and the discussion system prompt are passed through to the selected model.
+
+Configure your LLM server and models in Local LLM Hub, then select a Local LLM Hub model when creating or editing a Discussion Hub discussion. No additional integration settings are required.
+
+---
+
 ## AI Chat
 
 Streaming chat with your local LLM. Thinking display, file attachments, `@` mentions for vault notes, multiple sessions.
