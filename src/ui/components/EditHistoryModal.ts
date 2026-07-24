@@ -281,7 +281,7 @@ export class EditHistoryModal extends Modal {
       .addButton((btn) =>
         btn
           .setButtonText(t("editHistoryModal.clearAll"))
-          .setWarning()
+          .setDestructive()
           .onClick(() => {
             new LocalConfirmModal(this.app, t("editHistoryModal.confirmClear"), async () => {
               let restoredContent: string | null = null;

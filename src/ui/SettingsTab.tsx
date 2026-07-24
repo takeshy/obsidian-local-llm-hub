@@ -110,22 +110,4 @@ export class SettingsTab extends PluginSettingTab {
     ];
   }
 
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
-
-    const ctx = {
-      plugin: this.plugin,
-      display: () => this.display(),
-    };
-
-    displayLlmSettings(containerEl, ctx);
-    displayWorkspaceSettings(containerEl, ctx);
-    displayRagSettings(containerEl, ctx);
-    displayKnowledgeSettings(containerEl, ctx);
-    displayExternalSkillSettings(containerEl, ctx);
-    displaySlashCommandSettings(containerEl, ctx);
-    displayMcpSettings(containerEl, ctx);
-    displayEncryptionSettings(containerEl, ctx);
-  }
 }

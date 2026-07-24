@@ -1,8 +1,8 @@
 {
 	"id": "local-llm-hub",
 	"name": "Local LLM Hub",
-	"version": "0.19.3",
-	"minAppVersion": "1.10.0",
+	"version": "0.19.4",
+	"minAppVersion": "1.13.0",
 	"description": "Chat with local LLMs (Ollama, LM Studio, AnythingLLM) with local embeddings RAG, file encryption, edit history, slash commands, and workflow automation.",
 	"author": "takeshy",
 	"authorUrl": "https://github.com/takeshy",

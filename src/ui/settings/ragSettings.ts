@@ -169,7 +169,7 @@ function displaySelectedRagSetting(
           .addButton((confirmBtn) =>
             confirmBtn
               .setButtonText("Delete")
-              .setWarning()
+              .setDestructive()
               .onClick(async () => {
                 modal.close();
                 await deleteRagIndex(plugin.app, name);
@@ -438,16 +438,10 @@ function displaySelectedRagSetting(
       slider
         .setLimits(0, 10, 1)
         .setValue(Math.round(currentMinScore * 10))
-        .setDynamicTooltip()
+        .setDisplayFormat((value) => (value / 10).toFixed(1))
         .onChange((value) => {
           void updateSetting({ minScore: value / 10 }).catch((err) => new Notice(String(err)));
         });
-      const tooltipEl = slider.sliderEl.nextElementSibling;
-      if (tooltipEl) {
-        const updateTooltip = () => { tooltipEl.textContent = (slider.getValue() / 10).toFixed(1); };
-        updateTooltip();
-        slider.sliderEl.addEventListener("input", updateTooltip);
-      }
     })
     .addExtraButton((button) =>
       button
