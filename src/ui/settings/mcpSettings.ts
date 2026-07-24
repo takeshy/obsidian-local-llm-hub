@@ -179,7 +179,7 @@ class McpServerModal extends Modal {
       .setDesc(t("settings.mcpArgsDesc"))
       .addText((text) =>
         text
-          .setPlaceholder("e.g. -y @modelcontextprotocol/server-filesystem /path")
+          .setPlaceholder("E.g. -y @modelcontextprotocol/server-filesystem /path")
           .setValue(this.config.args.join(" "))
           .onChange((v) => {
             this.config.args = v.split(" ").filter((a) => a.length > 0);

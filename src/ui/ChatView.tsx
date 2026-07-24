@@ -20,7 +20,7 @@ export class ChatView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Local llm";
+    return "Local LLM";
   }
 
   getIcon(): IconName {

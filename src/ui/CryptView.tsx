@@ -66,7 +66,7 @@ export class CryptView extends TextFileView {
     container.addClass("llm-hub-crypt-container");
 
     if (!this.currentData) {
-      container.createEl("div", {
+      container.createDiv({
         text: "No content",
         cls: "llm-hub-crypt-error",
       });
@@ -74,7 +74,7 @@ export class CryptView extends TextFileView {
     }
 
     if (!isEncryptedFile(this.currentData)) {
-      container.createEl("div", {
+      container.createDiv({
         text: "File is not encrypted",
         cls: "llm-hub-crypt-error",
       });

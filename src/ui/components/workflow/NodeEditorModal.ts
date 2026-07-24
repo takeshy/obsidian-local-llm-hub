@@ -524,7 +524,7 @@ export class NodeEditorModal extends Modal {
       if (suggestions.length === 0) return;
 
       currentSuggestions = suggestions;
-      suggestionContainer = activeDocument.createDocumentFragment().createDiv({
+      suggestionContainer = createDiv({
         cls: "llm-hub-workflow-path-suggestions",
       });
 

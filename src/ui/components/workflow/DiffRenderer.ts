@@ -308,7 +308,7 @@ function createCommentEditor(
   const line = diffLines[lineIndex];
   const existingComment = lineComments.get(lineIndex);
 
-  const editor = activeDocument.createDocumentFragment().createDiv({ cls: "llm-hub-diff-comment-editor" });
+  const editor = createDiv({ cls: "llm-hub-diff-comment-editor" });
   afterEl.insertAdjacentElement("afterend", editor);
 
   const textarea = editor.createEl("textarea", { cls: "llm-hub-diff-comment-input" });

@@ -73,7 +73,7 @@ export function executeSandboxedJS(
   timeoutMs = DEFAULT_TIMEOUT_MS,
 ): Promise<string> {
   return new Promise<string>((resolve, reject) => {
-    const iframe = activeDocument.createDocumentFragment().createEl("iframe");
+    const iframe = createEl("iframe");
     iframe.sandbox.add("allow-scripts");
     iframe.setCssStyles({ display: "none" });
 

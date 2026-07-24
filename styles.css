@@ -6476,3 +6476,9 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 }
 
 /* ===================================================================== */
+/* Settings tab */
+.llm-hub-settings-section {
+  display: block;
+  padding: 0;
+  border: 0;
+}
