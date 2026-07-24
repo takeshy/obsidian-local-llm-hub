@@ -1,6 +1,6 @@
 {
   "name": "obsidian-local-llm-hub",
-  "version": "0.19.2",
+  "version": "0.19.3",
   "description": "Chat with local LLMs via OpenAI-compatible API, with local embeddings RAG and text processing commands",
   "main": "main.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "esbuild": "^0.25.2",
+    "esbuild": "^0.28.1",
     "eslint-plugin-obsidianmd": "^0.4.1",
     "obsidian": "^1.13.1",
     "tslib": "^2.4.0",
