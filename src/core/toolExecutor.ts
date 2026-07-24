@@ -4,6 +4,7 @@ import type { McpManager } from "./mcpManager";
 import { getEditHistoryManager } from "./editHistory";
 import { executeSandboxedJS } from "./sandboxExecutor";
 import { ensureMarkdownExtensionIfMissing, getVaultTextFiles } from "./vaultFileTypes";
+import { readTimelineEntriesForDay, sanitizeTimelineName } from "./timelineReader";
 
 export interface ToolExecutionResult {
   success: boolean;
@@ -32,6 +33,24 @@ export async function executeToolCall(
 
   try {
     switch (toolCall.name) {
+      case "read_timeline": {
+        const timelineName = sanitizeTimelineName((args.timelineName as string | undefined) || "Timeline");
+        const now = new Date();
+        const pad = (value: number) => String(value).padStart(2, "0");
+        const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const date = (args.date as string | undefined) || today;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          return { success: false, result: "date must use YYYY-MM-DD format" };
+        }
+        const entries = await readTimelineEntriesForDay(app.vault, timelineName, date);
+        return {
+          success: true,
+          result: entries.length > 0
+            ? `Timeline: ${timelineName}\nDate: ${date}\nEntries: ${entries.length}\n\n${entries.join("\n\n---\n\n")}`
+            : `No Timeline activity found for ${date} in ${timelineName}.`,
+        };
+      }
+
       case "read_note": {
         const path = args.path as string;
         const file = app.vault.getAbstractFileByPath(path);

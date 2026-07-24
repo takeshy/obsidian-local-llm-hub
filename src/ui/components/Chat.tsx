@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   forwardRef,
   useImperativeHandle,
 } from "react";
@@ -52,6 +53,7 @@ import { t } from "src/i18n";
 import { formatError } from "src/utils/error";
 import { decodeBase64Utf8 } from "src/utils/base64";
 import { findFileMentionOccurrences } from "src/utils/mentionResolver";
+import { runtimeSkillPath } from "src/core/runtimeSkills";
 
 export interface ChatRef {
   addAttachments: (attachments: Attachment[]) => void;
@@ -61,6 +63,8 @@ export interface ChatRef {
 interface ChatProps {
   plugin: LocalLlmHubPlugin;
 }
+
+const DASHBOARD_SKILL_PATH = runtimeSkillPath("dashboard-hub", "dashboard");
 
 const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -88,6 +92,14 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
   const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
   const [currentDashboard, setCurrentDashboard] = useState<TFile | null>(null);
+  const [activeContextSkillPath, setActiveContextSkillPath] = useState<string | null>(null);
+  const dismissedContextSkillPathsRef = useRef<Set<string>>(new Set());
+  const effectiveActiveSkillPaths = useMemo(() => {
+    if (!activeContextSkillPath) return activeSkillPaths;
+    return activeSkillPaths.includes(activeContextSkillPath)
+      ? activeSkillPaths
+      : [activeContextSkillPath, ...activeSkillPaths];
+  }, [activeSkillPaths, activeContextSkillPath]);
   const knownMcpServerIdsRef = useRef<Set<string>>(new Set());
   const mcpSelectionInitializedRef = useRef(false);
 
@@ -237,12 +249,18 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   }, [plugin, refreshMcpServerInfos]);
 
   const handleToggleSkill = useCallback((folderPath: string) => {
+    if (folderPath === activeContextSkillPath) {
+      dismissedContextSkillPathsRef.current.add(folderPath);
+      setActiveContextSkillPath(null);
+      setActiveSkillPaths(prev => prev.filter(path => path !== folderPath));
+      return;
+    }
     setActiveSkillPaths(prev =>
       prev.includes(folderPath)
         ? prev.filter(p => p !== folderPath)
         : [...prev, folderPath]
     );
-  }, []);
+  }, [activeContextSkillPath]);
 
   const getOkfSource = useCallback((): KnowledgeSource | null => {
     const source = (plugin.settings.knowledgeSources || []).find(s => s.enabled && s.type === "okf" && s.path.trim());
@@ -307,6 +325,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       const activeFile = plugin.app.workspace.getActiveFile();
       if (activeFile?.extension === "dashboard") {
         setCurrentDashboard(activeFile);
+        setActiveContextSkillPath(
+          dismissedContextSkillPathsRef.current.has(DASHBOARD_SKILL_PATH) ? null : DASHBOARD_SKILL_PATH
+        );
         return;
       }
       let openDashboard: TFile | null = null;
@@ -318,12 +339,16 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       });
       if (openDashboard) {
         setCurrentDashboard(openDashboard);
+        setActiveContextSkillPath(
+          dismissedContextSkillPathsRef.current.has(DASHBOARD_SKILL_PATH) ? null : DASHBOARD_SKILL_PATH
+        );
         return;
       }
       const dashboards = plugin.app.vault.getFiles()
         .filter(file => file.extension === "dashboard")
         .sort((a, b) => b.stat.mtime - a.stat.mtime);
       setCurrentDashboard(dashboards[0] ?? null);
+      setActiveContextSkillPath(null);
     };
     refreshDashboard();
     plugin.app.vault.on("create", refreshDashboard);
@@ -374,7 +399,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     void promptForValue(plugin.app, t("dashboard.createNamePrompt"), "Dashboard", false).then((name) => {
       if (name === null) return;
       void plugin.createDashboard(name).then((file) => {
-        if (file) setCurrentDashboard(file);
+        if (file) {
+          setCurrentDashboard(file);
+          setActiveContextSkillPath(DASHBOARD_SKILL_PATH);
+        }
       });
     });
   }, [plugin]);
@@ -809,9 +837,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       // Skill instructions injection (include skillPath from slash command even if state hasn't updated yet)
       let skillsUsedNames: string[] | undefined;
       let loadedSkillsList: LoadedSkill[] = [];
-      const effectiveSkillPaths = skillPath && !activeSkillPaths.includes(skillPath)
-        ? [...activeSkillPaths, skillPath]
-        : activeSkillPaths;
+      const effectiveSkillPaths = skillPath && !effectiveActiveSkillPaths.includes(skillPath)
+        ? [...effectiveActiveSkillPaths, skillPath]
+        : effectiveActiveSkillPaths;
       if (effectiveSkillPaths.length > 0) {
         const activeMetadata = availableSkills.filter(s => effectiveSkillPaths.includes(s.folderPath));
         loadedSkillsList = activeMetadata.map(m => loadSkill(plugin.app, m));
@@ -1055,7 +1083,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, activeSkillPaths, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
+  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, effectiveActiveSkillPaths, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
   return (
     <div className="llm-hub-chat">
@@ -1173,7 +1201,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         enabledMcpServerIds={enabledMcpServerIds}
         onMcpServerToggle={handleMcpServerToggle}
         availableSkills={availableSkills}
-        activeSkillPaths={activeSkillPaths}
+        activeSkillPaths={effectiveActiveSkillPaths}
         onToggleSkill={handleToggleSkill}
         okfBundles={okfBundles}
         activeOkfBundleIds={activeOkfBundleIds}

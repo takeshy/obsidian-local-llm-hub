@@ -230,6 +230,8 @@ export const en = {
   "input.vaultTool_noSearch": "Vault: no search",
   "input.vaultTool_none": "Vault: off",
   "input.model": "Model",
+  "input.modelFilterPlaceholder": "Filter models...",
+  "input.modelFilterEmpty": "No matching models",
   "input.ragToggle": "RAG",
   "input.ragToggleTooltip": "Toggle RAG context globally (applies to all chats until changed)",
   "input.mcpServersLabel": "Mcp servers",

@@ -230,6 +230,8 @@ export const ja: Record<string, string> = {
   "input.vaultTool_noSearch": "Vault: no search",
   "input.vaultTool_none": "Vault: off",
   "input.model": "モデル",
+  "input.modelFilterPlaceholder": "モデルを絞り込み...",
+  "input.modelFilterEmpty": "一致するモデルがありません",
   "input.ragToggle": "RAG",
   "input.ragToggleTooltip": "RAGコンテキストを全体に切り替え（変更するまで全チャットに適用）",
   "input.mcpServersLabel": "MCPサーバー",

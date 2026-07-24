@@ -49,7 +49,7 @@ Use these deterministic nodes when the workflow must reliably read or write vaul
 - `prompt-selection`: asks the user for a text selection or selection-derived input.
 - `dialog`: shows a title, message, optional Markdown rendering, and buttons. Use it for final confirmations or user-visible results.
 
-Dashboard workflow widgets should avoid interactive nodes such as `prompt-*` and `dialog`, because widgets run headlessly and render cached output.
+Workflows invoked through integrations such as Dashboard Hub should avoid interactive nodes such as `prompt-*` and `dialog`, because they run headlessly.
 
 ## Data and integration nodes
 

@@ -8,6 +8,7 @@ import type { OkfBundle } from "src/core/okfLoader";
 import { RagSourceModal } from "./RagSourceModal";
 import SkillSelector from "./SkillSelector";
 import OkfSelector from "./OkfSelector";
+import ModelSelector from "./ModelSelector";
 import { t } from "src/i18n";
 
 interface SlashCommandItem {
@@ -639,16 +640,12 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           {availableModels.length > 1 && (
             <>
               <label className="llm-hub-model-label">{t("input.model")}</label>
-              <select
-                className="llm-hub-model-dropdown"
+              <ModelSelector
+                models={availableModels}
                 value={currentModel}
-                onChange={(e) => onModelChange(e.target.value)}
+                onChange={onModelChange}
                 disabled={isLoading}
-              >
-                {availableModels.map((model) => (
-                  <option key={model} value={model}>{model}</option>
-                ))}
-              </select>
+              />
             </>
           )}
           {ragSettingNames.length > 0 && (

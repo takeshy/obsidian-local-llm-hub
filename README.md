@@ -90,36 +90,11 @@ See the OKF workflow node reference at
 
 ---
 
-## Dashboards
+## Dashboard Hub Integration
 
-Build a live personal home / overview page from a responsive grid of widgets.
-Dashboard files (`.dashboard`) can embed Obsidian Bases views, notes, web pages,
-timelines, workflow output, Kanban boards, and encrypted secrets. They open like normal notes,
-start in a read-only view mode, and switch to edit mode for drag-and-resize
-layout changes.
+Dashboard functionality is provided by the separate [Dashboard Hub](https://github.com/takeshy/obsidian-dashboard-hub) plugin. When both plugins are enabled, Local LLM Hub supplies its configured models, Chat handoff, Base generation, text rewriting, and Workflow generation/execution. Dashboard Hub also contributes its `dashboard` Agent Skill to Local LLM Hub at runtime.
 
-Use the dashboard title menu to switch between `.dashboard` files. Kanban
-definitions can be shared through `Dashboards/Kanbans/*.kanban`, with temporary
-tag filters and configurable frontmatter/file fields. The Secret Manager widget
-creates, searches, decrypts, and copies `.encrypted` vault files; descriptions
-and explicitly public metadata remain searchable while secret values stay encrypted.
-
-Workflow widgets render from `Dashboards/Data/` cache files so heavy workflows
-do not rerun on every open. Base and Workflow widgets also include **Create with
-AI** actions, Timeline drafts can be rewritten with AI, and the built-in
-`dashboard` agent skill can author an entire dashboard plus backing `.base`
-files from chat.
-
-![Dashboard](docs/images/dashboard.png)
-
-![Kanban dashboard settings](docs/images/kanban_edit.png)
-
-![Timeline input](docs/images/timeline_input.png)
-
-See the OKF dashboard references at
-[docs/okf/local-llm-hub-help/features/dashboard.md](docs/okf/local-llm-hub-help/features/dashboard.md),
-[dashboard-widgets.md](docs/okf/local-llm-hub-help/features/dashboard-widgets.md), and
-[dashboard-schema.md](docs/okf/local-llm-hub-help/features/dashboard-schema.md).
+Existing `.dashboard` files remain compatible. See the [Dashboard Hub documentation](https://github.com/takeshy/obsidian-dashboard-hub/blob/main/docs/dashboard.md) for dashboard features, widgets, storage, and schema.
 
 ---
 
@@ -133,7 +108,7 @@ Streaming chat with your local LLM. Thinking display, file attachments, `@` ment
 
 Models with function calling support (Qwen, Llama 3.1+, Mistral) can directly interact with your vault:
 
-`read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
+`read_timeline` · `read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
 
 Three modes — **All**, **No Search**, **Off** — selectable from the input area.
 

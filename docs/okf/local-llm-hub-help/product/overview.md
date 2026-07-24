@@ -19,8 +19,7 @@ Primary capabilities:
 - Build and run YAML workflows from the Workflow / skill tab.
 - Create and activate agent skills from `SKILL.md` files.
 - Build local embedding RAG indexes and search them.
-- Create `.dashboard` files with live widgets.
+- Integrate configured models, Chat, Base generation, text rewriting, and Workflow generation/execution with the separate Dashboard Hub plugin.
 - Encrypt sensitive files and keep AI tools away from encrypted contents.
 
 Cloud APIs can be used only when the user deliberately configures an OpenAI-compatible remote endpoint. The default product positioning is local LLMs such as Ollama, LM Studio, vLLM, or AnythingLLM.
-

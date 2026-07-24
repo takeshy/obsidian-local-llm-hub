@@ -13,6 +13,8 @@ timestamp: 2026-07-05
 
 Agent skills are `SKILL.md` files that add reusable instructions to chat. Users enable skills per conversation from the chat input area.
 
+Built-in Obsidian Markdown, Canvas, and Bases skills are available without vault setup. When the separate Dashboard Hub plugin is enabled, it contributes a `dashboard` skill at runtime for authoring `.dashboard` files and backing `.base` files.
+
 Skills are stored under the configured workspace skills folder, commonly `LocalLlmHub/skills`. A skill is a folder containing `SKILL.md`; optional `references/` files are appended to the skill context.
 
 `SKILL.md` frontmatter can include:

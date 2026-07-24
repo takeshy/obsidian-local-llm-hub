@@ -4,6 +4,7 @@ import { Copy, Check } from "lucide-react";
 import type { Message, ToolCall, ToolResult, RagCitation } from "src/types";
 import { discoverSkills } from "src/core/skillsLoader";
 import { isBuiltinSkillPath } from "src/core/builtinSkills";
+import { isRuntimeSkillPath } from "src/core/runtimeSkills";
 import { SKILL_WORKFLOW_TOOL_NAME } from "src/core/tools";
 import { ChatView, VIEW_TYPE_LLM_CHAT } from "src/ui/ChatView";
 import { t } from "src/i18n";
@@ -315,7 +316,7 @@ function SkillsUsedIndicator({ skillNames, app }: { skillNames: string[]; app: A
       if (cancelled) return;
       const map = new Map<string, { path: string; builtin: boolean }>();
       for (const s of skills) {
-        map.set(s.name, { path: s.skillFilePath, builtin: isBuiltinSkillPath(s.folderPath) });
+        map.set(s.name, { path: s.skillFilePath, builtin: isBuiltinSkillPath(s.folderPath) || isRuntimeSkillPath(s.folderPath) });
       }
       setSkillMap(map);
     });

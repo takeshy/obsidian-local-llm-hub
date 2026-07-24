@@ -1,5 +1,21 @@
 import type { ToolDefinition, VaultToolMode } from "../types";
 
+const readTimeline: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "read_timeline",
+    description: "Read activity recorded by Dashboard Hub in an Obsidian Timeline for a day. Use this when asked what the user did today or on a specific date. Includes manual Timeline posts, Calendar plans created that day, memo activity, and Kanban status changes.",
+    parameters: {
+      type: "object",
+      properties: {
+        date: { type: "string", description: "Local date in YYYY-MM-DD format. Defaults to today." },
+        timelineName: { type: "string", description: "Timeline name. Defaults to Timeline." },
+      },
+      required: [],
+    },
+  },
+};
+
 // All vault tool definitions
 export const readNoteTool: ToolDefinition = {
   type: "function",
@@ -186,7 +202,7 @@ const searchToolNames = new Set(["search_notes", "list_notes"]);
 
 // All vault tools
 const allVaultTools: ToolDefinition[] = [
-  readNoteTool, createNote, updateNote, renameNote, createFolder,
+  readTimeline, readNoteTool, createNote, updateNote, renameNote, createFolder,
   searchNotes, listNotes, listFolders, getActiveNote, proposeEdit,
 ];
 

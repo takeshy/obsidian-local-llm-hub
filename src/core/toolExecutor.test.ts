@@ -83,6 +83,21 @@ function call(name: string, args: Record<string, unknown>): ToolCall {
 }
 
 describe("executeToolCall vault files", () => {
+  it("reads Dashboard Hub Timeline activity through the dedicated AI tool", async () => {
+    const vault = new MockVault();
+    vault.addFile("Dashboards/Timeline/Timeline/2026-07-23.md", "2026-07-23T01:00:00.000Z\nid: memo-1\n\nMemo created");
+    vault.addFile("Dashboards/Timeline/Timeline/2026-07-30.md", "2026-07-23T02:00:00.000Z\nid: event-1\n\n<!-- calendar-event: 2026-07-30 -->\n> Planned review");
+
+    const result = await executeToolCall(call("read_timeline", { date: "2026-07-23" }), {
+      app: createApp(vault),
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.result).toContain("Entries: 2");
+    expect(result.result).toContain("Memo created");
+    expect(result.result).toContain("Planned review");
+  });
+
   it("searches non-markdown text files", async () => {
     const vault = new MockVault();
     vault.addFile("Board.canvas", '{"nodes":[{"text":"needle"}]}');

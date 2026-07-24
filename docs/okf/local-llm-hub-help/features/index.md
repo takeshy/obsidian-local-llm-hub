@@ -9,7 +9,3 @@
 - [[external-skills]]
 - [[workflows]]
 - [[workflow-nodes]]
-- [[dashboard]]
-- [[dashboard-widgets]]
-- [[dashboard-schema]]
-

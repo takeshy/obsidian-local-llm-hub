@@ -89,21 +89,11 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 
 ---
 
-## Dashboard
+## Dashboard Hub 連携
 
-レスポンシブなウィジェットグリッドで、ライブな個人用ホーム / 概要ページを作成できます。Dashboard ファイル（`.dashboard`）には Obsidian Bases ビュー、ノート、Web ページ、Timeline、ワークフロー出力、Kanban ボード、暗号化シークレットを埋め込めます。通常のノートと同じように開き、表示モードでは誤操作を防ぎ、編集モードでドラッグ・リサイズによるレイアウト変更を行います。
+ダッシュボード機能は、別プラグインの [Dashboard Hub](https://github.com/takeshy/obsidian-dashboard-hub) が提供します。両方のプラグインを有効にすると、Local LLM Hub は Dashboard Hub に設定済みモデル、チャット連携、Base 生成、テキスト書き換え、ワークフローの生成・実行機能を提供します。また、Dashboard Hub は `dashboard` エージェントスキルを実行時に Local LLM Hub へ登録します。
 
-Dashboard タイトルのメニューから別の `.dashboard` ファイルへ切り替えられます。Kanban 定義は `Dashboards/Kanbans/*.kanban` として複数の Dashboard で共有でき、一時的なタグ絞り込みや frontmatter / file 項目の表示設定に対応します。Secret Manager ウィジェットは Vault 内の `.encrypted` ファイルを作成・検索・復号・コピーします。説明と明示した公開メタデータだけを検索可能にし、シークレット値は暗号化したまま保持します。
-
-Workflow ウィジェットは `Dashboards/Data/` の cache ファイルを表示するため、重い workflow が開くたびに再実行されることはありません。Base / Workflow ウィジェットには **Create with AI** もあり、Timeline の下書きは AI でリライトできます。組み込みの `dashboard` agent skill を使えば、チャットから Dashboard 全体と backing `.base` ファイルを作成できます。
-
-![Dashboard](docs/images/dashboard.png)
-
-![Kanban dashboard settings](docs/images/kanban_edit.png)
-
-![Timeline input](docs/images/timeline_input.png)
-
-Dashboard の詳細は OKF 版の [dashboard.md](docs/okf/local-llm-hub-help/features/dashboard.md)、[dashboard-widgets.md](docs/okf/local-llm-hub-help/features/dashboard-widgets.md)、[dashboard-schema.md](docs/okf/local-llm-hub-help/features/dashboard-schema.md) を参照してください。
+既存の `.dashboard` ファイルはそのまま利用できます。ダッシュボードの機能、ウィジェット、保存形式、スキーマについては [Dashboard Hub のドキュメント](https://github.com/takeshy/obsidian-dashboard-hub/blob/main/docs/dashboard.md) を参照してください。
 
 ---
 
@@ -117,7 +107,7 @@ Dashboard の詳細は OKF 版の [dashboard.md](docs/okf/local-llm-hub-help/fea
 
 Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral）で Vault を直接操作:
 
-`read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
+`read_timeline` · `read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
 
 **All** / **No Search** / **Off** の 3 モードを入力エリアから切り替え。
 
