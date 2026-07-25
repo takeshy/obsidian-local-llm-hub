@@ -47,6 +47,7 @@ import {
   parseMarkdownToMessages,
   formatHistoryDate,
 } from "./chat/chatHistory";
+import { resolveEffectiveSkillPaths } from "./chat/contextSkills";
 import MessageList from "./MessageList";
 import InputArea, { type InputAreaHandle } from "./InputArea";
 import { t } from "src/i18n";
@@ -65,6 +66,7 @@ interface ChatProps {
 }
 
 const DASHBOARD_SKILL_PATH = runtimeSkillPath("dashboard-hub", "dashboard");
+const CONTEXT_SKILL_PATHS = new Set([DASHBOARD_SKILL_PATH]);
 
 const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -93,13 +95,23 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
   const [currentDashboard, setCurrentDashboard] = useState<TFile | null>(null);
   const [activeContextSkillPath, setActiveContextSkillPath] = useState<string | null>(null);
-  const dismissedContextSkillPathsRef = useRef<Set<string>>(new Set());
-  const effectiveActiveSkillPaths = useMemo(() => {
-    if (!activeContextSkillPath) return activeSkillPaths;
-    return activeSkillPaths.includes(activeContextSkillPath)
-      ? activeSkillPaths
-      : [activeContextSkillPath, ...activeSkillPaths];
-  }, [activeSkillPaths, activeContextSkillPath]);
+  const [disabledContextSkillPaths, setDisabledContextSkillPaths] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const effectiveActiveSkillPaths = useMemo(() => resolveEffectiveSkillPaths(
+    activeSkillPaths,
+    activeContextSkillPath,
+    disabledContextSkillPaths,
+    CONTEXT_SKILL_PATHS,
+  ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
+  const getEffectiveSkillPathsForSend = useCallback((skillPath?: string) =>
+    resolveEffectiveSkillPaths(
+      activeSkillPaths,
+      activeContextSkillPath,
+      disabledContextSkillPaths,
+      CONTEXT_SKILL_PATHS,
+      skillPath,
+    ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
   const knownMcpServerIdsRef = useRef<Set<string>>(new Set());
   const mcpSelectionInitializedRef = useRef(false);
 
@@ -249,18 +261,27 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   }, [plugin, refreshMcpServerInfos]);
 
   const handleToggleSkill = useCallback((folderPath: string) => {
-    if (folderPath === activeContextSkillPath) {
-      dismissedContextSkillPathsRef.current.add(folderPath);
-      setActiveContextSkillPath(null);
-      setActiveSkillPaths(prev => prev.filter(path => path !== folderPath));
+    if (folderPath === activeContextSkillPath && CONTEXT_SKILL_PATHS.has(folderPath)) {
+      setDisabledContextSkillPaths(prev => {
+        const next = new Set(prev);
+        if (next.has(folderPath)) next.delete(folderPath);
+        else next.add(folderPath);
+        return next;
+      });
+      setActiveSkillPaths(prev => prev.filter(path => !CONTEXT_SKILL_PATHS.has(path)));
       return;
     }
+    if (
+      activeContextSkillPath
+      && !disabledContextSkillPaths.has(activeContextSkillPath)
+      && CONTEXT_SKILL_PATHS.has(folderPath)
+    ) return;
     setActiveSkillPaths(prev =>
       prev.includes(folderPath)
         ? prev.filter(p => p !== folderPath)
         : [...prev, folderPath]
     );
-  }, [activeContextSkillPath]);
+  }, [activeContextSkillPath, disabledContextSkillPaths]);
 
   const getOkfSource = useCallback((): KnowledgeSource | null => {
     const source = (plugin.settings.knowledgeSources || []).find(s => s.enabled && s.type === "okf" && s.path.trim());
@@ -325,9 +346,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       const activeFile = plugin.app.workspace.getActiveFile();
       if (activeFile?.extension === "dashboard") {
         setCurrentDashboard(activeFile);
-        setActiveContextSkillPath(
-          dismissedContextSkillPathsRef.current.has(DASHBOARD_SKILL_PATH) ? null : DASHBOARD_SKILL_PATH
-        );
+        setActiveContextSkillPath(DASHBOARD_SKILL_PATH);
         return;
       }
       let openDashboard: TFile | null = null;
@@ -339,9 +358,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       });
       if (openDashboard) {
         setCurrentDashboard(openDashboard);
-        setActiveContextSkillPath(
-          dismissedContextSkillPathsRef.current.has(DASHBOARD_SKILL_PATH) ? null : DASHBOARD_SKILL_PATH
-        );
+        setActiveContextSkillPath(DASHBOARD_SKILL_PATH);
         return;
       }
       const dashboards = plugin.app.vault.getFiles()
@@ -837,9 +854,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       // Skill instructions injection (include skillPath from slash command even if state hasn't updated yet)
       let skillsUsedNames: string[] | undefined;
       let loadedSkillsList: LoadedSkill[] = [];
-      const effectiveSkillPaths = skillPath && !effectiveActiveSkillPaths.includes(skillPath)
-        ? [...effectiveActiveSkillPaths, skillPath]
-        : effectiveActiveSkillPaths;
+      const effectiveSkillPaths = getEffectiveSkillPathsForSend(skillPath);
       if (effectiveSkillPaths.length > 0) {
         const activeMetadata = availableSkills.filter(s => effectiveSkillPaths.includes(s.folderPath));
         loadedSkillsList = activeMetadata.map(m => loadSkill(plugin.app, m));
@@ -1083,7 +1098,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, effectiveActiveSkillPaths, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
+  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, getEffectiveSkillPathsForSend, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
   return (
     <div className="llm-hub-chat">

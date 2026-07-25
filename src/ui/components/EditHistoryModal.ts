@@ -3,6 +3,7 @@ import { t } from "src/i18n";
 import { formatError } from "src/utils/error";
 import { getEditHistoryManager, type EditHistoryEntry } from "src/core/editHistory";
 import { reconstructContent } from "src/core/diffUtils";
+import { setDestructiveButton } from "src/ui/buttonCompat";
 
 type DisplayEntry = EditHistoryEntry & { origin: "local" };
 
@@ -279,9 +280,7 @@ export class EditHistoryModal extends Modal {
 
     new Setting(footerEl)
       .addButton((btn) =>
-        btn
-          .setButtonText(t("editHistoryModal.clearAll"))
-          .setDestructive()
+        setDestructiveButton(btn.setButtonText(t("editHistoryModal.clearAll")))
           .onClick(() => {
             new LocalConfirmModal(this.app, t("editHistoryModal.confirmClear"), async () => {
               let restoredContent: string | null = null;

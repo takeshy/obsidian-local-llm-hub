@@ -7,6 +7,7 @@ import { getRagStore } from "src/core/ragStore";
 import { deleteRagIndex } from "src/core/ragStorage";
 import { fetchEmbeddingModels } from "src/core/localLlmProvider";
 import { RagSettingNameModal } from "./RagSettingNameModal";
+import { setDestructiveButton } from "src/ui/buttonCompat";
 
 interface SettingsContext {
   plugin: LocalLlmHubPlugin;
@@ -167,9 +168,7 @@ function displaySelectedRagSetting(
             cancelBtn.setButtonText("Cancel").onClick(() => modal.close())
           )
           .addButton((confirmBtn) =>
-            confirmBtn
-              .setButtonText("Delete")
-              .setDestructive()
+            setDestructiveButton(confirmBtn.setButtonText("Delete"))
               .onClick(async () => {
                 modal.close();
                 await deleteRagIndex(plugin.app, name);

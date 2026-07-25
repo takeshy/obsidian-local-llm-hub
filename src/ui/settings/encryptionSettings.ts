@@ -4,6 +4,7 @@ import { DEFAULT_ENCRYPTION_SETTINGS } from "src/types";
 import { generateKeyPair, encryptPrivateKey } from "src/core/crypto";
 import { ConfirmModal } from "src/ui/components/ConfirmModal";
 import { formatError } from "src/utils/error";
+import { setDestructiveButton } from "src/ui/buttonCompat";
 
 interface SettingsContext {
   plugin: import("src/plugin").LocalLlmHubPlugin;
@@ -62,9 +63,7 @@ export function displayEncryptionSettings(containerEl: HTMLElement, ctx: Setting
       .setName(t("settings.encryptionResetKeys"))
       .setDesc(t("settings.encryptionResetKeys.desc"))
       .addButton((btn) =>
-        btn
-          .setButtonText(t("settings.encryptionResetKeys"))
-          .setDestructive()
+        setDestructiveButton(btn.setButtonText(t("settings.encryptionResetKeys")))
           .onClick(() => {
             void (async () => {
               const confirmed = await new ConfirmModal(
