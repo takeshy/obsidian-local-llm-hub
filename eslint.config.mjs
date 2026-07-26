@@ -1,7 +1,9 @@
 import obsidianmd from 'eslint-plugin-obsidianmd';
 import tseslint from 'typescript-eslint';
+import { DEFAULT_ACRONYMS } from 'eslint-plugin-obsidianmd/dist/lib/rules/ui/acronyms.js';
 import { DEFAULT_BRANDS } from 'eslint-plugin-obsidianmd/dist/lib/rules/ui/brands.js';
 
+const ACRONYMS = [...DEFAULT_ACRONYMS, 'LLM'];
 const BRANDS = [...DEFAULT_BRANDS, 'Dashboard Hub', 'Local LLM Hub'];
 
 export default tseslint.config(
@@ -55,10 +57,12 @@ export default tseslint.config(
       'obsidianmd/validate-license': 'error',
       'obsidianmd/ui/sentence-case': ['error', {
         brands: BRANDS,
+        acronyms: ACRONYMS,
         allowAutoFix: true,
       }],
       'obsidianmd/ui/sentence-case-locale-module': ['error', {
         brands: BRANDS,
+        acronyms: ACRONYMS,
         ignoreWords: ['RAG', 'OKF'],
         ignoreRegex: ['^\\(', '^\\.\\.\\.', '^https?://', '^#', '^E\\.g\\. \\d'],
         allowAutoFix: true,

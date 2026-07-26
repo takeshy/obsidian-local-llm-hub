@@ -435,11 +435,11 @@ function displaySelectedRagSetting(
     .setDesc(t("settings.ragMinScoreDesc"))
     .addSlider((slider) => {
       slider
-        .setLimits(0, 10, 1)
-        .setValue(Math.round(currentMinScore * 10))
-        .setDisplayFormat((value) => (value / 10).toFixed(1))
+        .setLimits(0, 1, 0.1)
+        .setValue(currentMinScore)
+        .setDynamicTooltip()
         .onChange((value) => {
-          void updateSetting({ minScore: value / 10 }).catch((err) => new Notice(String(err)));
+          void updateSetting({ minScore: value }).catch((err) => new Notice(String(err)));
         });
     })
     .addExtraButton((button) =>
