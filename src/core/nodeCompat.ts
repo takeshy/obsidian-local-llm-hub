@@ -56,6 +56,8 @@ export interface NodeChildProcess {
   stdout: NodeReadable | null;
   stderr: NodeReadable | null;
   killed: boolean;
+  exitCode: number | null;
+  signalCode: string | null;
   kill(signal?: string): void;
   on(event: "error", listener: (err: Error) => void): void;
   on(event: "close", listener: (code: number | null) => void): void;

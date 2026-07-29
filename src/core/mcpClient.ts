@@ -8,6 +8,17 @@ import {
   type NodeSpawn,
 } from "./nodeCompat";
 
+const MODERN_PROTOCOL_VERSION = "2026-07-28";
+const LEGACY_PROTOCOL_VERSION = "2025-11-25";
+const SUPPORTED_LEGACY_PROTOCOL_VERSIONS = new Set([
+  LEGACY_PROTOCOL_VERSION,
+  "2025-06-18",
+  "2025-03-26",
+  "2024-11-05",
+]);
+
+type McpProtocolEra = "modern" | "legacy";
+
 // JSON-RPC 2.0 types
 interface JsonRpcRequest {
   jsonrpc: "2.0";
@@ -46,6 +57,14 @@ interface McpCallResult {
   isError?: boolean;
 }
 
+interface McpDiscoverResult {
+  supportedVersions: string[];
+}
+
+interface McpInitializeResult {
+  protocolVersion: string;
+}
+
 export class McpClient {
   private process: NodeChildProcess | null = null;
   private nextId = 1;
@@ -58,6 +77,7 @@ export class McpClient {
   private _ready = false;
   private stderrLog: string[] = [];
   private framing: McpFraming;
+  private protocolEra: McpProtocolEra | null = null;
 
   constructor(
     private command: string,
@@ -65,7 +85,7 @@ export class McpClient {
     private env?: Record<string, string>,
     framing?: McpFraming,
   ) {
-    this.framing = framing ?? "content-length";
+    this.framing = framing ?? "newline";
   }
 
   get ready(): boolean {
@@ -120,6 +140,7 @@ export class McpClient {
 
   async stop(): Promise<void> {
     this._ready = false;
+    this.protocolEra = null;
     const proc = this.process;
     this.process = null;
 
@@ -133,7 +154,7 @@ export class McpClient {
     if (proc && !proc.killed) {
       await new Promise<void>((resolve) => {
         const timer = window.setTimeout(() => {
-          if (!proc.killed) {
+          if (proc.exitCode === null && proc.signalCode === null) {
             proc.kill("SIGKILL");
           }
         }, 3000);
@@ -175,11 +196,25 @@ export class McpClient {
   }
 
   private async initialize(): Promise<void> {
-    await this.sendRequest("initialize", {
-      protocolVersion: "2024-11-05",
+    this.protocolEra = "modern";
+    try {
+      const discover = await this.sendRequest("server/discover", {}, 5000) as McpDiscoverResult;
+      if (discover.supportedVersions?.includes(MODERN_PROTOCOL_VERSION)) {
+        return;
+      }
+    } catch {
+      // A 2025-era server reports MethodNotFound/UnsupportedProtocolVersion.
+    }
+
+    this.protocolEra = "legacy";
+    const result = await this.sendRequest("initialize", {
+      protocolVersion: LEGACY_PROTOCOL_VERSION,
       capabilities: {},
       clientInfo: { name: "obsidian-local-llm-hub", version: "1.0.0" },
-    });
+    }) as McpInitializeResult;
+    if (!SUPPORTED_LEGACY_PROTOCOL_VERSIONS.has(result.protocolVersion)) {
+      throw new Error(`MCP server negotiated unsupported protocol version: ${result.protocolVersion}`);
+    }
     // Send initialized notification
     this.sendNotification("notifications/initialized");
   }
@@ -243,6 +278,7 @@ export class McpClient {
   private sendRequest(
     method: string,
     params: Record<string, unknown>,
+    timeoutOverride?: number,
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (!this.process || this.process.killed) {
@@ -251,14 +287,15 @@ export class McpClient {
       }
 
       const id = this.nextId++;
+      const modern = this.protocolEra === "modern" || method === "server/discover";
       const request: JsonRpcRequest = {
         jsonrpc: "2.0",
         id,
         method,
-        params,
+        params: modern ? this.withModernMetadata(params) : params,
       };
 
-      const timeoutMs = method === "initialize" ? 120000 : 30000;
+      const timeoutMs = timeoutOverride ?? (method === "initialize" ? 120000 : 30000);
       const timeout = window.setTimeout(() => {
         if (this.pending.has(id)) {
           this.pending.delete(id);
@@ -269,6 +306,16 @@ export class McpClient {
       this.pending.set(id, {
         resolve: (value) => {
           window.clearTimeout(timeout);
+          if (modern) {
+            const resultType = value && typeof value === "object"
+              ? (value as Record<string, unknown>).resultType
+              : undefined;
+            if (resultType !== "complete") {
+              const label = typeof resultType === "string" ? resultType : resultType === undefined ? "missing" : "invalid";
+              reject(new Error(`Unsupported MCP result type: ${label}`));
+              return;
+            }
+          }
           resolve(value);
         },
         reject: (reason) => {
@@ -279,6 +326,21 @@ export class McpClient {
 
       this.writeToStdin(this.serializeMessage(request));
     });
+  }
+
+  private withModernMetadata(params: Record<string, unknown>): Record<string, unknown> {
+    const existingMeta = params._meta && typeof params._meta === "object"
+      ? params._meta as Record<string, unknown>
+      : {};
+    return {
+      ...params,
+      _meta: {
+        ...existingMeta,
+        "io.modelcontextprotocol/protocolVersion": MODERN_PROTOCOL_VERSION,
+        "io.modelcontextprotocol/clientInfo": { name: "obsidian-local-llm-hub", version: "1.0.0" },
+        "io.modelcontextprotocol/clientCapabilities": {},
+      },
+    };
   }
 
   private sendNotification(method: string, params?: Record<string, unknown>): void {

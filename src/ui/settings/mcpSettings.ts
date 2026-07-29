@@ -141,7 +141,7 @@ class McpServerModal extends Modal {
           name: "",
           command: "",
           args: [],
-          framing: "content-length",
+          framing: "newline",
           enabled: true,
         };
     this.onSave = onSave;
@@ -191,9 +191,9 @@ class McpServerModal extends Modal {
       .setDesc(t("settings.mcpFramingDesc"))
       .addDropdown((dropdown) =>
         dropdown
-          .addOption("content-length", "Content-length (npx)")
-          .addOption("newline", "Newline (uvx/python)")
-          .setValue(this.config.framing || "content-length")
+          .addOption("newline", "Newline (standard mcp)")
+          .addOption("content-length", "Content-length (legacy/custom)")
+          .setValue(this.config.framing || "newline")
           .onChange((v) => { this.config.framing = v as McpFraming; })
       );
 

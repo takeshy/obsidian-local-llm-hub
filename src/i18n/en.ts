@@ -856,7 +856,7 @@ export const en = {
   "settings.mcpArgs": "Arguments",
   "settings.mcpArgsDesc": "Space-separated command arguments",
   "settings.mcpFraming": "Protocol",
-  "settings.mcpFramingDesc": "Content-length for npx/node servers, newline for uvx/python servers",
+  "settings.mcpFramingDesc": "Use standard newline framing unless a legacy/custom server requires content-length",
   "settings.mcpEnv": "Environment variables",
   "settings.mcpEnvDesc": "Key=value pairs, one per line",
   "settings.mcpNameRequired": "Server name is required",

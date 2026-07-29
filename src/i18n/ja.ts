@@ -788,7 +788,7 @@ export const ja: Record<string, string> = {
   "settings.mcpArgs": "引数",
   "settings.mcpArgsDesc": "スペース区切りのコマンド引数",
   "settings.mcpFraming": "プロトコル",
-  "settings.mcpFramingDesc": "npx/nodeサーバーはContent-Length、uvx/pythonサーバーはNewline",
+  "settings.mcpFramingDesc": "標準はNewline。legacy/customサーバーが必要とする場合のみContent-Lengthを使用",
   "settings.mcpEnv": "環境変数",
   "settings.mcpEnvDesc": "KEY=VALUE形式、1行に1つ",
   "settings.mcpNameRequired": "サーバー名は必須です",
