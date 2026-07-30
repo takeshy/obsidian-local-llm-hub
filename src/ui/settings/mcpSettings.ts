@@ -31,6 +31,9 @@ export function displayMcpSettings(containerEl: HTMLElement, ctx: SettingsContex
                 new Notice(t("settings.mcpConnectionFailed", { name: config.name, error: result.error || "" }));
               }
             }
+            // saveSettings() emits before the asynchronous connection finishes.
+            // Notify open chat views again so newly connected servers appear there.
+            plugin.settingsEmitter.emit("settings-updated", plugin.settings);
             display();
           }).open();
         })
@@ -72,6 +75,8 @@ export function displayMcpSettings(containerEl: HTMLElement, ctx: SettingsContex
           } else {
             await plugin.mcpManager.disconnectServer(server.id);
           }
+          // Refresh chat MCP controls after the connection state has settled.
+          plugin.settingsEmitter.emit("settings-updated", plugin.settings);
           display();
         })
     );
@@ -98,6 +103,8 @@ export function displayMcpSettings(containerEl: HTMLElement, ctx: SettingsContex
               } else {
                 await plugin.mcpManager.disconnectServer(config.id);
               }
+              // Refresh chat MCP controls after reconnecting the edited server.
+              plugin.settingsEmitter.emit("settings-updated", plugin.settings);
               display();
             }
           }).open();
