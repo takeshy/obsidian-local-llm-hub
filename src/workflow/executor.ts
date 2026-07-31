@@ -42,6 +42,7 @@ import { parseWorkflowFromMarkdown } from "./parser";
 import { ExecutionHistoryManager, EncryptionConfig } from "./history";
 import { isEncryptedFile } from "../core/crypto";
 import { formatError } from "../utils/error";
+import { assertVaultToolFileAllowed, assertVaultToolPathAllowed } from "../core/vaultToolScope";
 
 const MAX_ITERATIONS = 1000; // Prevent infinite loops
 
@@ -52,6 +53,9 @@ export interface ExecuteOptions {
   abortSignal?: AbortSignal;
   startNodeId?: string;
   initialVariables?: Map<string, string | number>;
+  vaultToolAllowedFolders?: string[];
+  /** Trusted folder containing an LLM-triggered skill workflow and its child workflows. */
+  workflowDefinitionRoot?: string;
 }
 
 export interface ExecuteResult {
@@ -94,6 +98,7 @@ export class WorkflowExecutor {
     const context: ExecutionContext = {
       variables: new Map(input.variables),
       logs: [],
+      vaultToolAllowedFolders: options?.vaultToolAllowedFolders,
     };
 
     if (options?.initialVariables) {
@@ -668,9 +673,14 @@ export class WorkflowExecutor {
               workflowPath: string,
               inputVariables: Map<string, string | number>
             ): Promise<Map<string, string | number>> => {
+              const definitionFolders = options?.workflowDefinitionRoot
+                ? [options.workflowDefinitionRoot]
+                : undefined;
+              assertVaultToolPathAllowed(workflowPath, definitionFolders);
               const file = this.app.vault.getAbstractFileByPath(workflowPath);
               if (!file) {
                 const mdPath = workflowPath.endsWith(".md") ? workflowPath : `${workflowPath}.md`;
+                assertVaultToolPathAllowed(mdPath, definitionFolders);
                 const mdFile = this.app.vault.getAbstractFileByPath(mdPath);
                 if (!mdFile) {
                   throw new Error(`Workflow file not found: ${workflowPath}`);
@@ -682,6 +692,7 @@ export class WorkflowExecutor {
               if (!(actualFile instanceof TFile)) {
                 throw new Error(`Invalid workflow file: ${workflowPath}`);
               }
+              assertVaultToolFileAllowed(actualFile, definitionFolders);
 
               const content = await this.app.vault.read(actualFile);
               const subWorkflow = parseWorkflowFromMarkdown(content);
@@ -703,6 +714,8 @@ export class WorkflowExecutor {
                   // Forward the abort signal so cancelling the parent run (e.g. a
                   // dashboard workflow widget) also interrupts the sub-workflow.
                   abortSignal: options?.abortSignal,
+                  vaultToolAllowedFolders: context.vaultToolAllowedFolders,
+                  workflowDefinitionRoot: options?.workflowDefinitionRoot,
                 },
                 promptCallbacks
               );

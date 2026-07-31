@@ -503,6 +503,9 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.enabledWorkflowEventTriggers) {
       this.settings.enabledWorkflowEventTriggers = [];
     }
+    if (!Array.isArray(this.settings.vaultToolAllowedFolders)) {
+      this.settings.vaultToolAllowedFolders = [];
+    }
     if (!this.settings.knowledgeSources) {
       this.settings.knowledgeSources = [];
     }

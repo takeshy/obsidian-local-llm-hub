@@ -5,6 +5,13 @@ import { getEditHistoryManager } from "./editHistory";
 import { executeSandboxedJS } from "./sandboxExecutor";
 import { ensureMarkdownExtensionIfMissing, getVaultTextFiles } from "./vaultFileTypes";
 import { readTimelineEntriesForDay, sanitizeTimelineName } from "./timelineReader";
+import {
+  assertVaultToolFileAllowed,
+  assertVaultToolFolderNavigable,
+  assertVaultToolPathAllowed,
+  isFileAllowedForVaultTools,
+  isPathNavigableForVaultTools,
+} from "./vaultToolScope";
 
 export interface ToolExecutionResult {
   success: boolean;
@@ -22,6 +29,7 @@ export interface ToolExecutorOptions {
   onProposeEdit?: ProposeEditCallback;
   mcpManager?: McpManager;
   onRunSkillWorkflow?: SkillWorkflowExecutor;
+  vaultToolAllowedFolders?: string[];
 }
 
 export async function executeToolCall(
@@ -30,11 +38,13 @@ export async function executeToolCall(
 ): Promise<ToolExecutionResult> {
   const { app } = options;
   const args = toolCall.arguments;
+  const allowedFolders = options.vaultToolAllowedFolders;
 
   try {
     switch (toolCall.name) {
       case "read_timeline": {
         const timelineName = sanitizeTimelineName((args.timelineName as string | undefined) || "Timeline");
+        assertVaultToolPathAllowed(`Dashboards/Timeline/${timelineName}`, allowedFolders);
         const now = new Date();
         const pad = (value: number) => String(value).padStart(2, "0");
         const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -53,16 +63,19 @@ export async function executeToolCall(
 
       case "read_note": {
         const path = args.path as string;
+        assertVaultToolPathAllowed(path, allowedFolders);
         const file = app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile)) {
           return { success: false, result: `File not found: ${path}` };
         }
+        assertVaultToolFileAllowed(file, allowedFolders);
         const content = await app.vault.cachedRead(file);
         return { success: true, result: content };
       }
 
       case "create_note": {
         const path = ensureMarkdownExtensionIfMissing(args.path as string);
+        assertVaultToolPathAllowed(path, allowedFolders);
         const content = args.content as string;
         const existing = app.vault.getAbstractFileByPath(path);
         if (existing) {
@@ -80,7 +93,8 @@ export async function executeToolCall(
       case "search_notes": {
         const query = (args.query as string).toLowerCase();
         const limit = parseInt(args.limit as string || "10", 10);
-        const files = getVaultTextFiles(app);
+        const files = getVaultTextFiles(app)
+          .filter((file) => isFileAllowedForVaultTools(file, allowedFolders));
         const results: { path: string; snippet: string }[] = [];
 
         for (const file of files) {
@@ -112,8 +126,10 @@ export async function executeToolCall(
 
       case "list_notes": {
         const folder = (args.folder as string) || "";
+        if (folder) assertVaultToolPathAllowed(folder, allowedFolders);
         const recursive = (args.recursive as string) === "true";
         const files = getVaultTextFiles(app)
+          .filter((file) => isFileAllowedForVaultTools(file, allowedFolders))
           .filter(f => {
             if (!folder) return recursive || !f.path.includes("/");
             if (recursive) return f.path.startsWith(folder + "/");
@@ -128,6 +144,7 @@ export async function executeToolCall(
 
       case "list_folders": {
         const parentFolder = (args.folder as string) || "";
+        if (parentFolder) assertVaultToolFolderNavigable(parentFolder, allowedFolders);
         const folders: string[] = [];
         const root = parentFolder
           ? app.vault.getAbstractFileByPath(parentFolder)
@@ -136,7 +153,9 @@ export async function executeToolCall(
         if (root instanceof TFolder) {
           for (const child of root.children) {
             if (child instanceof TFolder) {
-              folders.push(child.path);
+              if (isPathNavigableForVaultTools(child.path, allowedFolders)) {
+                folders.push(child.path);
+              }
             }
           }
         }
@@ -148,6 +167,7 @@ export async function executeToolCall(
         if (!activeFile) {
           return { success: true, result: "No vault file is currently open." };
         }
+        assertVaultToolFileAllowed(activeFile, allowedFolders);
         const content = await app.vault.cachedRead(activeFile);
         return {
           success: true,
@@ -157,12 +177,14 @@ export async function executeToolCall(
 
       case "update_note": {
         const path = args.path as string;
+        assertVaultToolPathAllowed(path, allowedFolders);
         const content = args.content as string;
         const mode = (args.mode as string) || "replace";
         const file = app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile)) {
           return { success: false, result: `File not found: ${path}` };
         }
+        assertVaultToolFileAllowed(file, allowedFolders);
         const existing = await app.vault.cachedRead(file);
         let newContent: string;
         if (mode === "append") {
@@ -184,10 +206,13 @@ export async function executeToolCall(
       case "rename_note": {
         const oldPath = args.oldPath as string;
         const newPath = ensureMarkdownExtensionIfMissing(args.newPath as string);
+        assertVaultToolPathAllowed(oldPath, allowedFolders);
+        assertVaultToolPathAllowed(newPath, allowedFolders);
         const file = app.vault.getAbstractFileByPath(oldPath);
         if (!(file instanceof TFile)) {
           return { success: false, result: `File not found: ${oldPath}` };
         }
+        assertVaultToolFileAllowed(file, allowedFolders);
         if (app.vault.getAbstractFileByPath(newPath)) {
           return { success: false, result: `File already exists: ${newPath}` };
         }
@@ -197,6 +222,7 @@ export async function executeToolCall(
 
       case "create_folder": {
         const path = args.path as string;
+        assertVaultToolPathAllowed(path, allowedFolders);
         if (app.vault.getAbstractFileByPath(path)) {
           return { success: false, result: `Folder already exists: ${path}` };
         }
@@ -206,11 +232,13 @@ export async function executeToolCall(
 
       case "propose_edit": {
         const path = args.path as string;
+        assertVaultToolPathAllowed(path, allowedFolders);
         const newContent = args.content as string;
         const file = app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile)) {
           return { success: false, result: `File not found: ${path}` };
         }
+        assertVaultToolFileAllowed(file, allowedFolders);
         const oldContent = await app.vault.cachedRead(file);
 
         const saveEditHistory = async () => {

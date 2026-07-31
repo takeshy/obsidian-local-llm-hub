@@ -4,6 +4,12 @@ import { getRagStore } from "../../core/ragStore";
 
 import { WorkflowNode, ExecutionContext, PromptCallbacks } from "../types";
 import { replaceVariables } from "./utils";
+import {
+  assertVaultToolFileAllowed,
+  assertVaultToolPathAllowed,
+  hasVaultToolFolderRestrictions,
+  VAULT_TOOL_SCOPE_DENIED_MSG,
+} from "../../core/vaultToolScope";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -177,12 +183,21 @@ export async function handleObsidianCommandNode(
     throw new Error(`Command not found: ${commandId}`);
   }
 
+  // With an active LLM workflow scope, a pathless command could operate on
+  // the current editor or let another plugin touch arbitrary vault files.
+  // Require an explicit, scope-checked target instead.
+  if (!path && hasVaultToolFolderRestrictions(context.vaultToolAllowedFolders)) {
+    throw new Error(VAULT_TOOL_SCOPE_DENIED_MSG);
+  }
+
   if (path) {
     const filePath = path.endsWith(".md") ? path : `${path}.md`;
+    assertVaultToolPathAllowed(filePath, context.vaultToolAllowedFolders);
     const file = app.vault.getAbstractFileByPath(filePath);
     if (!file || !(file instanceof TFile)) {
       throw new Error(`File not found: ${filePath}`);
     }
+    assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
 
     let existingLeaf: WorkspaceLeaf | null = null;
     app.workspace.iterateAllLeaves((leaf) => {

@@ -1,6 +1,10 @@
 import { App, TFile } from "obsidian";
 import { WorkflowNode, ExecutionContext, PromptCallbacks, FileExplorerData } from "../types";
 import { replaceVariables } from "./utils";
+import {
+  assertVaultToolFileAllowed,
+  assertVaultToolPathAllowed,
+} from "../../core/vaultToolScope";
 
 // Binary file extensions
 const BINARY_EXTENSIONS = [
@@ -125,6 +129,7 @@ export async function handleFileExplorerNode(
   if (filePath === null) {
     throw new Error("File selection cancelled by user");
   }
+  assertVaultToolPathAllowed(filePath, context.vaultToolAllowedFolders);
 
   if (savePathTo) {
     context.variables.set(savePathTo, filePath);
@@ -152,6 +157,7 @@ export async function handleFileExplorerNode(
       if (!file || !(file instanceof TFile)) {
         throw new Error(`File not found: ${filePath}`);
       }
+      assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
 
       const extension = file.extension.toLowerCase();
       const mimeType = getMimeType(extension);
@@ -216,6 +222,7 @@ export async function handleFileSaveNode(
   if (!filePath.includes(".") && fileData.extension) {
     filePath = `${filePath}.${fileData.extension}`;
   }
+  assertVaultToolPathAllowed(filePath, context.vaultToolAllowedFolders);
 
   const folderPath = filePath.substring(0, filePath.lastIndexOf("/"));
   if (folderPath) {

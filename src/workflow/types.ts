@@ -98,6 +98,7 @@ export interface ExecutionContext {
   variables: Map<string, string | number>;
   chatId?: string;
   logs: ExecutionLog[];
+  vaultToolAllowedFolders?: string[];
   lastCommandInfo?: LastCommandInfo;
   regenerateInfo?: RegenerateInfo;
 }
