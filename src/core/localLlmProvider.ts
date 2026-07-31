@@ -175,7 +175,7 @@ export async function fetchLocalLlmModels(config: LocalLlmConfig): Promise<strin
 
 /**
  * Fetch available embedding models.
- * Ollama: filters by family (BERT-based models only).
+ * Ollama: filters by known embedding families or embedding model names.
  * Others: returns all models from /v1/models (user selects the right one).
  */
 export async function fetchEmbeddingModels(config: LocalLlmConfig, embeddingBaseUrl?: string): Promise<string[]> {
@@ -191,7 +191,7 @@ export async function fetchEmbeddingModels(config: LocalLlmConfig, embeddingBase
         models?: { name: string; details?: { families?: string[] } }[];
       };
       return (data.models || [])
-        .filter(m => isEmbeddingModel(m.details?.families))
+        .filter(m => isEmbeddingModel(m.details?.families) || isEmbeddingModelByName(m.name))
         .map(m => m.name);
     }
 
