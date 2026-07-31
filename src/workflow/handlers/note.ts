@@ -4,6 +4,13 @@ import { isEncryptedFile, decryptFileContent } from "../../core/crypto";
 import { cryptoCache } from "../../core/cryptoCache";
 import { WorkflowNode, ExecutionContext, PromptCallbacks } from "../types";
 import { replaceVariables, RegenerateRequestError } from "./utils";
+import {
+  assertVaultToolFileAllowed,
+  assertVaultToolFolderNavigable,
+  assertVaultToolPathAllowed,
+  isFileAllowedForVaultTools,
+  isPathNavigableForVaultTools,
+} from "../../core/vaultToolScope";
 
 // Sanitize path segments by replacing characters not allowed in Obsidian file names
 function sanitizePath(path: string): string {
@@ -53,6 +60,7 @@ export async function handleNoteNode(
   }
 
   const notePath = sanitizePath(path.endsWith(".md") ? path : `${path}.md`);
+  assertVaultToolPathAllowed(notePath, context.vaultToolAllowedFolders);
 
   const confirm = node.properties["confirm"] !== "false";
 
@@ -145,6 +153,7 @@ export async function handleNoteReadNode(
 
   const path = replaceVariables(pathRaw, context);
   const notePath = path.endsWith(".md") ? path : `${path}.md`;
+  assertVaultToolPathAllowed(notePath, context.vaultToolAllowedFolders);
 
   const file = app.vault.getAbstractFileByPath(notePath);
   if (!file) {
@@ -154,6 +163,7 @@ export async function handleNoteReadNode(
   if (!(file instanceof TFile)) {
     throw new Error(`Path is not a file: ${notePath}`);
   }
+  assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
 
   let content = await app.vault.read(file);
 
@@ -198,7 +208,8 @@ export async function handleNoteSearchNode(
     throw new Error("note-search node missing 'saveTo' property");
   }
 
-  const files = app.vault.getMarkdownFiles();
+  const files = app.vault.getMarkdownFiles()
+    .filter((file) => isFileAllowedForVaultTools(file, context.vaultToolAllowedFolders));
   const results: { name: string; path: string; matchedContent?: string }[] = [];
 
   if (searchContent) {
@@ -333,9 +344,11 @@ export function handleNoteListNode(
         .filter((t) => t.length > 1)
     : [];
 
-  let files = app.vault.getMarkdownFiles();
+  let files = app.vault.getMarkdownFiles()
+    .filter((file) => isFileAllowedForVaultTools(file, context.vaultToolAllowedFolders));
 
   if (folder) {
+    assertVaultToolPathAllowed(folder, context.vaultToolAllowedFolders);
     const normalizedFolder = folder.endsWith("/") ? folder : folder + "/";
     files = files.filter((file) => {
       if (recursive) {
@@ -412,6 +425,9 @@ export function handleFolderListNode(
   }
 
   const folders: string[] = [];
+  if (parentFolder) {
+    assertVaultToolFolderNavigable(parentFolder, context.vaultToolAllowedFolders);
+  }
 
   const allFiles = app.vault.getAllLoadedFiles();
   for (const file of allFiles) {
@@ -426,6 +442,9 @@ export function handleFolderListNode(
       }
 
       if (folderPath) {
+        if (!isPathNavigableForVaultTools(folderPath, context.vaultToolAllowedFolders)) {
+          continue;
+        }
         folders.push(folderPath);
       }
     }

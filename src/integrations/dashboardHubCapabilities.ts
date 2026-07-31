@@ -61,7 +61,10 @@ async function generate(plugin: LocalLlmHubPlugin, modelId: string, prompt: stri
     if (calls.length === 0) { if (!output.trim()) throw new Error("AI returned an empty response."); return output.trim(); }
     conversation.push({ role: "assistant", content: output, timestamp: Date.now(), toolCalls: calls });
     for (const call of calls) {
-      const result = await executeToolCall(call, { app: plugin.app });
+      const result = await executeToolCall(call, {
+        app: plugin.app,
+        vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
+      });
       conversation.push({ role: "tool", content: result.result, timestamp: Date.now(), toolCallId: call.id, toolName: call.name });
     }
   }

@@ -120,6 +120,8 @@ Models with function calling support (Qwen, Llama 3.1+, Mistral) can directly in
 
 Three modes — **All**, **No Search**, **Off** — selectable from the input area.
 
+In **Settings -> Workspace -> LLM vault tool folders**, you can restrict LLM vault tools and LLM-triggered skill workflows to selected vault-relative folders. Leave it empty to allow the whole vault. This setting is separate from the RAG index folders setting and does not restrict RAG, manual attachments, `@note` mentions, MCP tools, or scripts.
+
 ![Tool Settings](docs/images/chat_tool_setting.png)
 
 ### MCP Servers
@@ -197,7 +199,7 @@ Automatic tracking of AI-made changes with diff view and one-click restore.
 
 1. Enable RAG in settings
 2. Fetch and select the embedding model
-3. Configure target folders (optional — defaults to entire vault)
+3. Configure RAG index folders (optional — defaults to entire vault; this does not restrict Vault tools)
 4. Click **Sync** to build the index
 
 For large vaults, create multiple RAG settings for separate folders, sync each one, then create another RAG setting and enable **Combine internal RAG settings**. Select the synced source settings to search them together from one chat/search selector. Combined settings use the embedding server and model from the first selected source setting.
@@ -217,6 +219,8 @@ You can also enable **Use external index** and enter one external index director
 ![MCP & Encryption Settings](docs/images/setting_mcp_server_and_encryption.png)
 
 ### Workspace Settings
+
+Use **LLM vault tool folders** to control which folders automatic LLM vault operations can access. An empty value allows the whole vault.
 
 ![Workspace Settings](docs/images/setting_workspace.png)
 

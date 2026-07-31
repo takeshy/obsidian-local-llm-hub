@@ -184,6 +184,7 @@ Please revise the output based on the user's feedback above.`;
       const result = await executeToolCall(tc, {
         app,
         mcpManager: plugin.mcpManager,
+        vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
       });
       const toolResultMsg: Message = {
         role: "tool",

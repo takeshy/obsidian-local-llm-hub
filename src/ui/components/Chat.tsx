@@ -1013,6 +1013,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               : await executeToolCall(tc, {
               app: plugin.app,
               mcpManager: plugin.mcpManager,
+              vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
               onProposeEdit: async (path, oldContent, newContent) => {
                 const modal = new EditConfirmationModal(plugin.app, path, newContent, "overwrite", oldContent);
                 const response = await modal.openAndWait();
@@ -1350,6 +1351,8 @@ async function executeSkillWorkflow(
         workflowName: workflowDisplayName,
         recordHistory: true,
         abortSignal: abortController.signal,
+        vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
+        workflowDefinitionRoot: entry.skill.folderPath,
       },
       callbacks,
     );

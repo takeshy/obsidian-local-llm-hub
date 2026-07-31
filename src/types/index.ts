@@ -267,6 +267,8 @@ export interface LocalLlmHubSettings {
   enabledWorkflowHotkeys: string[];
   enabledWorkflowEventTriggers: WorkflowEventTrigger[];
   hideWorkspaceFolder: boolean;
+  /** Vault-relative folders that LLM-driven vault tools may access. Empty allows the whole vault. */
+  vaultToolAllowedFolders: string[];
   lastSelectedWorkflowPath?: string;
   /** Last used model for Timeline AI rewrite. */
   lastTimelineAiModel?: string;
@@ -295,6 +297,7 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   enabledWorkflowHotkeys: [],
   enabledWorkflowEventTriggers: [],
   hideWorkspaceFolder: true,
+  vaultToolAllowedFolders: [],
   knowledgeSources: [],
   mcpServers: [],
 };

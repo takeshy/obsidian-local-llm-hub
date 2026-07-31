@@ -2,6 +2,10 @@ import { App, TFile } from "obsidian";
 import { WorkflowNode, ExecutionContext, PromptCallbacks } from "../types";
 import { replaceVariables } from "./utils";
 import { getEventVariable } from "../eventVariables";
+import {
+  assertVaultToolFileAllowed,
+  assertVaultToolPathAllowed,
+} from "../../core/vaultToolScope";
 
 // Helper function to create file info object from path
 function createFileInfo(filePath: string): { path: string; basename: string; name: string; extension: string } {
@@ -82,10 +86,12 @@ export async function handlePromptFileNode(
   }
 
   const notePath = filePath.endsWith(".md") ? filePath : `${filePath}.md`;
+  assertVaultToolPathAllowed(notePath, context.vaultToolAllowedFolders);
   const file = app.vault.getAbstractFileByPath(notePath);
   if (!file || !(file instanceof TFile)) {
     throw new Error(`File not found: ${notePath}`);
   }
+  assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
   const content = await app.vault.read(file);
 
   context.variables.set(saveTo, content);
@@ -171,8 +177,10 @@ export async function handlePromptSelectionNode(
     const fileInfo = parsePathInfo(eventFile);
     if (fileInfo) {
       try {
+        assertVaultToolPathAllowed(fileInfo.path, context.vaultToolAllowedFolders);
         const file = app.vault.getAbstractFileByPath(fileInfo.path);
         if (file && file instanceof TFile) {
+          assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
           const content = await app.vault.read(file);
           context.variables.set(saveTo, content);
 
@@ -204,10 +212,12 @@ export async function handlePromptSelectionNode(
     throw new Error("Selection cancelled by user");
   }
 
+  assertVaultToolPathAllowed(result.path, context.vaultToolAllowedFolders);
   const file = app.vault.getAbstractFileByPath(result.path);
   if (!file || !(file instanceof TFile)) {
     throw new Error(`File not found: ${result.path}`);
   }
+  assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
   const fileContent = await app.vault.read(file);
 
   const lines = fileContent.split("\n");

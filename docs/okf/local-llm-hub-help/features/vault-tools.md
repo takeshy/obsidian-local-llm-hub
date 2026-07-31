@@ -19,5 +19,10 @@ Vault tool modes:
 - No Search: disables search/list style tools while keeping direct read/write operations.
 - Off: disables vault tools.
 
-Ollama native chat and other marker-only local model modes may not support OpenAI-style function calling. In those cases users should rely on workflows for deterministic vault operations.
+## Folder access
 
+Settings -> Workspace -> LLM vault tool folders restricts LLM vault tools and LLM-triggered skill workflows to specified vault-relative folders. Empty means whole-vault access. This setting is independent of RAG index folders.
+
+The folder allowlist does not restrict RAG, manual attachments, explicit `@note` mentions, MCP tools, scripts, shell commands, or workflows started directly by the user.
+
+Ollama native chat and other marker-only local model modes may not support OpenAI-style function calling. In those cases users should rely on workflows for deterministic vault operations.
