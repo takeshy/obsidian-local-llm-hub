@@ -347,11 +347,17 @@ export class NodeEditorModal extends Modal {
         this.addTextField(container, "prefix", t("nodeEditor.prefix"), t("nodeEditor.prefix.placeholder"));
         break;
 
-      case "rag-sync":
+      case "rag-sync": {
         this.addTextField(container, "path", t("nodeEditor.ragNotePath"), t("nodeEditor.ragNotePath.placeholder"));
         this.addTextField(container, "oldPath", t("nodeEditor.ragOldPath"), t("nodeEditor.ragOldPath.placeholder"));
+        const ragNames = this.plugin.getRagSettingNames();
+        this.addLabeledDropdown(container, "ragSetting", t("nodeEditor.ragSetting"), [
+          { value: "", label: t("nodeEditor.ragSetting.select") },
+          ...ragNames.map((name) => ({ value: name, label: name })),
+        ]);
         this.addTextField(container, "saveTo", t("nodeEditor.saveTo"), t("nodeEditor.saveTo.ragResult"));
         break;
+      }
 
       case "file-save":
         this.addTextField(container, "source", t("nodeEditor.fileSaveSource"), t("nodeEditor.fileSaveSource.placeholder"));

@@ -231,6 +231,8 @@ Prompt user to select file and read its content.
 - **saveTo** (required): Variable for file content
 - **saveFileTo** (optional): Variable for file info (path, basename, name, extension)
 
+When run from a hotkey with \`forcePrompt: "false"\`, this node uses the active Markdown file. If no Markdown file is active, it opens the file picker. Cancelling the picker, resolving an invalid path, or failing to read the file throws an error and stops the workflow; the node never continues with an empty \`saveFileTo.path\`. Do not add a downstream path-presence check solely to guard a successful \`prompt-file\` result.
+
 #### prompt-selection
 Prompt user to select text from a file.
 - **saveTo** (required): Variable for selected text
@@ -248,8 +250,21 @@ Execute sub-workflow.
 #### rag-sync
 Sync notes to RAG store. If path is specified, syncs a single file (fast). Without path, triggers a full sync.
 - **path** (optional): Note path to sync (supports {{variables}}). Omit for full sync.
+- **ragSetting** (optional): RAG setting name. Uses the currently selected RAG setting when omitted.
 - **oldPath** (optional): Previous file path to remove from index (for renames)
 - **saveTo** (optional): Variable for result
+
+**Example — sync the file selected by a hotkey to a specific RAG setting**:
+\`\`\`yaml
+- id: current-file
+  type: prompt-file
+  saveTo: content
+  saveFileTo: file
+- id: sync-to-rag
+  type: rag-sync
+  path: "{{file.path}}"
+  ragSetting: "my-rag-setting"
+\`\`\`
 
 #### obsidian-command
 Execute Obsidian command.

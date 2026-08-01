@@ -1371,6 +1371,16 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   padding: 12px;
 }
 
+.llm-hub-workflow-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+
 .llm-hub-workflow-sidebar-footer {
   padding: 12px;
   border-top: 1px solid var(--background-modifier-border);
