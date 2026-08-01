@@ -1,6 +1,6 @@
 {
   "name": "obsidian-local-llm-hub",
-  "version": "0.19.10",
+  "version": "0.19.11",
   "description": "Chat with local LLMs via OpenAI-compatible API, with local embeddings RAG and text processing commands",
   "main": "main.js",
   "scripts": {
