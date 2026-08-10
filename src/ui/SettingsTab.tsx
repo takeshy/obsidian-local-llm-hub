@@ -1,4 +1,4 @@
-import { PluginSettingTab, App } from "obsidian";
+import { PluginSettingTab, App, type Setting, type SettingDefinitionItem } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { displayLlmSettings } from "src/ui/settings/llmSettings";
 import { displayWorkspaceSettings } from "src/ui/settings/workspaceSettings";
@@ -18,23 +18,30 @@ export class SettingsTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  /** Render settings using the API available at the declared minimum version. */
-  display(): void {
-    const { containerEl } = this;
-    containerEl.empty();
+  getSettingDefinitions(): SettingDefinitionItem[] {
     const ctx = {
       plugin: this.plugin,
-      display: () => this.display(),
+      display: () => this.update(),
     };
 
-    displayLlmSettings(containerEl, ctx);
-    displayWorkspaceSettings(containerEl, ctx);
-    displayRagSettings(containerEl, ctx);
-    displayKnowledgeSettings(containerEl, ctx);
-    displayExternalSkillSettings(containerEl, ctx);
-    displayAgentPluginSettings(containerEl, ctx);
-    displaySlashCommandSettings(containerEl, ctx);
-    displayMcpSettings(containerEl, ctx);
-    displayEncryptionSettings(containerEl, ctx);
+    const section = (name: string, render: (containerEl: HTMLElement) => void): SettingDefinitionItem => ({
+      name,
+      render: (setting: Setting) => {
+        setting.settingEl.empty();
+        render(setting.settingEl);
+      },
+    });
+
+    return [
+      section("Language models", containerEl => displayLlmSettings(containerEl, ctx)),
+      section("Workspaces", containerEl => displayWorkspaceSettings(containerEl, ctx)),
+      section("Retrieval-augmented generation", containerEl => displayRagSettings(containerEl, ctx)),
+      section("Knowledge", containerEl => displayKnowledgeSettings(containerEl, ctx)),
+      section("External skills", containerEl => displayExternalSkillSettings(containerEl, ctx)),
+      section("Agent plugins", containerEl => displayAgentPluginSettings(containerEl, ctx)),
+      section("Slash commands", containerEl => displaySlashCommandSettings(containerEl, ctx)),
+      section("Model Context Protocol", containerEl => displayMcpSettings(containerEl, ctx)),
+      section("Encryption", containerEl => displayEncryptionSettings(containerEl, ctx)),
+    ];
   }
 }

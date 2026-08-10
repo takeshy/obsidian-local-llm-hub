@@ -20,6 +20,14 @@ const SUPPORTED_LEGACY_PROTOCOL_VERSIONS = new Set([
 
 type McpProtocolEra = "modern" | "legacy";
 
+interface NodePath {
+  sep: string;
+  resolve(value: string): string;
+  isAbsolute(value: string): boolean;
+}
+
+const nodePath = path as unknown as NodePath;
+
 // JSON-RPC 2.0 types
 interface JsonRpcRequest {
   jsonrpc: "2.0";
@@ -100,10 +108,10 @@ export class McpClient {
     const childEnv = { ...getNodeProcessEnv(), ...this.env };
     if (this.pluginRoot) {
       if (!this.pluginData || !this.cwd) throw new Error("Agent Plugin paths are incomplete");
-      const root = path.resolve(this.pluginRoot), data = path.resolve(this.pluginData), resolvedCwd = path.resolve(this.cwd);
-      const inside = (parent: string, child: string) => child === parent || child.startsWith(parent + path.sep);
+      const root = nodePath.resolve(this.pluginRoot), data = nodePath.resolve(this.pluginData), resolvedCwd = nodePath.resolve(this.cwd);
+      const inside = (parent: string, child: string) => child === parent || child.startsWith(parent + nodePath.sep);
       if (!inside(root, resolvedCwd) && !inside(data, resolvedCwd)) throw new Error("Agent Plugin cwd is outside PLUGIN_ROOT and PLUGIN_DATA");
-      if (path.isAbsolute(this.command) && !inside(root, path.resolve(this.command))) throw new Error("Agent Plugin executable is outside PLUGIN_ROOT");
+      if (nodePath.isAbsolute(this.command) && !inside(root, nodePath.resolve(this.command))) throw new Error("Agent Plugin executable is outside PLUGIN_ROOT");
       for (const key of Object.keys(this.env ?? {})) if (key.toUpperCase() === "PLUGIN_ROOT" || key.toUpperCase() === "PLUGIN_DATA") throw new Error(`Reserved Agent Plugin environment variable: ${key}`);
       Object.assign(childEnv, { PLUGIN_ROOT: this.pluginRoot, PLUGIN_DATA: this.pluginData });
     }

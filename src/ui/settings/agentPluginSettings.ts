@@ -3,6 +3,7 @@ import { AGENT_PLUGIN_ROOT, agentPluginAbsolutePaths, installAgentPlugin, parseA
 import type { AgentPluginInstall, McpServerConfig } from "src/types";
 import type { SettingsContext } from "./settingsContext";
 import { AgentPluginInstallModal } from "./AgentPluginInstallModal";
+import { ConfirmModal } from "src/ui/components/ConfirmModal";
 
 function mergeServer(next: McpServerConfig, previous?: McpServerConfig): McpServerConfig {
   if (!previous) return next;
@@ -15,9 +16,7 @@ export function displayAgentPluginSettings(containerEl: HTMLElement, ctx: Settin
   new Setting(containerEl).setName("Agent plugins").setHeading();
   containerEl.createDiv({ cls: "setting-item-description", text: `Install Agent Plugins v1.0.0 from a public GitHub repository. Packages are pinned to a commit and stored in ${AGENT_PLUGIN_ROOT}.` });
   let repository = "";
-  // GitHub is a proper brand name; the sentence-case rule treats it as title case.
-  // eslint-disable-next-line obsidianmd/ui/sentence-case
-  new Setting(containerEl).setName("GitHub repository").setDesc("owner/repository or a GitHub URL").addText(text => text.setPlaceholder("owner/repository").onChange(value => { repository = value; })).addButton(button => button.setButtonText("Preview and install").setCta().onClick(() => { void (async () => {
+  new Setting(containerEl).setName("GitHub repository").setDesc("Owner/repository or a GitHub URL").addText(text => text.setPlaceholder("Owner/repository").onChange(value => { repository = value; })).addButton(button => button.setButtonText("Preview and install").setCta().onClick(() => { void (async () => {
     button.setDisabled(true);
     try {
       const preview = await previewAgentPlugin(repository), paths = agentPluginAbsolutePaths(plugin.app, preview.manifest.name);
@@ -40,6 +39,6 @@ export function displayAgentPluginSettings(containerEl: HTMLElement, ctx: Settin
     const setting = new Setting(containerEl).setName(item.name).setDesc(`${item.version} · ${item.repo}@${item.commitSha.slice(0, 7)} · Skills: ${item.skillNames.join(", ") || "none"}`);
     setting.addToggle(toggle => toggle.setValue(item.enabled).onChange(value => { void (async () => { item.enabled = value; await plugin.app.vault.adapter.write(`${AGENT_PLUGIN_ROOT}/${item.name}/install.json`, JSON.stringify(item, null, 2)); for (const server of plugin.settings.mcpServers) if (server.agentPlugin?.pluginName === item.name && !value) { server.enabled = false; await plugin.mcpManager.disconnectServer(server.id); } await plugin.saveSettings(); plugin.settingsEmitter.emit("skills-changed"); display(); })(); }));
     setting.addExtraButton(button => button.setIcon("refresh-cw").setTooltip("Check for update").onClick(() => { void (async () => { try { const next = await previewAgentPlugin(item.repo); new Notice(next.commitSha === item.commitSha ? `${item.name} is up to date.` : `Update available for ${item.name}: ${next.version}.`); } catch (error) { new Notice(String(error)); } })(); }));
-    setting.addExtraButton(button => button.setIcon("trash").setTooltip("Uninstall").onClick(() => { void (async () => { if (!window.confirm(`Uninstall ${item.name}?`)) return; for (const server of plugin.settings.mcpServers.filter(v => v.agentPlugin?.pluginName === item.name)) await plugin.mcpManager.disconnectServer(server.id); await uninstallAgentPlugin(plugin.app, item.name); plugin.settings.agentPlugins = plugin.settings.agentPlugins.filter(v => v.name !== item.name); plugin.settings.mcpServers = plugin.settings.mcpServers.filter(v => v.agentPlugin?.pluginName !== item.name); await plugin.saveSettings(); plugin.settingsEmitter.emit("skills-changed"); new Notice(`Uninstalled ${item.name}. Plugin data was preserved.`); display(); })(); }));
+    setting.addExtraButton(button => button.setIcon("trash").setTooltip("Uninstall").onClick(() => { void (async () => { if (!await new ConfirmModal(plugin.app, `Uninstall ${item.name}?`, "Uninstall").openAndWait()) return; for (const server of plugin.settings.mcpServers.filter(v => v.agentPlugin?.pluginName === item.name)) await plugin.mcpManager.disconnectServer(server.id); await uninstallAgentPlugin(plugin.app, item.name); plugin.settings.agentPlugins = plugin.settings.agentPlugins.filter(v => v.name !== item.name); plugin.settings.mcpServers = plugin.settings.mcpServers.filter(v => v.agentPlugin?.pluginName !== item.name); await plugin.saveSettings(); plugin.settingsEmitter.emit("skills-changed"); new Notice(`Uninstalled ${item.name}. Plugin data was preserved.`); display(); })(); }));
   }
 }

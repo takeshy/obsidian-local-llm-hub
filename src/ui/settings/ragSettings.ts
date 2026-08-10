@@ -437,7 +437,6 @@ function displaySelectedRagSetting(
       slider
         .setLimits(0, 1, 0.1)
         .setValue(currentMinScore)
-        .setDynamicTooltip()
         .onChange((value) => {
           void updateSetting({ minScore: value }).catch((err) => new Notice(String(err)));
         });

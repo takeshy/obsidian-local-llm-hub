@@ -1,4 +1,4 @@
-import { FileSystemAdapter, normalizePath, parseYaml, type App } from "obsidian";
+import { FileSystemAdapter, normalizePath, parseYaml, requestUrl, type App } from "obsidian";
 import type { AgentPluginInstall, McpServerConfig } from "src/types";
 
 export const AGENT_PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
@@ -66,10 +66,10 @@ export function parseAgentPluginMcp(value: string, pluginName: string, root: str
 }
 
 async function github<T>(url: string, optional = false): Promise<T | null> {
-  const response = await fetch(url, { headers: { Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(30_000) });
+  const response = await requestUrl({ url, headers: { Accept: "application/vnd.github+json" }, throw: false });
   if (optional && response.status === 404) return null;
-  if (!response.ok) throw new Error(`GitHub request failed (${response.status})`);
-  return await response.json() as T;
+  if (response.status < 200 || response.status >= 300) throw new Error(`GitHub request failed (${response.status})`);
+  return response.json as unknown as T;
 }
 export function normalizeAgentPluginRepo(input: string): string | null {
   const match = input.trim().replace(/\.git$/, "").match(/^(?:https?:\/\/github\.com\/)?([A-Za-z0-9_-]+\/[A-Za-z0-9._-]+)\/?$/);
@@ -90,9 +90,9 @@ export async function previewAgentPlugin(input: string): Promise<AgentPluginPrev
   if (!entries.some(v => v.path === "plugin.json")) throw new Error("plugin.json is required at the repository root.");
   const pairs = await Promise.all(entries.map(async entry => {
     const path = entry.path.split("/").map(encodeURIComponent).join("/");
-    const response = await fetch(`https://raw.githubusercontent.com/${repo}/${commit.sha}/${path}`, { signal: AbortSignal.timeout(30_000) });
-    if (!response.ok) throw new Error(`Failed to download ${entry.path}`);
-    const bytes = await response.arrayBuffer();
+    const response = await requestUrl({ url: `https://raw.githubusercontent.com/${repo}/${commit.sha}/${path}`, throw: false });
+    if (response.status < 200 || response.status >= 300) throw new Error(`Failed to download ${entry.path}`);
+    const bytes = response.arrayBuffer;
     if (bytes.byteLength > 10 * 1024 * 1024) throw new Error(`Package file is too large: ${entry.path}`);
     return [entry.path, bytes] as const;
   }));
