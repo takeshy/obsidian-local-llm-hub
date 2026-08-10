@@ -1,4 +1,4 @@
-import { PluginSettingTab, App, type Setting, type SettingDefinitionItem } from "obsidian";
+import { PluginSettingTab, App, Setting, type SettingDefinitionItem } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { displayLlmSettings } from "src/ui/settings/llmSettings";
 import { displayWorkspaceSettings } from "src/ui/settings/workspaceSettings";
@@ -18,19 +18,30 @@ export class SettingsTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  getSettingDefinitions(): SettingDefinitionItem[] {
-    const ctx = {
-      plugin: this.plugin,
-      display: () => this.update(),
-    };
+  display(): void {
+    this.containerEl.empty();
+    for (const section of this.getSections()) {
+      section.render(new Setting(this.containerEl).setName(section.name).settingEl);
+    }
+  }
 
-    const section = (name: string, render: (containerEl: HTMLElement) => void): SettingDefinitionItem => ({
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return this.getSections().map(({ name, render }) => ({
       name,
       render: (setting: Setting) => {
         setting.settingEl.empty();
         render(setting.settingEl);
       },
-    });
+    }));
+  }
+
+  private getSections(): Array<{ name: string; render: (containerEl: HTMLElement) => void }> {
+    const ctx = {
+      plugin: this.plugin,
+      display: () => this.display(),
+    };
+
+    const section = (name: string, render: (containerEl: HTMLElement) => void) => ({ name, render });
 
     return [
       section("Language models", containerEl => displayLlmSettings(containerEl, ctx)),

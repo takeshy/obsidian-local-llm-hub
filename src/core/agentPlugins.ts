@@ -69,7 +69,7 @@ async function github<T>(url: string, optional = false): Promise<T | null> {
   const response = await requestUrl({ url, headers: { Accept: "application/vnd.github+json" }, throw: false });
   if (optional && response.status === 404) return null;
   if (response.status < 200 || response.status >= 300) throw new Error(`GitHub request failed (${response.status})`);
-  return response.json as unknown as T;
+  return response.json as T;
 }
 export function normalizeAgentPluginRepo(input: string): string | null {
   const match = input.trim().replace(/\.git$/, "").match(/^(?:https?:\/\/github\.com\/)?([A-Za-z0-9_-]+\/[A-Za-z0-9._-]+)\/?$/);
