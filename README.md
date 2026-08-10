@@ -128,6 +128,8 @@ In **Settings -> Workspace -> LLM vault tool folders**, you can restrict LLM vau
 
 Connect local [MCP](https://modelcontextprotocol.io/) servers to extend the AI with external tools. MCP tools are merged with vault tools and routed via function calling — all running as **local child processes**.
 
+Agent Plugins can contribute stdio MCP servers alongside namespaced skills. A tested plugin-managed server stays disabled normally and is started only for a chat turn where a skill from the same enabled package is active.
+
 ![Chat with MCP](docs/images/chat_with_mcp.png)
 
 ### RAG (Local Embeddings)
@@ -156,6 +158,10 @@ Create skills the same way as workflows — click **Create skill with AI** in th
 **Clickable skill chips:** Active skill chips in the chat input area and on assistant messages are clickable and jump to the matching `SKILL.md` (built-in skills are shown as static labels).
 
 **Workflow error recovery:** If a skill workflow fails during a chat, the failing tool call shows an **Open workflow** button. Clicking it opens the workflow file *and* switches to the Workflow / skill tab so you can immediately edit and re-run. Use **Modify workflow with AI** together with **Reference execution history** to let the AI fix the failing step.
+
+**Agent Plugins:** Open **Settings → Agent plugins**, enter `owner/repository` or a public GitHub URL, and preview the Agent Plugin v1.0.0 package before installation. Packages are pinned to the reviewed commit and stored under `.local-llm-hub/agent-plugins/`; persistent package data is stored separately under `.local-llm-hub/agent-plugin-data/`. Installed skills appear as `<plugin>.<skill>`.
+
+Plugin stdio MCP entries support `${PLUGIN_ROOT}` and `${PLUGIN_DATA}`. Local LLM Hub validates commands, arguments, environment variables, working directories, symlinks, paths, and package sizes before use. Successfully tested servers are activated only while a skill from the same enabled plugin is active.
 
 ![Agent Skills](docs/images/skill.png)
 
@@ -215,6 +221,8 @@ You can also enable **Use external index** and enter one external index director
 1. Settings → **MCP servers** → **Add server**
 2. Configure: name, command (e.g. `npx`), arguments, optional env vars
 3. Toggle on — connects automatically via stdio
+
+Portable Agent Plugin MCP servers are managed from **Settings → Agent plugins** instead of being added manually. Package updates are reviewed and installed as a new commit-pinned version.
 
 ![MCP & Encryption Settings](docs/images/setting_mcp_server_and_encryption.png)
 

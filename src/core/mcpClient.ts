@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import * as path from "path";
 import type { McpFraming, ToolDefinition } from "../types";
 import {
   getNodeBuffer,
@@ -84,6 +85,9 @@ export class McpClient {
     private args: string[],
     private env?: Record<string, string>,
     framing?: McpFraming,
+    private cwd?: string,
+    private pluginRoot?: string,
+    private pluginData?: string,
   ) {
     this.framing = framing ?? "newline";
   }
@@ -94,9 +98,19 @@ export class McpClient {
 
   async start(): Promise<void> {
     const childEnv = { ...getNodeProcessEnv(), ...this.env };
+    if (this.pluginRoot) {
+      if (!this.pluginData || !this.cwd) throw new Error("Agent Plugin paths are incomplete");
+      const root = path.resolve(this.pluginRoot), data = path.resolve(this.pluginData), resolvedCwd = path.resolve(this.cwd);
+      const inside = (parent: string, child: string) => child === parent || child.startsWith(parent + path.sep);
+      if (!inside(root, resolvedCwd) && !inside(data, resolvedCwd)) throw new Error("Agent Plugin cwd is outside PLUGIN_ROOT and PLUGIN_DATA");
+      if (path.isAbsolute(this.command) && !inside(root, path.resolve(this.command))) throw new Error("Agent Plugin executable is outside PLUGIN_ROOT");
+      for (const key of Object.keys(this.env ?? {})) if (key.toUpperCase() === "PLUGIN_ROOT" || key.toUpperCase() === "PLUGIN_DATA") throw new Error(`Reserved Agent Plugin environment variable: ${key}`);
+      Object.assign(childEnv, { PLUGIN_ROOT: this.pluginRoot, PLUGIN_DATA: this.pluginData });
+    }
     this.process = (spawn as unknown as NodeSpawn)(this.command, this.args, {
       stdio: ["pipe", "pipe", "pipe"],
       env: childEnv,
+      cwd: this.cwd,
     });
 
     this.process.stdout!.on("data", (data: Uint8Array) => {

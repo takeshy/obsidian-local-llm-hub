@@ -233,6 +233,18 @@ export interface WorkflowEventTrigger {
 // MCP stdio framing protocol
 export type McpFraming = "content-length" | "newline";
 
+export interface AgentPluginInstall {
+  name: string;
+  repo: string;
+  version: string;
+  sourceType: "release" | "branch";
+  sourceRef: string;
+  commitSha: string;
+  enabled: boolean;
+  skillNames: string[];
+  executables?: string[];
+}
+
 export interface McpServerConfig {
   id: string;
   name: string;
@@ -241,6 +253,11 @@ export interface McpServerConfig {
   env?: Record<string, string>;
   framing: McpFraming;
   enabled: boolean;
+  toolHints?: string[];
+  cwd?: string;
+  pluginRoot?: string;
+  pluginData?: string;
+  agentPlugin?: { pluginName: string; serverName: string };
 }
 
 export interface KnowledgeSource {
@@ -274,6 +291,7 @@ export interface LocalLlmHubSettings {
   lastTimelineAiModel?: string;
   knowledgeSources: KnowledgeSource[];
   mcpServers: McpServerConfig[];
+  agentPlugins: AgentPluginInstall[];
 }
 
 /** Fixed skills folder name. */
@@ -300,4 +318,5 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   vaultToolAllowedFolders: [],
   knowledgeSources: [],
   mcpServers: [],
+  agentPlugins: [],
 };

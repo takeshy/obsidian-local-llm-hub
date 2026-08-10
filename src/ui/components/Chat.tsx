@@ -27,6 +27,7 @@ import { executeToolCall } from "src/core/toolExecutor";
 import { GET_WORKFLOW_SPEC_TOOL, GET_WORKFLOW_SPEC_TOOL_NAME, handleGetWorkflowSpec } from "src/workflow/workflowSpec";
 import { getRagStore } from "src/core/ragStore";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
+import { resolveAgentPluginMcpServers } from "src/core/agentPlugins";
 import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
 import { buildBuiltinOkfSystemPrompt, buildOkfSystemPrompt, discoverOkfBundles, getBuiltinOkfBundle, isBuiltinOkfBundleId, type OkfBundle } from "src/core/okfLoader";
 import { executeReadOkfDocumentTool, READ_OKF_DOCUMENT_TOOL, READ_OKF_DOCUMENT_TOOL_NAME } from "src/core/okfDocumentTool";
@@ -787,6 +788,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
     const startTime = Date.now();
+    const temporaryAgentPluginServerIds: string[] = [];
 
     try {
       // Build system prompt
@@ -865,13 +867,23 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         }
       }
 
+      // Tested Agent Plugin MCP servers are connected only for turns where a
+      // skill from the same enabled package is active.
+      const resolvedMcpServers = resolveAgentPluginMcpServers(plugin.settings.mcpServers, effectiveSkillPaths, plugin.settings.agentPlugins);
+      for (const server of resolvedMcpServers) {
+        const persisted = plugin.settings.mcpServers.find(item => item.id === server.id);
+        if (!server.enabled || !server.agentPlugin || persisted?.enabled) continue;
+        const result = await plugin.mcpManager.connectServer(server);
+        if (result.success) temporaryAgentPluginServerIds.push(server.id);
+      }
+
       // Get vault tools based on mode + MCP tools (MCP always available if servers enabled)
       // AnythingLLM does not support OpenAI function calling — skip tools entirely
       const isAnythingLlm = llmConfig.framework === "anythingllm";
       const vaultTools = isAnythingLlm ? [] : getVaultTools(vaultToolMode);
       const mcpTools = isAnythingLlm
         ? []
-        : plugin.mcpManager.getAllTools(Array.from(enabledMcpServerIds));
+        : plugin.mcpManager.getAllTools([...enabledMcpServerIds, ...temporaryAgentPluginServerIds]);
       if (isAnythingLlm && (vaultToolMode !== "none" || enabledMcpServerIds.size > 0)) {
         new Notice(t("chat.anythingLlmToolsNotSupported"));
       }
@@ -1096,6 +1108,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       setStreamingContent("");
       setStreamingThinking("");
     } finally {
+      for (const id of temporaryAgentPluginServerIds) await plugin.mcpManager.disconnectServer(id);
       setIsLoading(false);
       abortControllerRef.current = null;
     }

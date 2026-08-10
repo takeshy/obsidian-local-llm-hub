@@ -8,6 +8,7 @@ import { displayExternalSkillSettings } from "src/ui/settings/externalSkillSetti
 import { displayEncryptionSettings } from "src/ui/settings/encryptionSettings";
 import { displaySlashCommandSettings } from "src/ui/settings/slashCommandSettings";
 import { displayMcpSettings } from "src/ui/settings/mcpSettings";
+import { displayAgentPluginSettings } from "src/ui/settings/agentPluginSettings";
 
 export class SettingsTab extends PluginSettingTab {
   plugin: LocalLlmHubPlugin;
@@ -31,6 +32,7 @@ export class SettingsTab extends PluginSettingTab {
     displayRagSettings(containerEl, ctx);
     displayKnowledgeSettings(containerEl, ctx);
     displayExternalSkillSettings(containerEl, ctx);
+    displayAgentPluginSettings(containerEl, ctx);
     displaySlashCommandSettings(containerEl, ctx);
     displayMcpSettings(containerEl, ctx);
     displayEncryptionSettings(containerEl, ctx);

@@ -16,6 +16,7 @@ Important settings areas:
 - Local LLM: framework selection, endpoint URL, API key if needed, available models, thinking display, and tool support.
 - RAG: embedding endpoint/model, folders, exclusions, chunking, top K, and score threshold.
 - MCP: configured MCP servers for tools when enabled by the plugin.
+- Agent plugins: commit-pinned Agent Plugins v1.0.0 installed from public GitHub repositories.
 - Knowledge sources: OKF directory settings.
 
 Supported Local LLM framework modes:
@@ -28,3 +29,12 @@ Supported Local LLM framework modes:
 For OKF, enable the OKF source and set a vault-relative directory such as `Knowledge` or `.Knowledge`. The chat input can then select discovered OKF bundles from that directory.
 
 `LLM vault tool folders` is a comma-separated, vault-relative allowlist for automatic LLM vault tool access. Empty means the whole vault. This setting is separate from RAG index folders.
+
+# Agent plugin settings
+
+- GitHub repository accepts `owner/repository` or a public GitHub URL.
+- Preview and install validates the manifest, paths, symlinks, file counts and sizes, then displays the pinned commit, skills, MCP servers, and warnings.
+- Plugin MCP servers are tested before installation completes. Failed servers remain unavailable for automatic skill activation.
+- Enable or disable controls skill discovery and automatic MCP activation for the package.
+- Check for update compares the installed commit with the latest release, falling back to the repository's default branch.
+- Uninstall removes package files and managed MCP settings but preserves `.local-llm-hub/agent-plugin-data/<plugin-name>/`.

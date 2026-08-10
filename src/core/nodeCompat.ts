@@ -67,7 +67,7 @@ export interface NodeChildProcess {
 export type NodeSpawn = (
   command: string,
   args: string[],
-  options: { stdio: string[]; env: Record<string, string | undefined> },
+  options: { stdio: string[]; env: Record<string, string | undefined>; cwd?: string },
 ) => NodeChildProcess;
 
 /** Subset of `http.IncomingMessage`. */

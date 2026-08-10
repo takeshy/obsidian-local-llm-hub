@@ -529,6 +529,9 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.mcpServers) {
       this.settings.mcpServers = [];
     }
+    if (!Array.isArray(this.settings.agentPlugins)) {
+      this.settings.agentPlugins = [];
+    }
 
     // Hydrate the workspace state manager created synchronously in onload so
     // restored views can safely use the default state during startup.
