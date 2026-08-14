@@ -123,7 +123,7 @@ export class WorkflowSelectorModal extends Modal {
     modalEl.addClass("llm-hub-workflow-selector-modal-container");
 
     // Load and sort files (workflows/ first), excluding workspace folder (chat history etc.)
-    const wsFolder = WORKSPACE_FOLDER;
+    const wsFolder = this.plugin.settings.workspaceFolder || WORKSPACE_FOLDER;
     this.files = this.app.vault
       .getMarkdownFiles()
       .filter((file) => !file.path.startsWith(wsFolder + "/"))

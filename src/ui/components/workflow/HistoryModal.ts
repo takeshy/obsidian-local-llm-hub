@@ -5,10 +5,12 @@ import { ExecutionHistoryManager, formatDuration, EncryptionConfig } from "src/w
 import { cryptoCache } from "src/core/cryptoCache";
 import { decryptPrivateKey } from "src/core/crypto";
 import { t } from "src/i18n";
+import { WORKSPACE_FOLDER } from "src/types";
 
 export class HistoryModal extends Modal {
   private workflowPath: string;
   private encryptionConfig: EncryptionConfig | undefined;
+  private workspaceFolder: string;
   private onRetryFromError?: (workflowPath: string, workflowName: string | undefined, errorNodeId: string, variablesSnapshot: Record<string, string | number>) => void;
   private records: ExecutionRecord[] = [];
   private selectedRecord: ExecutionRecord | null = null;
@@ -21,11 +23,13 @@ export class HistoryModal extends Modal {
     app: App,
     workflowPath: string,
     encryptionConfig?: EncryptionConfig,
+    workspaceFolder = WORKSPACE_FOLDER,
     onRetryFromError?: (workflowPath: string, workflowName: string | undefined, errorNodeId: string, variablesSnapshot: Record<string, string | number>) => void,
   ) {
     super(app);
     this.workflowPath = workflowPath;
     this.encryptionConfig = encryptionConfig;
+    this.workspaceFolder = workspaceFolder;
     this.onRetryFromError = onRetryFromError;
   }
 
@@ -204,12 +208,12 @@ export class HistoryModal extends Modal {
   }
 
   private async loadHistory(): Promise<void> {
-    const historyManager = new ExecutionHistoryManager(this.app, this.encryptionConfig);
+    const historyManager = new ExecutionHistoryManager(this.app, this.encryptionConfig, this.workspaceFolder);
     this.records = await historyManager.loadRecords(this.workflowPath);
   }
 
   private getHistoryManager(): ExecutionHistoryManager {
-    return new ExecutionHistoryManager(this.app, this.encryptionConfig);
+    return new ExecutionHistoryManager(this.app, this.encryptionConfig, this.workspaceFolder);
   }
 
   private renderList(): void {

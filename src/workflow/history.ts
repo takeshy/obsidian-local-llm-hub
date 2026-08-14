@@ -27,9 +27,9 @@ export class ExecutionHistoryManager {
   private historyFolder: string;
   private encryptionConfig: EncryptionConfig | null;
 
-  constructor(app: App, encryptionConfig?: EncryptionConfig) {
+  constructor(app: App, encryptionConfig?: EncryptionConfig, workspaceFolder = WORKSPACE_FOLDER) {
     this.app = app;
-    this.historyFolder = `${WORKSPACE_FOLDER}/workflow-history`;
+    this.historyFolder = `${workspaceFolder}/workflow-history`;
     this.encryptionConfig = encryptionConfig || null;
   }
 

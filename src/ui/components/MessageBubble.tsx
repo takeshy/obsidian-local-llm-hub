@@ -13,12 +13,14 @@ interface MessageBubbleProps {
   message: Message;
   isStreaming?: boolean;
   app: App;
+  skillsFolder?: string;
 }
 
 export default function MessageBubble({
   message,
   isStreaming,
   app,
+  skillsFolder,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
@@ -204,7 +206,7 @@ export default function MessageBubble({
       )}
 
       {message.skillsUsed && message.skillsUsed.length > 0 && (
-        <SkillsUsedIndicator skillNames={message.skillsUsed} app={app} />
+        <SkillsUsedIndicator skillNames={message.skillsUsed} app={app} skillsFolder={skillsFolder} />
       )}
 
       {/* Attachments display */}
@@ -307,12 +309,12 @@ export default function MessageBubble({
   );
 }
 
-function SkillsUsedIndicator({ skillNames, app }: { skillNames: string[]; app: App }) {
+function SkillsUsedIndicator({ skillNames, app, skillsFolder }: { skillNames: string[]; app: App; skillsFolder?: string }) {
   const [skillMap, setSkillMap] = useState<Map<string, { path: string; builtin: boolean }>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
-    void discoverSkills(app).then((skills) => {
+    void discoverSkills(app, skillsFolder).then((skills) => {
       if (cancelled) return;
       const map = new Map<string, { path: string; builtin: boolean }>();
       for (const s of skills) {
@@ -321,7 +323,7 @@ function SkillsUsedIndicator({ skillNames, app }: { skillNames: string[]; app: A
       setSkillMap(map);
     });
     return () => { cancelled = true; };
-  }, [app, skillNames]);
+  }, [app, skillNames, skillsFolder]);
 
   return (
     <div className="llm-hub-skills-used">

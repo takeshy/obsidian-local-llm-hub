@@ -156,6 +156,7 @@ function mergeLoadedIndexes(loadedIndexes: { index: RagIndex; vectors: Float32Ar
 }
 
 class RagStore {
+  workspaceFolder = WORKSPACE_FOLDER;
   private entries = new Map<string, StoreEntry>();
   private externalPaths = new Map<string, string>();
   private sourceRagSettings = new Map<string, string[]>();
@@ -471,7 +472,7 @@ class RagStore {
       incompatibleIndexLoaded: false,
     });
 
-    await saveRagIndex(app, settingName, newIndex, newVectors);
+    await saveRagIndex(app, settingName, newIndex, newVectors, this.workspaceFolder);
 
     return {
       totalChunks: allMeta.length,
@@ -625,7 +626,7 @@ class RagStore {
       incompatibleIndexLoaded: false,
     });
 
-    await saveRagIndex(app, settingName, newIndex, newVectors);
+    await saveRagIndex(app, settingName, newIndex, newVectors, this.workspaceFolder);
 
     return { path: filePath, syncedAt: new Date().toISOString() };
   }
@@ -838,7 +839,7 @@ class RagStore {
    */
   async clear(app: App, settingName: string): Promise<void> {
     this.entries.delete(settingName);
-    await deleteRagIndex(app, settingName);
+    await deleteRagIndex(app, settingName, this.workspaceFolder);
   }
 
   private async ensureLoaded(
@@ -890,10 +891,10 @@ class RagStore {
 
       ({ index, vectors } = mergeLoadedIndexes(loadedIndexes));
     } else {
-      index = await loadRagIndex(app, settingName);
+      index = await loadRagIndex(app, settingName, this.workspaceFolder);
       if (index) {
         if (index.embeddingFormatVersion === EMBEDDING_FORMAT_VERSION) {
-          vectors = await loadRagVectors(app, settingName);
+          vectors = await loadRagVectors(app, settingName, this.workspaceFolder);
         } else {
           index = null;
           incompatibleIndexLoaded = true;
@@ -1005,7 +1006,7 @@ function getTargetFiles(app: App, ragSetting: RagSetting): TFile[] {
 
   return files.filter(file => {
     // Skip workspace folder
-    if (file.path.startsWith(WORKSPACE_FOLDER + "/")) return false;
+    if (file.path.startsWith(this.workspaceFolder + "/")) return false;
 
     // Check target folders
     if (ragSetting.targetFolders.length > 0) {

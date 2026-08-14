@@ -171,7 +171,7 @@ function displaySelectedRagSetting(
             setDestructiveButton(confirmBtn.setButtonText("Delete"))
               .onClick(async () => {
                 modal.close();
-                await deleteRagIndex(plugin.app, name);
+                await deleteRagIndex(plugin.app, name, plugin.settings.workspaceFolder);
                 await plugin.deleteRagSetting(name);
                 new Notice(t("settings.ragSettingDeleted", { name }));
                 display();

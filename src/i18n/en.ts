@@ -52,6 +52,13 @@ export const en = {
 
   // Settings - Workspace
   "settings.workspace": "Workspace",
+  "settings.workspaceFolder": "Plugin data folder",
+  "settings.workspaceFolderDesc": "Vault-relative folder for chat history, RAG indexes, workflow history, and other plugin data. Existing data is moved when possible.",
+  "settings.skillsFolder": "Skills folder",
+  "settings.skillsFolderDesc": "Vault-relative folder containing agent skills.",
+  "settings.folderPathInvalid": "Enter a safe vault-relative folder path.",
+  "settings.folderAlreadyExists": "The destination folder already exists. Choose another folder.",
+  "settings.folderMoveFailed": "Failed to move the folder: {{error}}",
   "settings.saveChatHistory": "Save chat history",
   "settings.saveChatHistoryDesc": "Save chat conversations as Markdown files",
   "settings.systemPrompt": "System prompt",

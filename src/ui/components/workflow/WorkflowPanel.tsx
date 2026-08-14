@@ -324,6 +324,7 @@ async function syncSkillInputVariables(
   app: App,
   workflowFile: TFile,
   nodes: SidebarNode[],
+  skillsFolder = SKILLS_FOLDER,
 ): Promise<void> {
   const parent = workflowFile.parent;
   if (!parent) return;
@@ -349,7 +350,7 @@ async function syncSkillInputVariables(
   // Only treat SKILL.md files that live under the skills/ folder as skills.
   // A stray SKILL.md elsewhere in the vault (e.g. a user's personal note) must
   // not trigger capability-block rewrites.
-  if (!skillFile.path.startsWith(`${SKILLS_FOLDER}/`)) return;
+  if (!skillFile.path.startsWith(`${skillsFolder}/`)) return;
 
   const content = await app.vault.read(skillFile);
   const { frontmatter, body } = parseFrontmatter(content);
@@ -400,8 +401,9 @@ async function syncSkillInputVariables(
 async function createSkillFromResult(
   app: App,
   result: AIWorkflowResult,
+  skillsFolder = SKILLS_FOLDER,
 ): Promise<TFile> {
-  const skillFolderPath = `${SKILLS_FOLDER}/${result.name}`;
+  const skillFolderPath = `${skillsFolder}/${result.name}`;
   const workflowsFolderPath = `${skillFolderPath}/workflows`;
   const skillFilePath = `${skillFolderPath}/SKILL.md`;
   const workflowFilePath = `${workflowsFolderPath}/workflow.md`;
@@ -589,8 +591,8 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
       nodes: newNodes,
     });
 
-    await syncSkillInputVariables(plugin.app, workflowFile, newNodes);
-  }, [plugin.app, workflowFile, workflowName, showProgress]);
+    await syncSkillInputVariables(plugin.app, workflowFile, newNodes, plugin.settings.skillsFolder);
+  }, [plugin.app, plugin.settings.skillsFolder, workflowFile, workflowName, showProgress]);
 
   // Split a multi-block workflow file into individual "1 file = 1 workflow"
   // files. The original file keeps the first block plus any surrounding prose;
@@ -1193,6 +1195,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
       plugin.app,
       workflowFile.path,
       encryptionConfig,
+      plugin.settings.workspaceFolder,
       (retryPath, retryName, errorNodeId, variablesSnapshot) => {
         void retryFromError(retryPath, retryName, errorNodeId, variablesSnapshot);
       }
@@ -1206,7 +1209,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
 
     let targetFile: TFile;
     if (result.createAsSkill) {
-      targetFile = await createSkillFromResult(plugin.app, result);
+      targetFile = await createSkillFromResult(plugin.app, result, plugin.settings.skillsFolder);
       new Notice(t("aiWorkflow.skillCreated", { name: result.name, path: targetFile.path }));
       plugin.settingsEmitter.emit("skills-changed");
     } else {

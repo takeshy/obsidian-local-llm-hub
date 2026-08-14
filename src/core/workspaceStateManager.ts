@@ -19,10 +19,15 @@ export class WorkspaceStateManager {
   constructor(
     private app: App,
     private settingsEmitter: SettingsEmitter,
+    private getWorkspaceFolder: () => string = () => WORKSPACE_FOLDER,
   ) {}
 
+  private workspaceFolder(): string {
+    return this.getWorkspaceFolder() || WORKSPACE_FOLDER;
+  }
+
   private getFilePath(): string {
-    return `${WORKSPACE_FOLDER}/${WORKSPACE_STATE_FILENAME}`;
+    return `${this.workspaceFolder()}/${WORKSPACE_STATE_FILENAME}`;
   }
 
   async loadWorkspaceState(): Promise<void> {
@@ -57,8 +62,9 @@ export class WorkspaceStateManager {
     const filePath = this.getFilePath();
     const content = JSON.stringify(this.workspaceState, null, 2);
 
-    if (!(await this.app.vault.adapter.exists(WORKSPACE_FOLDER))) {
-      await this.app.vault.createFolder(WORKSPACE_FOLDER);
+    const workspaceFolder = this.workspaceFolder();
+    if (!(await this.app.vault.adapter.exists(workspaceFolder))) {
+      await this.app.vault.createFolder(workspaceFolder);
     }
 
     await this.app.vault.adapter.write(filePath, content);
@@ -92,7 +98,7 @@ export class WorkspaceStateManager {
     this.workspaceState.selectedRagSetting = ragConfig.enabled ? settingName : null;
 
     // Migrate old flat index files to named subdirectory
-    await migrateOldRagIndex(this.app, settingName);
+    await migrateOldRagIndex(this.app, settingName, this.workspaceFolder());
 
     await this.saveWorkspaceState();
     return true;
@@ -178,7 +184,7 @@ export class WorkspaceStateManager {
     this.checkSanitizedCollision(newName, oldName);
 
     // Move on-disk index directory
-    await renameRagIndex(this.app, oldName, newName);
+    await renameRagIndex(this.app, oldName, newName, this.workspaceFolder());
 
     // Invalidate RagStore cache for old name
     const store = getRagStore();

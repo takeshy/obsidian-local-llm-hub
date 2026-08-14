@@ -464,12 +464,12 @@ export class AIWorkflowModal extends Modal {
         },
       });
 
-      // Skill output path is locked to SKILLS_FOLDER — skills are addressed by folder name
+      // Skill output path is locked to the configured skills folder.
       // so the generator shouldn't be able to drop them elsewhere.
       const pathContainer = contentEl.createDiv({ cls: "llm-hub-workflow-input-row" });
       pathContainer.createEl("label", { text: t("aiWorkflow.outputPath") });
       const defaultPath = this.forceSkill
-        ? `${SKILLS_FOLDER}/{{name}}`
+        ? `${this.plugin.settings.skillsFolder || SKILLS_FOLDER}/{{name}}`
         : this.defaultOutputPath || `${WORKFLOWS_FOLDER}/{{name}}`;
       this.outputPathEl = pathContainer.createEl("input", {
         type: "text",
@@ -659,7 +659,8 @@ export class AIWorkflowModal extends Modal {
       } : undefined;
       const historyManager = new ExecutionHistoryManager(
         this.app,
-        encryptionConfig
+        encryptionConfig,
+        this.plugin.settings.workspaceFolder,
       );
       const executionRecords = await historyManager.loadRecords(activeFile.path);
 

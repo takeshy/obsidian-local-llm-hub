@@ -283,6 +283,10 @@ export interface LocalLlmHubSettings {
   slashCommands: SlashCommand[];
   enabledWorkflowHotkeys: string[];
   enabledWorkflowEventTriggers: WorkflowEventTrigger[];
+  /** Vault-relative folder used for plugin-generated data. */
+  workspaceFolder: string;
+  /** Vault-relative folder containing user-installed skills. */
+  skillsFolder: string;
   hideWorkspaceFolder: boolean;
   /** Vault-relative folders that LLM-driven vault tools may access. Empty allows the whole vault. */
   vaultToolAllowedFolders: string[];
@@ -300,7 +304,7 @@ export const SKILLS_FOLDER = "skills";
 export const WORKFLOWS_FOLDER = "workflows";
 /** Basename (no extension) of a skill definition file: skills/<dir>/SKILL.md. */
 export const SKILL_FILE_BASENAME = "SKILL";
-/** Fixed workspace folder name. */
+/** Default workspace folder name. */
 export const WORKSPACE_FOLDER = "LocalLlmHub";
 
 export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
@@ -314,6 +318,8 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   slashCommands: [],
   enabledWorkflowHotkeys: [],
   enabledWorkflowEventTriggers: [],
+  workspaceFolder: WORKSPACE_FOLDER,
+  skillsFolder: SKILLS_FOLDER,
   hideWorkspaceFolder: true,
   vaultToolAllowedFolders: [],
   knowledgeSources: [],

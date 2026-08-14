@@ -52,6 +52,13 @@ export const ja: Record<string, string> = {
 
   // Settings - Workspace
   "settings.workspace": "ワークスペース",
+  "settings.workspaceFolder": "プラグインデータフォルダ",
+  "settings.workspaceFolderDesc": "チャット履歴、RAGインデックス、ワークフロー履歴などを保存するVault相対フォルダです。可能な場合は既存データも移動します。",
+  "settings.skillsFolder": "スキルフォルダ",
+  "settings.skillsFolderDesc": "エージェントスキルを保存するVault相対フォルダです。",
+  "settings.folderPathInvalid": "安全なVault相対フォルダパスを入力してください。",
+  "settings.folderAlreadyExists": "移動先フォルダが既に存在します。別のフォルダを指定してください。",
+  "settings.folderMoveFailed": "フォルダを移動できませんでした: {{error}}",
   "settings.saveChatHistory": "チャット履歴を保存",
   "settings.saveChatHistoryDesc": "チャット会話をマークダウンファイルとして保存",
   "settings.systemPrompt": "システムプロンプト",

@@ -193,7 +193,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
     void (async () => {
       try {
-        const folder = `${WORKSPACE_FOLDER}/chats`;
+        const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
         const filePath = `${folder}/${lastId}.md`;
         const file = plugin.app.vault.getAbstractFileByPath(filePath);
         if (!(file instanceof TFile) || cancelled || userInteractedRef.current) return;
@@ -221,7 +221,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
   // Discover skills (on mount + when skills-changed is emitted)
   const refreshSkills = useCallback(() => {
-    void discoverSkills(plugin.app).then(setAvailableSkills);
+    void discoverSkills(plugin.app, plugin.settings.skillsFolder).then(setAvailableSkills);
   }, [plugin]);
 
   useEffect(() => {
@@ -532,7 +532,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     if (!plugin.settings.saveChatHistory || msgs.length === 0) return;
 
     const chatTitle = generateChatTitle(msgs);
-    const folder = `${WORKSPACE_FOLDER}/chats`;
+    const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
 
     // Ensure folder exists
     if (!plugin.app.vault.getAbstractFileByPath(folder)) {
@@ -578,7 +578,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
   // Load chat histories
   const loadChatHistories = useCallback(async () => {
-    const folder = `${WORKSPACE_FOLDER}/chats`;
+    const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
     const folderFile = plugin.app.vault.getAbstractFileByPath(folder);
     if (!folderFile) {
       setChatHistories([]);
@@ -638,7 +638,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
   // Delete a chat
   const deleteChat = useCallback(async (history: ChatHistory) => {
-    const folder = `${WORKSPACE_FOLDER}/chats`;
+    const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
     const filePath = `${folder}/${history.id}.md`;
     const file = plugin.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof TFile) {
@@ -1192,6 +1192,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         streamingThinking={streamingThinking}
         isLoading={isLoading}
         app={plugin.app}
+        skillsFolder={plugin.settings.skillsFolder}
         currentDashboard={currentDashboard ? {
           basename: currentDashboard.basename,
           path: currentDashboard.path,

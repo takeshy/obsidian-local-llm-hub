@@ -270,35 +270,35 @@ function resolveSkillRelativePath(skillId: string, path: string): string | null 
   return `${skillId}/${normalized}`;
 }
 
-function normalizePatchTargetPath(skillId: string, fileName: string): string | null {
+function normalizePatchTargetPath(skillId: string, fileName: string, skillsFolder = SKILLS_FOLDER): string | null {
   if (!fileName || fileName === "/dev/null") return null;
   let normalized = normalizePathSeparators(fileName).replace(/^\/+/, "");
   if (normalized.startsWith("a/") || normalized.startsWith("b/")) {
     normalized = normalized.slice(2);
   }
-  if (normalized.startsWith(`${SKILLS_FOLDER}/${skillId}/`)) {
-    normalized = normalized.slice(`${SKILLS_FOLDER}/${skillId}/`.length);
+  if (normalized.startsWith(`${skillsFolder}/${skillId}/`)) {
+    normalized = normalized.slice(`${skillsFolder}/${skillId}/`.length);
   } else if (normalized.startsWith(`${skillId}/`)) {
     normalized = normalized.slice(`${skillId}/`.length);
   }
   return resolveSkillRelativePath(skillId, normalized);
 }
 
-export function getSafeSkillTargetPath(skillId: string, relativePath: string): string | null {
+export function getSafeSkillTargetPath(skillId: string, relativePath: string, skillsFolder = SKILLS_FOLDER): string | null {
   if (!isSafeSkillId(skillId) || isUnsafePath(relativePath)) return null;
 
   const normalizedRelativePath = normalizePathSeparators(relativePath).replace(/^\/+/, "");
   const expectedPrefix = `${skillId}/`;
   if (!normalizedRelativePath.startsWith(expectedPrefix)) return null;
 
-  const targetPath = normalizePathSeparators(`${SKILLS_FOLDER}/${normalizedRelativePath}`);
-  const expectedTargetPrefix = `${SKILLS_FOLDER}/${skillId}/`;
+  const targetPath = normalizePathSeparators(`${skillsFolder}/${normalizedRelativePath}`);
+  const expectedTargetPrefix = `${skillsFolder}/${skillId}/`;
   if (!targetPath.startsWith(expectedTargetPrefix)) return null;
   return targetPath;
 }
 
-async function getInstalledManifest(app: App, skillId: string): Promise<SkillManifest | null> {
-  const path = `${SKILLS_FOLDER}/${skillId}/manifest.json`;
+async function getInstalledManifest(app: App, skillId: string, skillsFolder = SKILLS_FOLDER): Promise<SkillManifest | null> {
+  const path = `${skillsFolder}/${skillId}/manifest.json`;
   if (!(await app.vault.adapter.exists(path))) return null;
   try {
     return parseManifest(await app.vault.adapter.read(path));
@@ -312,6 +312,7 @@ function applyHostPatches(
   files: SourceFile[],
   manifest: SkillManifest,
   pluginId: string,
+  skillsFolder = SKILLS_FOLDER,
 ): { files: SourceFile[]; error?: string } {
   const patchPaths = manifest.hostPatches?.[pluginId] || [];
   if (patchPaths.length === 0) return { files };
@@ -337,7 +338,7 @@ function applyHostPatches(
 
     for (const patch of patches) {
       const fileName = patch.newFileName !== "/dev/null" ? patch.newFileName : patch.oldFileName;
-      const targetRelativePath = normalizePatchTargetPath(skillId, fileName);
+      const targetRelativePath = normalizePatchTargetPath(skillId, fileName, skillsFolder);
       if (!targetRelativePath) return { files, error: `unsafe patch target: ${fileName}` };
 
       const targetIndex = nextFiles.findIndex(file => file.relativePath === targetRelativePath);
@@ -365,9 +366,10 @@ export async function importExternalSkills(
   skillIds: string[] = [],
   pluginId = "local-llm-hub",
   pluginVersion = "0.0.0",
+  skillsFolder = SKILLS_FOLDER,
 ): Promise<ImportExternalSkillsResult> {
   const files = await readGitHubTree(OFFICIAL_SKILLS_REPO);
-  return installSkillFiles(app, files, skillIds, pluginId, pluginVersion);
+  return installSkillFiles(app, files, skillIds, pluginId, pluginVersion, skillsFolder);
 }
 
 export interface SkillCatalogEntry {
@@ -414,16 +416,16 @@ export interface InstalledSkill {
 }
 
 /** List skills already installed into the vault skills/ folder. */
-export async function listInstalledSkills(app: App): Promise<InstalledSkill[]> {
+export async function listInstalledSkills(app: App, skillsFolder = SKILLS_FOLDER): Promise<InstalledSkill[]> {
   const result: InstalledSkill[] = [];
-  if (!(await app.vault.adapter.exists(SKILLS_FOLDER))) return result;
+  if (!(await app.vault.adapter.exists(skillsFolder))) return result;
 
-  const listing = await app.vault.adapter.list(SKILLS_FOLDER);
+  const listing = await app.vault.adapter.list(skillsFolder);
   for (const folder of listing.folders) {
     const id = folder.split("/").filter(Boolean).pop() || "";
     if (!isSafeSkillId(id)) continue;
     if (!(await app.vault.adapter.exists(`${folder}/SKILL.md`))) continue;
-    const manifest = await getInstalledManifest(app, id);
+    const manifest = await getInstalledManifest(app, id, skillsFolder);
     result.push({ id, name: manifest?.name || id, version: manifest?.version ?? null });
   }
   result.sort((a, b) => a.id.localeCompare(b.id));
@@ -436,6 +438,7 @@ export async function installSkillFiles(
   skillIds: string[] = [],
   pluginId = "local-llm-hub",
   pluginVersion = "0.0.0",
+  skillsFolder = SKILLS_FOLDER,
 ): Promise<ImportExternalSkillsResult> {
   const grouped = groupFilesBySkill(files);
   const requestedIds = skillIds.map(id => id.trim()).filter(Boolean);
@@ -443,7 +446,7 @@ export async function installSkillFiles(
   const installed: string[] = [];
   const skipped: Array<{ id: string; reason: string }> = [];
   let written = 0;
-  await ensureFolder(app, SKILLS_FOLDER);
+  await ensureFolder(app, skillsFolder);
 
   for (const skillId of targetIds) {
     if (!isSafeSkillId(skillId)) {
@@ -484,7 +487,7 @@ export async function installSkillFiles(
       continue;
     }
 
-    const installedManifest = await getInstalledManifest(app, skillId);
+    const installedManifest = await getInstalledManifest(app, skillId, skillsFolder);
     if (sourceManifest?.version && installedManifest?.version) {
       const versionComparison = compareVersions(sourceManifest.version, installedManifest.version);
       if (versionComparison === null) {
@@ -503,7 +506,7 @@ export async function installSkillFiles(
       }
     }
 
-    const patched = applyHostPatches(skillId, skillFiles, sourceManifest, pluginId);
+    const patched = applyHostPatches(skillId, skillFiles, sourceManifest, pluginId, skillsFolder);
     if (patched.error) {
       skipped.push({ id: skillId, reason: patched.error });
       continue;
@@ -511,7 +514,7 @@ export async function installSkillFiles(
 
     const filesToWrite: Array<{ file: SourceFile; targetPath: string }> = [];
     for (const file of patched.files) {
-      const targetPath = getSafeSkillTargetPath(skillId, file.relativePath);
+      const targetPath = getSafeSkillTargetPath(skillId, file.relativePath, skillsFolder);
       if (!targetPath) {
         skipped.push({ id: skillId, reason: `unsafe path: ${file.relativePath}` });
         filesToWrite.length = 0;

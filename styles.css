@@ -23,6 +23,10 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   display: none;
 }
 
+.nav-folder.llm-hub-workspace-folder-hidden {
+  display: none;
+}
+
 /* Folder icons in file explorer */
 .nav-folder[data-path="skills"] > .nav-folder-title > .nav-folder-title-content::before {
   content: "\01F9E9 ";

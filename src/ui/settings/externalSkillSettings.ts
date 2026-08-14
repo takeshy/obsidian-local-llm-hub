@@ -32,7 +32,7 @@ async function loadState(ctx: SettingsContext, force: boolean): Promise<void> {
   try {
     const [catalog, installed] = await Promise.all([
       fetchSkillCatalog(ctx.plugin.manifest.id, ctx.plugin.manifest.version),
-      listInstalledSkills(ctx.plugin.app),
+      listInstalledSkills(ctx.plugin.app, ctx.plugin.settings.skillsFolder),
     ]);
     catalogCache = catalog;
     installedCache = installed;
@@ -63,6 +63,7 @@ async function installSkill(ctx: SettingsContext, id: string): Promise<void> {
       [id],
       ctx.plugin.manifest.id,
       ctx.plugin.manifest.version,
+      ctx.plugin.settings.skillsFolder,
     );
     if (result.installed.includes(id)) {
       ctx.plugin.settingsEmitter.emit("skills-changed");

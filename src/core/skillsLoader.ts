@@ -119,10 +119,10 @@ export function writeSkillMd(frontmatter: Record<string, unknown>, body: string)
  * <prose body>
  * ```
  */
-export async function discoverSkills(app: App): Promise<SkillMetadata[]> {
+export async function discoverSkills(app: App, skillsFolderPath = SKILLS_FOLDER): Promise<SkillMetadata[]> {
   const skills: SkillMetadata[] = [...getBuiltinSkillMetadata(), ...getRuntimeSkillMetadata()];
 
-  const folder = app.vault.getAbstractFileByPath(SKILLS_FOLDER);
+  const folder = app.vault.getAbstractFileByPath(skillsFolderPath);
   const children = folder instanceof TFolder ? folder.children : [];
   for (const child of children) {
     if (!(child instanceof TFolder)) continue;

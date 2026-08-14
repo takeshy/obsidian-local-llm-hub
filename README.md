@@ -199,6 +199,8 @@ Automatic tracking of AI-made changes with diff view and one-click restore.
 4. Fetch and select your chat model
 5. Click **Verify connection**
 
+The plugin data folder (chat history, RAG indexes, and workflow history) and the agent skills folder can both be changed under **Settings → Workspace**. Paths are relative to the vault; changing an existing folder moves its contents to the new location.
+
 ![LLM Settings](docs/images/setting_llm.png)
 
 ### RAG Setup

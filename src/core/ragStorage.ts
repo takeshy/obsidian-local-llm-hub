@@ -37,7 +37,6 @@ interface ExternalRagIndex {
   meta?: ExternalChunkMeta[];
 }
 
-const RAG_DIR = `${WORKSPACE_FOLDER}/rag`;
 const META_FILE = "rag-index.json";
 const VECTORS_FILE = "rag-vectors.bin";
 
@@ -56,20 +55,24 @@ function getNodeRequire(): ((id: string) => unknown) | null {
   return loader || null;
 }
 
-function getSettingDir(settingName: string): string {
-  return `${RAG_DIR}/${sanitizeSettingName(settingName)}`;
+function getRagDir(workspaceFolder = WORKSPACE_FOLDER): string {
+  return `${workspaceFolder}/rag`;
 }
 
-function getIndexPath(settingName: string): string {
-  return `${getSettingDir(settingName)}/${META_FILE}`;
+function getSettingDir(settingName: string, workspaceFolder = WORKSPACE_FOLDER): string {
+  return `${getRagDir(workspaceFolder)}/${sanitizeSettingName(settingName)}`;
 }
 
-function getVectorsPath(settingName: string): string {
-  return `${getSettingDir(settingName)}/${VECTORS_FILE}`;
+function getIndexPath(settingName: string, workspaceFolder = WORKSPACE_FOLDER): string {
+  return `${getSettingDir(settingName, workspaceFolder)}/${META_FILE}`;
 }
 
-async function ensureDir(app: App, dirPath: string): Promise<void> {
-  for (const seg of [WORKSPACE_FOLDER, RAG_DIR, dirPath]) {
+function getVectorsPath(settingName: string, workspaceFolder = WORKSPACE_FOLDER): string {
+  return `${getSettingDir(settingName, workspaceFolder)}/${VECTORS_FILE}`;
+}
+
+async function ensureDir(app: App, dirPath: string, workspaceFolder = WORKSPACE_FOLDER): Promise<void> {
+  for (const seg of [workspaceFolder, getRagDir(workspaceFolder), dirPath]) {
     if (!(await app.vault.adapter.exists(seg))) {
       await app.vault.createFolder(seg);
     }
@@ -84,14 +87,15 @@ export async function saveRagIndex(
   settingName: string,
   index: RagIndex,
   vectors: Float32Array,
+  workspaceFolder = WORKSPACE_FOLDER,
 ): Promise<void> {
-  const dirPath = getSettingDir(settingName);
-  await ensureDir(app, dirPath);
+  const dirPath = getSettingDir(settingName, workspaceFolder);
+  await ensureDir(app, dirPath, workspaceFolder);
 
-  const indexPath = getIndexPath(settingName);
+  const indexPath = getIndexPath(settingName, workspaceFolder);
   await app.vault.adapter.write(indexPath, JSON.stringify(index));
 
-  const vectorsPath = getVectorsPath(settingName);
+  const vectorsPath = getVectorsPath(settingName, workspaceFolder);
   const bytes = new Uint8Array(vectors.byteLength);
   bytes.set(new Uint8Array(vectors.buffer, vectors.byteOffset, vectors.byteLength));
   await app.vault.adapter.writeBinary(vectorsPath, bytes.buffer);
@@ -103,8 +107,9 @@ export async function saveRagIndex(
 export async function loadRagIndex(
   app: App,
   settingName: string,
+  workspaceFolder = WORKSPACE_FOLDER,
 ): Promise<RagIndex | null> {
-  const indexPath = getIndexPath(settingName);
+  const indexPath = getIndexPath(settingName, workspaceFolder);
   try {
     if (!(await app.vault.adapter.exists(indexPath))) return null;
     const content = await app.vault.adapter.read(indexPath);
@@ -120,8 +125,9 @@ export async function loadRagIndex(
 export async function loadRagVectors(
   app: App,
   settingName: string,
+  workspaceFolder = WORKSPACE_FOLDER,
 ): Promise<Float32Array | null> {
-  const vectorsPath = getVectorsPath(settingName);
+  const vectorsPath = getVectorsPath(settingName, workspaceFolder);
   try {
     if (!(await app.vault.adapter.exists(vectorsPath))) return null;
     const buffer = await app.vault.adapter.readBinary(vectorsPath);
@@ -137,10 +143,11 @@ export async function loadRagVectors(
 export async function deleteRagIndex(
   app: App,
   settingName: string,
+  workspaceFolder = WORKSPACE_FOLDER,
 ): Promise<void> {
-  const dirPath = getSettingDir(settingName);
-  const indexPath = getIndexPath(settingName);
-  const vectorsPath = getVectorsPath(settingName);
+  const dirPath = getSettingDir(settingName, workspaceFolder);
+  const indexPath = getIndexPath(settingName, workspaceFolder);
+  const vectorsPath = getVectorsPath(settingName, workspaceFolder);
   try {
     if (await app.vault.adapter.exists(indexPath)) {
       await app.vault.adapter.remove(indexPath);
@@ -164,25 +171,26 @@ export async function renameRagIndex(
   app: App,
   oldSettingName: string,
   newSettingName: string,
+  workspaceFolder = WORKSPACE_FOLDER,
 ): Promise<void> {
-  const oldDir = getSettingDir(oldSettingName);
-  const newDir = getSettingDir(newSettingName);
-  const oldIndex = getIndexPath(oldSettingName);
-  const oldVectors = getVectorsPath(oldSettingName);
+  const oldDir = getSettingDir(oldSettingName, workspaceFolder);
+  const newDir = getSettingDir(newSettingName, workspaceFolder);
+  const oldIndex = getIndexPath(oldSettingName, workspaceFolder);
+  const oldVectors = getVectorsPath(oldSettingName, workspaceFolder);
 
   try {
     if (!(await app.vault.adapter.exists(oldIndex))) return;
 
-    await ensureDir(app, newDir);
+    await ensureDir(app, newDir, workspaceFolder);
 
     // Copy index
     const indexContent = await app.vault.adapter.read(oldIndex);
-    await app.vault.adapter.write(getIndexPath(newSettingName), indexContent);
+    await app.vault.adapter.write(getIndexPath(newSettingName, workspaceFolder), indexContent);
 
     // Copy vectors
     if (await app.vault.adapter.exists(oldVectors)) {
       const vectorBuffer = await app.vault.adapter.readBinary(oldVectors);
-      await app.vault.adapter.writeBinary(getVectorsPath(newSettingName), vectorBuffer);
+      await app.vault.adapter.writeBinary(getVectorsPath(newSettingName, workspaceFolder), vectorBuffer);
     }
 
     // Remove old
@@ -205,22 +213,24 @@ export async function renameRagIndex(
 export async function migrateOldRagIndex(
   app: App,
   settingName: string,
+  workspaceFolder = WORKSPACE_FOLDER,
 ): Promise<boolean> {
-  const oldIndexPath = `${RAG_DIR}/${META_FILE}`;
-  const oldVectorsPath = `${RAG_DIR}/${VECTORS_FILE}`;
+  const ragDir = getRagDir(workspaceFolder);
+  const oldIndexPath = `${ragDir}/${META_FILE}`;
+  const oldVectorsPath = `${ragDir}/${VECTORS_FILE}`;
   try {
     if (!(await app.vault.adapter.exists(oldIndexPath))) return false;
 
-    const dirPath = getSettingDir(settingName);
-    await ensureDir(app, dirPath);
+    const dirPath = getSettingDir(settingName, workspaceFolder);
+    await ensureDir(app, dirPath, workspaceFolder);
 
     // Copy old files to new location
     const indexContent = await app.vault.adapter.read(oldIndexPath);
-    await app.vault.adapter.write(getIndexPath(settingName), indexContent);
+    await app.vault.adapter.write(getIndexPath(settingName, workspaceFolder), indexContent);
 
     if (await app.vault.adapter.exists(oldVectorsPath)) {
       const vectorBuffer = await app.vault.adapter.readBinary(oldVectorsPath);
-      await app.vault.adapter.writeBinary(getVectorsPath(settingName), vectorBuffer);
+      await app.vault.adapter.writeBinary(getVectorsPath(settingName, workspaceFolder), vectorBuffer);
     }
 
     // Remove old files

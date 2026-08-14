@@ -11,6 +11,7 @@ interface MessageListProps {
   streamingThinking: string;
   isLoading: boolean;
   app: App;
+  skillsFolder?: string;
   currentDashboard?: { basename: string; path: string } | null;
   onOpenDashboard?: () => void;
   onCreateDashboard?: () => void;
@@ -23,6 +24,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(({
   streamingThinking,
   isLoading,
   app,
+  skillsFolder,
   currentDashboard,
   onOpenDashboard,
   onCreateDashboard,
@@ -93,6 +95,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(({
           key={index}
           message={message}
           app={app}
+          skillsFolder={skillsFolder}
         />
       ))}
 
@@ -106,6 +109,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(({
           }}
           isStreaming
           app={app}
+          skillsFolder={skillsFolder}
         />
       )}
 

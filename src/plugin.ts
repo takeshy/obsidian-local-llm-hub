@@ -4,6 +4,7 @@ import { CryptView, CRYPT_VIEW_TYPE } from "src/ui/CryptView";
 import { SettingsTab } from "src/ui/SettingsTab";
 import { type LocalLlmHubSettings, type RagSetting, DEFAULT_SETTINGS } from "src/types";
 import { WorkspaceStateManager } from "src/core/workspaceStateManager";
+import { getRagStore } from "src/core/ragStore";
 import { initLocale, t } from "src/i18n";
 import { formatError } from "src/utils/error";
 import { EncryptionManager } from "src/plugin/encryptionManager";
@@ -90,13 +91,14 @@ export class LocalLlmHubPlugin extends Plugin {
     // Views restored by Obsidian can render before the asynchronous settings
     // load completes. Keep a usable default workspace state available from the
     // start; loadSettings() hydrates this same manager below.
-    this.wsManager = new WorkspaceStateManager(this.app, this.settingsEmitter);
+    this.wsManager = new WorkspaceStateManager(this.app, this.settingsEmitter, () => this.settings.workspaceFolder);
 
     void this.loadSettings().then(() => {
       this.settingsEmitter.emit("settings-updated", this.settings);
 
       // Initialize edit history manager
       initEditHistoryManager(this.app, this.settings.editHistory);
+      getRagStore().workspaceFolder = this.settings.workspaceFolder;
 
       // Apply workspace folder visibility
       this.updateWorkspaceFolderVisibility();
@@ -509,17 +511,18 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!this.settings.knowledgeSources) {
       this.settings.knowledgeSources = [];
     }
-    // Clean up legacy settings from saved data
+    // Migrate legacy settings from saved data
     const raw = this.settings as unknown as Record<string, unknown>;
     let needsSave = false;
     if ("skillsFolderPath" in raw) {
+      if (typeof raw.skillsFolderPath === "string" && !(data && "skillsFolder" in data)) {
+        this.settings.skillsFolder = raw.skillsFolderPath;
+      }
       delete raw.skillsFolderPath;
       needsSave = true;
     }
-    if ("workspaceFolder" in raw) {
-      delete raw.workspaceFolder;
-      needsSave = true;
-    }
+    this.settings.workspaceFolder = this.settings.workspaceFolder || DEFAULT_SETTINGS.workspaceFolder;
+    this.settings.skillsFolder = this.settings.skillsFolder || DEFAULT_SETTINGS.skillsFolder;
     if (needsSave) {
       await this.saveSettings();
     }
@@ -600,6 +603,7 @@ export class LocalLlmHubPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+    getRagStore().workspaceFolder = this.settings.workspaceFolder;
     this.settingsEmitter.emit("settings-updated", this.settings);
 
     // Update edit history manager settings
@@ -614,6 +618,15 @@ export class LocalLlmHubPlugin extends Plugin {
 
   private updateWorkspaceFolderVisibility(): void {
     activeDocument.body.toggleClass("llm-hub-hide-workspace-folder", this.settings.hideWorkspaceFolder);
+    activeDocument.querySelectorAll(".llm-hub-workspace-folder-hidden").forEach(el =>
+      el.classList.remove("llm-hub-workspace-folder-hidden"));
+    if (this.settings.hideWorkspaceFolder) {
+      activeDocument.querySelectorAll(".nav-folder").forEach(el => {
+        if (el.getAttribute("data-path") === this.settings.workspaceFolder) {
+          el.classList.add("llm-hub-workspace-folder-hidden");
+        }
+      });
+    }
   }
 
   private async ensureChatViewExists(): Promise<void> {
