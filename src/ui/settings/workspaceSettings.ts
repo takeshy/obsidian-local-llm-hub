@@ -22,7 +22,7 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
     fallback: string,
     save: (folder: string) => Promise<void>,
   ) => {
-    new Setting(containerEl)
+    const setting = new Setting(containerEl)
       .setName(name)
       .setDesc(desc)
       .addText((text) => {
@@ -42,6 +42,7 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
           })();
         });
       });
+    setting.settingEl.addClass("llm-hub-folder-setting");
   };
 
   addFolderSetting(

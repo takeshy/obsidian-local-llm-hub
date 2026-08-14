@@ -31,6 +31,21 @@ describe("WorkspaceStateManager", () => {
     vi.restoreAllMocks();
   });
 
+  describe("saveWorkspaceState", () => {
+    it("creates each parent of a nested workspace folder", async () => {
+      const { app, createFolder, write } = createAppMock();
+      const manager = new WorkspaceStateManager(app as never, createEmitter() as never, () => "plugin/data");
+
+      await manager.saveWorkspaceState();
+
+      expect(createFolder.mock.calls).toEqual([["plugin"], ["plugin/data"]]);
+      expect(write).toHaveBeenCalledWith(
+        "plugin/data/workspace-state.json",
+        expect.any(String),
+      );
+    });
+  });
+
   describe("migrateFromRagConfig", () => {
     it("migrates a disabled legacy ragConfig without auto-selecting it", async () => {
       const { app, write } = createAppMock();

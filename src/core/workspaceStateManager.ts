@@ -30,6 +30,16 @@ export class WorkspaceStateManager {
     return `${this.workspaceFolder()}/${WORKSPACE_STATE_FILENAME}`;
   }
 
+  private async ensureWorkspaceFolder(): Promise<void> {
+    let currentPath = "";
+    for (const segment of this.workspaceFolder().split("/").filter(Boolean)) {
+      currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+      if (!(await this.app.vault.adapter.exists(currentPath))) {
+        await this.app.vault.createFolder(currentPath);
+      }
+    }
+  }
+
   async loadWorkspaceState(): Promise<void> {
     this.workspaceState = { ...DEFAULT_WORKSPACE_STATE, ragSettings: {} };
     const filePath = this.getFilePath();
@@ -62,10 +72,7 @@ export class WorkspaceStateManager {
     const filePath = this.getFilePath();
     const content = JSON.stringify(this.workspaceState, null, 2);
 
-    const workspaceFolder = this.workspaceFolder();
-    if (!(await this.app.vault.adapter.exists(workspaceFolder))) {
-      await this.app.vault.createFolder(workspaceFolder);
-    }
+    await this.ensureWorkspaceFolder();
 
     await this.app.vault.adapter.write(filePath, content);
   }

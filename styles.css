@@ -806,6 +806,39 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   min-width: 200px;
 }
 
+.llm-hub-folder-setting {
+  min-width: 0;
+}
+
+.llm-hub-folder-setting .setting-item-info,
+.llm-hub-folder-setting .setting-item-control {
+  min-width: 0;
+}
+
+.llm-hub-folder-setting .setting-item-control {
+  flex: 0 1 320px;
+  max-width: 100%;
+}
+
+.llm-hub-folder-setting input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 600px) {
+  .llm-hub-folder-setting {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .llm-hub-folder-setting .setting-item-control {
+    flex-basis: auto;
+    width: 100%;
+  }
+}
+
 .llm-hub-status {
   font-size: 12px;
   padding: 2px 0;
@@ -6493,6 +6526,8 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 /* Settings tab */
 .llm-hub-settings-section {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
   border: 0;
 }

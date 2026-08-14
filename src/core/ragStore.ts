@@ -231,7 +231,7 @@ class RagStore {
     onProgress?: (progress: RagSyncProgress) => void,
   ): Promise<SyncResult> {
     // Get markdown files matching target/exclude criteria
-    const files = getTargetFiles(app, ragSetting);
+    const files = getTargetFiles(app, ragSetting, this.workspaceFolder);
     const totalFiles = files.length;
 
     // Force fresh load before scanning so unchanged PDFs can skip text extraction.
@@ -996,7 +996,7 @@ function computePageLabel(startOffset: number, endOffset: number, pageOffsets: n
   return `pages ${startPage}-${endPage} of ${numPages}`;
 }
 
-function getTargetFiles(app: App, ragSetting: RagSetting): TFile[] {
+function getTargetFiles(app: App, ragSetting: RagSetting, workspaceFolder: string): TFile[] {
   const files = app.vault.getFiles().filter(f => f.extension === "md" || f.extension === "pdf");
   const excludeRegexes = ragSetting.excludePatterns
     .filter(Boolean)
@@ -1006,7 +1006,7 @@ function getTargetFiles(app: App, ragSetting: RagSetting): TFile[] {
 
   return files.filter(file => {
     // Skip workspace folder
-    if (file.path.startsWith(this.workspaceFolder + "/")) return false;
+    if (file.path.startsWith(workspaceFolder + "/")) return false;
 
     // Check target folders
     if (ragSetting.targetFolders.length > 0) {

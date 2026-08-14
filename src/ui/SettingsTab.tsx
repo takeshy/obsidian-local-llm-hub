@@ -18,18 +18,12 @@ export class SettingsTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
-  display(): void {
-    this.containerEl.empty();
-    for (const section of this.getSections()) {
-      section.render(new Setting(this.containerEl).setName(section.name).settingEl);
-    }
-  }
-
   getSettingDefinitions(): SettingDefinitionItem[] {
     return this.getSections().map(({ name, render }) => ({
       name,
       render: (setting: Setting) => {
         setting.settingEl.empty();
+        setting.settingEl.addClass("llm-hub-settings-section");
         render(setting.settingEl);
       },
     }));
@@ -38,7 +32,7 @@ export class SettingsTab extends PluginSettingTab {
   private getSections(): Array<{ name: string; render: (containerEl: HTMLElement) => void }> {
     const ctx = {
       plugin: this.plugin,
-      display: () => this.display(),
+      display: () => this.update(),
     };
 
     const section = (name: string, render: (containerEl: HTMLElement) => void) => ({ name, render });

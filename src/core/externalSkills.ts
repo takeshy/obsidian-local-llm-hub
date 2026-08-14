@@ -1,7 +1,7 @@
 import { requestUrl, type App } from "obsidian";
 import { applyPatch, parsePatch, type StructuredPatch } from "diff";
 import { SKILLS_FOLDER } from "src/types";
-import { isAbsolutePath, normalizePathSeparators } from "./pathAccess";
+import { isUnsafePath, normalizePathSeparators } from "./pathAccess";
 
 export interface SourceFile {
   relativePath: string;
@@ -51,11 +51,6 @@ const SEMVER_RE = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+
 // to a single trusted repo is the main mitigation against importing untrusted,
 // executable (workflow) skills.
 export const OFFICIAL_SKILLS_REPO = "takeshy/llm-hub-skills";
-
-function isUnsafePath(path: string): boolean {
-  const normalized = normalizePathSeparators(path);
-  return isAbsolutePath(normalized) || normalized.split("/").some(part => part === "." || part === "..");
-}
 
 async function ensureFolder(app: App, folderPath: string): Promise<void> {
   const normalized = normalizePathSeparators(folderPath).replace(/^\/+|\/+$/g, "");

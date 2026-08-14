@@ -8,6 +8,11 @@ export function normalizePathSeparators(path: string): string {
   return path.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/\/$/, "");
 }
 
+export function isUnsafePath(path: string): boolean {
+  const normalized = normalizePathSeparators(path);
+  return isAbsolutePath(normalized) || normalized.split("/").some(part => part === "." || part === "..");
+}
+
 export function getNodeFs(): NodeFs | null {
   const runtimeWindow = window as Window & { require?: (id: string) => unknown };
   const requireFn = runtimeWindow.require;
