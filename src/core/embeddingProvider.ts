@@ -6,6 +6,7 @@
 
 import { requestUrl } from "obsidian";
 import type { LocalLlmConfig, RagSetting } from "../types";
+import { normalizeEmbeddingBaseUrl } from "./localLlmProvider";
 
 interface EmbeddingResponse {
   data: { embedding: number[]; index: number }[];
@@ -28,7 +29,7 @@ export async function generateEmbeddings(
   ragSetting: RagSetting,
   llmConfig: LocalLlmConfig,
 ): Promise<number[][]> {
-  const baseUrl = getEmbeddingBaseUrl(ragSetting, llmConfig);
+  const baseUrl = normalizeEmbeddingBaseUrl(getEmbeddingBaseUrl(ragSetting, llmConfig));
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (llmConfig.apiKey) {
     headers["Authorization"] = `Bearer ${llmConfig.apiKey}`;

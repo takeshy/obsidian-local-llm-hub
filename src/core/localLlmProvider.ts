@@ -89,6 +89,11 @@ function openaiPathPrefix(config: LocalLlmConfig): string {
   return "/v1";
 }
 
+/** Normalize a server URL before appending an embedding API endpoint. */
+export function normalizeEmbeddingBaseUrl(baseUrl: string): string {
+  return baseUrl.trim().replace(/\/+$/, "");
+}
+
 /**
  * Verify connection to local LLM server and check available models
  */
@@ -180,7 +185,7 @@ export async function fetchLocalLlmModels(config: LocalLlmConfig): Promise<strin
  */
 export async function fetchEmbeddingModels(config: LocalLlmConfig, embeddingBaseUrl?: string): Promise<string[]> {
   try {
-    const baseUrl = embeddingBaseUrl || config.baseUrl;
+    const baseUrl = normalizeEmbeddingBaseUrl(embeddingBaseUrl || config.baseUrl);
 
     if (config.framework === "ollama" || isOllamaDefaultUrl(baseUrl)) {
       const response = await requestUrl({

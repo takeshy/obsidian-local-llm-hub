@@ -210,6 +210,8 @@ The plugin data folder (chat history, RAG indexes, and workflow history) and the
 3. Configure RAG index folders (optional — defaults to entire vault; this does not restrict Vault tools)
 4. Click **Sync** to build the index
 
+For Ollama, enter the server root URL as `http://localhost:11434`. Do not append `/v1`; the plugin adds the required API paths automatically. A trailing slash is optional.
+
 For large vaults, create multiple RAG settings for separate folders, sync each one, then create another RAG setting and enable **Combine internal RAG settings**. Select the synced source settings to search them together from one chat/search selector. Combined settings use the embedding server and model from the first selected source setting.
 
 During sync, changed files are processed and saved in small file batches so large first-time indexes can recover from an Obsidian crash without starting over. This is separate from the RAG chunk size setting. If a PDF cannot be extracted, it is listed after sync, its checksum is saved, and it appears in the indexed file list with `0 chunks`. It will not be retried on later syncs unless the PDF file changes. To force re-import, rename the PDF, modify the file, or clear/rebuild the RAG index.

@@ -92,7 +92,7 @@ export const en = {
   "settings.ragEmbeddingModel": "Embedding model",
   "settings.ragEmbeddingModelDesc": "Embedding model is required for rag (e.g. Nomic-embed-text). Ollama: ollama pull nomic-embed-text",
   "settings.ragEmbeddingBaseUrl": "Embedding server URL",
-  "settings.ragEmbeddingBaseUrlDesc": "Leave empty to use the same server as LLM",
+  "settings.ragEmbeddingBaseUrlDesc": "Server root address without an endpoint path (ollama example: http://localhost:11434, not /v1). Leave empty to use the configured language model server.",
   "settings.ragTargetFolders": "Folders indexed by RAG",
   "settings.ragTargetFoldersDesc": "Comma-separated folder paths to include in the RAG index (empty = entire vault). This does not restrict vault tool access.",
   "settings.ragExcludePatterns": "Exclude patterns",

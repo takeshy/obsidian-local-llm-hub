@@ -92,7 +92,7 @@ export const ja: Record<string, string> = {
   "settings.ragEmbeddingModel": "Embeddingモデル",
   "settings.ragEmbeddingModelDesc": "RAGにはEmbeddingモデルが必要です（例: nomic-embed-text）。Ollama: ollama pull nomic-embed-text",
   "settings.ragEmbeddingBaseUrl": "EmbeddingサーバーURL",
-  "settings.ragEmbeddingBaseUrlDesc": "空欄の場合はLLMサーバーと同じURLを使用",
+  "settings.ragEmbeddingBaseUrlDesc": "APIパスを含まないサーバーのルートURL（Ollamaの例: http://localhost:11434。/v1は付けません）。空欄の場合はLLMサーバーと同じURLを使用します。",
   "settings.ragTargetFolders": "RAGインデックス対象フォルダ",
   "settings.ragTargetFoldersDesc": "RAGインデックスに含めるフォルダパスをカンマ区切りで指定します（空欄=Vault全体）。Vaultツールのアクセス範囲は制限しません。",
   "settings.ragExcludePatterns": "除外パターン",

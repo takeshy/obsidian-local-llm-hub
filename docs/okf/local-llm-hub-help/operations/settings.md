@@ -26,6 +26,8 @@ Supported Local LLM framework modes:
 - vLLM: OpenAI-compatible `/v1/chat/completions`.
 - AnythingLLM: OpenAI-compatible endpoint mode.
 
+For Ollama embeddings, configure the server root URL as `http://localhost:11434`. Do not append `/v1`; Local LLM Hub adds the required API paths automatically. A trailing slash is optional.
+
 For OKF, enable the OKF source and set a vault-relative directory such as `Knowledge` or `.Knowledge`. The chat input can then select discovered OKF bundles from that directory.
 
 `LLM vault tool folders` is a comma-separated, vault-relative allowlist for automatic LLM vault tool access. Empty means the whole vault. This setting is separate from RAG index folders.

@@ -35,4 +35,15 @@ describe("fetchEmbeddingModels", () => {
       "qwen3-embedding:8b-q8_0",
     ]);
   });
+
+  it("removes a trailing slash from the Ollama embedding server URL", async () => {
+    requestUrl.mockResolvedValue({ json: { models: [] } });
+
+    await fetchEmbeddingModels(config, "http://localhost:11434/");
+
+    expect(requestUrl).toHaveBeenCalledWith({
+      url: "http://localhost:11434/api/tags",
+      method: "GET",
+    });
+  });
 });

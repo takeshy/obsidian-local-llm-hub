@@ -26,5 +26,6 @@ Common embedding setup:
 - Ollama with an embedding model such as `nomic-embed-text`.
 - Any OpenAI-compatible embedding endpoint configured in the RAG setting.
 
-If a user uses a cloud chat endpoint through the OpenAI-compatible framework, local RAG still needs a reachable embedding endpoint. A common setup is cloud chat plus local Ollama embeddings.
+For Ollama, use the server root URL `http://localhost:11434` in the RAG setting. Do not append `/v1`; the plugin constructs the model and embedding endpoint paths. A trailing slash is optional.
 
+If a user uses a cloud chat endpoint through the OpenAI-compatible framework, local RAG still needs a reachable embedding endpoint. A common setup is cloud chat plus local Ollama embeddings.

@@ -124,7 +124,9 @@ function displaySelectedRagSetting(
     return !sourceReferenceSetting || hasSameEffectiveEmbeddingConfig(plugin, source, sourceReferenceSetting);
   });
 
+  let currentRagSetting = ragSetting;
   const updateSetting = async (updates: Partial<RagSetting>) => {
+    currentRagSetting = { ...currentRagSetting, ...updates };
     await plugin.updateRagSetting(name, updates);
   };
 
@@ -299,7 +301,10 @@ function displaySelectedRagSetting(
           btn.setButtonText(t("settings.llmModal.fetching"));
           btn.setDisabled(true);
           try {
-            const models = await fetchEmbeddingModels(plugin.settings.llmConfig, ragSetting.embeddingBaseUrl || undefined);
+            const models = await fetchEmbeddingModels(
+              plugin.settings.llmConfig,
+              currentRagSetting.embeddingBaseUrl || undefined,
+            );
             if (models.length === 0) {
               new Notice(t("settings.llmModal.noModelsFound"));
               return;
@@ -308,11 +313,11 @@ function displaySelectedRagSetting(
               embeddingDropdown.empty();
               for (const model of models) {
                 const opt = embeddingDropdown.createEl("option", { text: model, value: model });
-                if (model === ragSetting.embeddingModel) {
+                if (model === currentRagSetting.embeddingModel) {
                   opt.selected = true;
                 }
               }
-              if (!ragSetting.embeddingModel || !models.includes(ragSetting.embeddingModel)) {
+              if (!currentRagSetting.embeddingModel || !models.includes(currentRagSetting.embeddingModel)) {
                 await updateSetting({ embeddingModel: models[0] });
                 embeddingDropdown.value = models[0];
               }
@@ -502,7 +507,7 @@ function displaySelectedRagSetting(
             const result = await store.sync(
               plugin.app,
               name,
-              ragSetting,
+              currentRagSetting,
               plugin.settings.llmConfig,
               undefined,
               (progress) => {
