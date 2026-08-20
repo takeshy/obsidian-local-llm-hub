@@ -83,7 +83,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [ragSettingNames, setRagSettingNames] = useState<string[]>(plugin.getRagSettingNames());
   const [selectedRagSetting, setSelectedRagSetting] = useState<string | null>(plugin.getSelectedRagSettingName());
   const [ragEnabled, setRagEnabled] = useState(true);
-  const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>("all");
+  const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>(plugin.settings.vaultToolMode ?? "all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<SkillMetadata[]>(getBuiltinSkillMetadata);
@@ -93,7 +93,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [okfBundles, setOkfBundles] = useState<OkfBundle[]>([]);
   const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
-  const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
+  const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(
+    // Seed with the persisted selection so a reload shows the saved state even
+    // before the first async MCP refresh completes.
+    () => new Set(plugin.settings.enabledMcpServerIds || [])
+  );
   const [currentDashboard, setCurrentDashboard] = useState<TFile | null>(null);
   const [activeContextSkillPath, setActiveContextSkillPath] = useState<string | null>(null);
   const [disabledContextSkillPaths, setDisabledContextSkillPaths] = useState<Set<string>>(
@@ -114,7 +118,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       skillPath,
     ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
   const knownMcpServerIdsRef = useRef<Set<string>>(new Set());
-  const mcpSelectionInitializedRef = useRef(false);
+  // Becomes true only after the first refresh that actually saw connected
+  // servers. This avoids the async race on startup where the first refresh
+  // runs before MCP servers finish connecting, which would otherwise flip
+  // the "first load" branch off too early and auto-enable every server.
+  const mcpInitialRestoreDoneRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -238,13 +246,20 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     setMcpServerInfos(infos);
     const connectedIds = new Set(infos.map(info => info.id));
     const previouslyKnownIds = knownMcpServerIdsRef.current;
-    const firstLoad = !mcpSelectionInitializedRef.current;
     knownMcpServerIdsRef.current = connectedIds;
-    mcpSelectionInitializedRef.current = true;
+    // Only treat this as the initial restore once servers are actually present,
+    // so the async startup window (refresh fires before connectAll finishes)
+    // does not prematurely disable the "restore from saved" branch.
+    const firstLoad = !mcpInitialRestoreDoneRef.current;
+    if (connectedIds.size > 0) mcpInitialRestoreDoneRef.current = true;
     setEnabledMcpServerIds(prev => {
-      // Enable connected servers on first load, then preserve explicit opt-outs.
-      // Servers connected after the previous refresh start enabled.
-      if (firstLoad) return connectedIds;
+      // On first load, strictly restore the persisted per-request selection and
+      // do NOT auto-enable connected servers. After that, newly connected
+      // servers start enabled but explicit opt-outs are preserved.
+      if (firstLoad) {
+        const saved = new Set(plugin.settings.enabledMcpServerIds || []);
+        return new Set([...saved].filter(id => connectedIds.has(id)));
+      }
       const next = new Set([...prev].filter(id => connectedIds.has(id)));
       for (const id of connectedIds) {
         if (!previouslyKnownIds.has(id)) next.add(id);
@@ -397,6 +412,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     void plugin.saveSettings();
   }, [plugin]);
 
+  const handleVaultToolModeChange = useCallback((mode: VaultToolMode) => {
+    setVaultToolMode(mode);
+    plugin.settings.vaultToolMode = mode;
+    void plugin.saveSettings();
+  }, [plugin]);
+
   const handleMcpServerToggle = useCallback((serverId: string, enabled: boolean) => {
     setEnabledMcpServerIds(prev => {
       const next = new Set(prev);
@@ -405,9 +426,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       } else {
         next.delete(serverId);
       }
+      // Persist the per-request MCP selection so it survives reloads.
+      plugin.settings.enabledMcpServerIds = [...next];
+      void plugin.saveSettings();
       return next;
     });
-  }, []);
+  }, [plugin]);
 
   const handleOpenDashboard = useCallback(() => {
     if (currentDashboard) void plugin.app.workspace.getLeaf(true).openFile(currentDashboard);
@@ -1223,7 +1247,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
           void plugin.selectRagSetting(setting);
         }}
         vaultToolMode={vaultToolMode}
-        onVaultToolModeChange={setVaultToolMode}
+        onVaultToolModeChange={handleVaultToolModeChange}
         vaultFiles={vaultFiles}
         hasSelection={hasSelection}
         app={plugin.app}
