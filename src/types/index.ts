@@ -296,6 +296,10 @@ export interface LocalLlmHubSettings {
   knowledgeSources: KnowledgeSource[];
   mcpServers: McpServerConfig[];
   agentPlugins: AgentPluginInstall[];
+  /** Vault tool mode for the chat input (all | noSearch | none). */
+  vaultToolMode: VaultToolMode;
+  /** Per-request MCP server selection in the chat input, persisted across reloads. */
+  enabledMcpServerIds: string[];
 }
 
 /** Fixed skills folder name. */
@@ -325,4 +329,6 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   knowledgeSources: [],
   mcpServers: [],
   agentPlugins: [],
+  vaultToolMode: "all",
+  enabledMcpServerIds: [],
 };
