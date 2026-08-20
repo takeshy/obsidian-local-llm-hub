@@ -93,11 +93,16 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [okfBundles, setOkfBundles] = useState<OkfBundle[]>([]);
   const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
-  const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(
-    // Seed with the persisted selection so a reload shows the saved state even
-    // before the first async MCP refresh completes.
-    () => new Set(plugin.settings.enabledMcpServerIds || [])
-  );
+  const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(() => {
+    // Reconstruct the allowed set from the persisted opt-out map on mount: a server is
+    // enabled UNLESS it has an explicit `false`, so absent keys keep the old default of
+    // "enabled" and never flip fresh / uninitialised users onto an all-off list.
+    const allowed = new Set<string>();
+    for (const id of plugin.mcpManager.getServerInfos().map(info => info.id)) {
+      if (plugin.settings.mcpServerEnabled?.[id] !== false) allowed.add(id);
+    }
+    return allowed;
+  });
   const [currentDashboard, setCurrentDashboard] = useState<TFile | null>(null);
   const [activeContextSkillPath, setActiveContextSkillPath] = useState<string | null>(null);
   const [disabledContextSkillPaths, setDisabledContextSkillPaths] = useState<Set<string>>(
@@ -117,12 +122,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       CONTEXT_SKILL_PATHS,
       skillPath,
     ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
-  const knownMcpServerIdsRef = useRef<Set<string>>(new Set());
-  // Becomes true only after the first refresh that actually saw connected
-  // servers. This avoids the async race on startup where the first refresh
-  // runs before MCP servers finish connecting, which would otherwise flip
-  // the "first load" branch off too early and auto-enable every server.
-  const mcpInitialRestoreDoneRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -245,27 +244,18 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     const infos = plugin.mcpManager.getServerInfos();
     setMcpServerInfos(infos);
     const connectedIds = new Set(infos.map(info => info.id));
-    const previouslyKnownIds = knownMcpServerIdsRef.current;
-    knownMcpServerIdsRef.current = connectedIds;
-    // Only treat this as the initial restore once servers are actually present,
-    // so the async startup window (refresh fires before connectAll finishes)
-    // does not prematurely disable the "restore from saved" branch.
-    const firstLoad = !mcpInitialRestoreDoneRef.current;
-    if (connectedIds.size > 0) mcpInitialRestoreDoneRef.current = true;
-    setEnabledMcpServerIds(prev => {
-      // On first load, strictly restore the persisted per-request selection and
-      // do NOT auto-enable connected servers. After that, newly connected
-      // servers start enabled but explicit opt-outs are preserved.
-      if (firstLoad) {
-        const saved = new Set(plugin.settings.enabledMcpServerIds || []);
-        return new Set([...saved].filter(id => connectedIds.has(id)));
-      }
-      const next = new Set([...prev].filter(id => connectedIds.has(id)));
-      for (const id of connectedIds) {
-        if (!previouslyKnownIds.has(id)) next.add(id);
-      }
-      return next;
-    });
+    // The persisted opt-out MAP is the single source of truth for which connected
+    // servers are enabled. Absence of a key means the default (enabled), so:
+    //  - fresh / first-time users (no key) keep the old "connected servers start
+    //    enabled" behaviour (Bug 1: [] no longer means "disable everything");
+    //  - an explicitly disabled server stays disabled even across reconnects,
+    //    because the map is NOT rebuilt from connection state (Bug 2).
+    const saved = plugin.settings.mcpServerEnabled || {};
+    const next = new Set<string>();
+    for (const id of connectedIds) {
+      if (saved[id] !== false) next.add(id);
+    }
+    setEnabledMcpServerIds(next);
   }, [plugin]);
 
   useEffect(() => {
@@ -426,8 +416,17 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       } else {
         next.delete(serverId);
       }
-      // Persist the per-request MCP selection so it survives reloads.
-      plugin.settings.enabledMcpServerIds = [...next];
+      // Persist the per-request MCP selection as an opt-out map so it survives
+      // reloads. We only record the explicit choice: a server that is enabled
+      // keeps its key absent (default) unless it was previously disabled, and a
+      // disabled server gets an explicit `false`.
+      const map = { ...(plugin.settings.mcpServerEnabled || {}) };
+      if (enabled) {
+        if (map[serverId] === false) delete map[serverId];
+      } else {
+        map[serverId] = false;
+      }
+      plugin.settings.mcpServerEnabled = map;
       void plugin.saveSettings();
       return next;
     });

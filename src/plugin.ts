@@ -535,6 +535,22 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!Array.isArray(this.settings.agentPlugins)) {
       this.settings.agentPlugins = [];
     }
+    // Migrate the old allow-list "enabledMcpServerIds" into the new opt-out map
+    // "mcpServerEnabled". An id in the old allow-list was explicitly enabled, so it
+    // maps to `true` (key present => explicit choice). The old field is then dropped.
+    const rawForMigrate = this.settings as unknown as Record<string, unknown>;
+    if ("enabledMcpServerIds" in rawForMigrate) {
+      const oldList = rawForMigrate.enabledMcpServerIds;
+      if (Array.isArray(oldList) && oldList.length > 0) {
+        const map: Record<string, boolean> = { ...(this.settings.mcpServerEnabled || {}) } as Record<string, boolean>;
+        for (const id of oldList) {
+          if (typeof id === "string") map[id] = true;
+        }
+        this.settings.mcpServerEnabled = map;
+      }
+      delete rawForMigrate.enabledMcpServerIds;
+      needsSave = true;
+    }
 
     // Hydrate the workspace state manager created synchronously in onload so
     // restored views can safely use the default state during startup.
