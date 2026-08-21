@@ -296,6 +296,20 @@ export interface LocalLlmHubSettings {
   knowledgeSources: KnowledgeSource[];
   mcpServers: McpServerConfig[];
   agentPlugins: AgentPluginInstall[];
+  /** Vault tool mode for the chat input (all | noSearch | none). */
+  vaultToolMode: VaultToolMode;
+  /**
+   * Per-request per-MCP-server selection persisted in the chat input, stored as an
+   * opt-out map keyed by server id: a value of false means "disabled", while a key
+   * that is absent means "default" (enabled). Absence is the crucial signal that
+   * lets us tell an unset selection apart from an explicit choice to disable.
+   *
+   * We deliberately moved away from an allow-list of "enabled ids": with an
+   * allow-list, an unset field serializes as the same [] value as "user disabled
+   * everything", which made fresh/first users default every connected server OFF on
+   * next reload and let reconnect races silently flip saved state.
+   */
+  mcpServerEnabled?: Partial<Record<string, boolean>>;
 }
 
 /** Fixed skills folder name. */
@@ -325,4 +339,5 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   knowledgeSources: [],
   mcpServers: [],
   agentPlugins: [],
+  vaultToolMode: "all",
 };

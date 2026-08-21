@@ -535,7 +535,6 @@ export class LocalLlmHubPlugin extends Plugin {
     if (!Array.isArray(this.settings.agentPlugins)) {
       this.settings.agentPlugins = [];
     }
-
     // Hydrate the workspace state manager created synchronously in onload so
     // restored views can safely use the default state during startup.
     await this.wsManager.loadOrCreateWorkspaceState();

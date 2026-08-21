@@ -83,7 +83,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [ragSettingNames, setRagSettingNames] = useState<string[]>(plugin.getRagSettingNames());
   const [selectedRagSetting, setSelectedRagSetting] = useState<string | null>(plugin.getSelectedRagSettingName());
   const [ragEnabled, setRagEnabled] = useState(true);
-  const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>("all");
+  const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>(plugin.settings.vaultToolMode ?? "all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<SkillMetadata[]>(getBuiltinSkillMetadata);
@@ -93,7 +93,16 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [okfBundles, setOkfBundles] = useState<OkfBundle[]>([]);
   const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
-  const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(new Set());
+  const [enabledMcpServerIds, setEnabledMcpServerIds] = useState<Set<string>>(() => {
+    // Reconstruct the allowed set from the persisted opt-out map on mount: a server is
+    // enabled UNLESS it has an explicit `false`, so absent keys keep the old default of
+    // "enabled" and never flip fresh / uninitialised users onto an all-off list.
+    const allowed = new Set<string>();
+    for (const id of plugin.mcpManager.getServerInfos().map(info => info.id)) {
+      if (plugin.settings.mcpServerEnabled?.[id] !== false) allowed.add(id);
+    }
+    return allowed;
+  });
   const [currentDashboard, setCurrentDashboard] = useState<TFile | null>(null);
   const [activeContextSkillPath, setActiveContextSkillPath] = useState<string | null>(null);
   const [disabledContextSkillPaths, setDisabledContextSkillPaths] = useState<Set<string>>(
@@ -113,8 +122,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       CONTEXT_SKILL_PATHS,
       skillPath,
     ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
-  const knownMcpServerIdsRef = useRef<Set<string>>(new Set());
-  const mcpSelectionInitializedRef = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -237,20 +244,18 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     const infos = plugin.mcpManager.getServerInfos();
     setMcpServerInfos(infos);
     const connectedIds = new Set(infos.map(info => info.id));
-    const previouslyKnownIds = knownMcpServerIdsRef.current;
-    const firstLoad = !mcpSelectionInitializedRef.current;
-    knownMcpServerIdsRef.current = connectedIds;
-    mcpSelectionInitializedRef.current = true;
-    setEnabledMcpServerIds(prev => {
-      // Enable connected servers on first load, then preserve explicit opt-outs.
-      // Servers connected after the previous refresh start enabled.
-      if (firstLoad) return connectedIds;
-      const next = new Set([...prev].filter(id => connectedIds.has(id)));
-      for (const id of connectedIds) {
-        if (!previouslyKnownIds.has(id)) next.add(id);
-      }
-      return next;
-    });
+    // The persisted opt-out MAP is the single source of truth for which connected
+    // servers are enabled. Absence of a key means the default (enabled), so:
+    //  - fresh / first-time users (no key) keep the old "connected servers start
+    //    enabled" behaviour (Bug 1: [] no longer means "disable everything");
+    //  - an explicitly disabled server stays disabled even across reconnects,
+    //    because the map is NOT rebuilt from connection state (Bug 2).
+    const saved = plugin.settings.mcpServerEnabled || {};
+    const next = new Set<string>();
+    for (const id of connectedIds) {
+      if (saved[id] !== false) next.add(id);
+    }
+    setEnabledMcpServerIds(next);
   }, [plugin]);
 
   useEffect(() => {
@@ -397,6 +402,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     void plugin.saveSettings();
   }, [plugin]);
 
+  const handleVaultToolModeChange = useCallback((mode: VaultToolMode) => {
+    setVaultToolMode(mode);
+    plugin.settings.vaultToolMode = mode;
+    void plugin.saveSettings();
+  }, [plugin]);
+
   const handleMcpServerToggle = useCallback((serverId: string, enabled: boolean) => {
     setEnabledMcpServerIds(prev => {
       const next = new Set(prev);
@@ -407,7 +418,18 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       }
       return next;
     });
-  }, []);
+
+    // Persist only explicit opt-outs. An absent key keeps the default enabled
+    // behavior for new servers while false survives reloads and reconnects.
+    const map = { ...(plugin.settings.mcpServerEnabled || {}) };
+    if (enabled) {
+      delete map[serverId];
+    } else {
+      map[serverId] = false;
+    }
+    plugin.settings.mcpServerEnabled = map;
+    void plugin.saveSettings();
+  }, [plugin]);
 
   const handleOpenDashboard = useCallback(() => {
     if (currentDashboard) void plugin.app.workspace.getLeaf(true).openFile(currentDashboard);
@@ -1223,7 +1245,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
           void plugin.selectRagSetting(setting);
         }}
         vaultToolMode={vaultToolMode}
-        onVaultToolModeChange={setVaultToolMode}
+        onVaultToolModeChange={handleVaultToolModeChange}
         vaultFiles={vaultFiles}
         hasSelection={hasSelection}
         app={plugin.app}
