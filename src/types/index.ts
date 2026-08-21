@@ -300,10 +300,9 @@ export interface LocalLlmHubSettings {
   vaultToolMode: VaultToolMode;
   /**
    * Per-request per-MCP-server selection persisted in the chat input, stored as an
-   * opt-out MAP keyed by server id: a key present with value false means "disabled",
-   * a key present with value true means "user enabled", and a key that is ABSENT
-   * means "default" (enabled). Absence is the crucial signal that lets us tell an
-   * unset/uninitialized selection apart from an explicit choice to disable.
+   * opt-out map keyed by server id: a value of false means "disabled", while a key
+   * that is absent means "default" (enabled). Absence is the crucial signal that
+   * lets us tell an unset selection apart from an explicit choice to disable.
    *
    * We deliberately moved away from an allow-list of "enabled ids": with an
    * allow-list, an unset field serializes as the same [] value as "user disabled
@@ -341,4 +340,4 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   mcpServers: [],
   agentPlugins: [],
   vaultToolMode: "all",
-  };
+};

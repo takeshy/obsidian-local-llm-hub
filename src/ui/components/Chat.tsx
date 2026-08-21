@@ -416,20 +416,19 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       } else {
         next.delete(serverId);
       }
-      // Persist the per-request MCP selection as an opt-out map so it survives
-      // reloads. We only record the explicit choice: a server that is enabled
-      // keeps its key absent (default) unless it was previously disabled, and a
-      // disabled server gets an explicit `false`.
-      const map = { ...(plugin.settings.mcpServerEnabled || {}) };
-      if (enabled) {
-        if (map[serverId] === false) delete map[serverId];
-      } else {
-        map[serverId] = false;
-      }
-      plugin.settings.mcpServerEnabled = map;
-      void plugin.saveSettings();
       return next;
     });
+
+    // Persist only explicit opt-outs. An absent key keeps the default enabled
+    // behavior for new servers while false survives reloads and reconnects.
+    const map = { ...(plugin.settings.mcpServerEnabled || {}) };
+    if (enabled) {
+      delete map[serverId];
+    } else {
+      map[serverId] = false;
+    }
+    plugin.settings.mcpServerEnabled = map;
+    void plugin.saveSettings();
   }, [plugin]);
 
   const handleOpenDashboard = useCallback(() => {
