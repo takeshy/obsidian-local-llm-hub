@@ -4,8 +4,8 @@ const requestUrl = vi.hoisted(() => vi.fn());
 
 vi.mock("obsidian", () => ({ requestUrl }));
 
-import { fetchEmbeddingModels } from "./localLlmProvider";
-import type { LocalLlmConfig } from "../types";
+import { buildOpenAiMessages, fetchEmbeddingModels } from "./localLlmProvider";
+import type { LocalLlmConfig, Message } from "../types";
 
 const config: LocalLlmConfig = {
   framework: "ollama",
@@ -44,6 +44,68 @@ describe("fetchEmbeddingModels", () => {
     expect(requestUrl).toHaveBeenCalledWith({
       url: "http://localhost:11434/api/tags",
       method: "GET",
+    });
+  });
+});
+
+describe("buildOpenAiMessages", () => {
+  it("replays reasoning and uses null content for a tool-only assistant turn", () => {
+    const messages: Message[] = [
+      { role: "user", content: "Update the active note", timestamp: 1 },
+      {
+        role: "assistant",
+        content: "",
+        thinking: "I need to read the note first.",
+        timestamp: 2,
+        toolCalls: [{ id: "call_1", name: "get_active_note", arguments: {} }],
+      },
+      {
+        role: "tool",
+        content: "Path: note.md\n\nExisting content",
+        timestamp: 3,
+        toolCallId: "call_1",
+        toolName: "get_active_note",
+      },
+    ];
+
+    expect(buildOpenAiMessages(messages, "system prompt")).toEqual([
+      { role: "system", content: "system prompt" },
+      { role: "user", content: "Update the active note" },
+      {
+        role: "assistant",
+        content: null,
+        reasoning_content: "I need to read the note first.",
+        tool_calls: [
+          {
+            id: "call_1",
+            type: "function",
+            function: { name: "get_active_note", arguments: "{}" },
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: "Path: note.md\n\nExisting content",
+        tool_call_id: "call_1",
+      },
+    ]);
+  });
+
+  it("keeps text content when a reasoning turn also calls a tool", () => {
+    const messages: Message[] = [
+      {
+        role: "assistant",
+        content: "I will inspect the note.",
+        thinking: "The active note is required.",
+        timestamp: 1,
+        toolCalls: [{ id: "call_2", name: "get_active_note", arguments: {} }],
+      },
+    ];
+
+    expect(buildOpenAiMessages(messages, "system")[1]).toMatchObject({
+      role: "assistant",
+      content: "I will inspect the note.",
+      reasoning_content: "The active note is required.",
     });
   });
 });

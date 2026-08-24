@@ -1024,6 +1024,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
           role: "assistant",
           content: fullContent,
           timestamp: Date.now(),
+          thinking: thinkingContent || undefined,
           toolCalls: pendingToolCalls,
         };
         conversationMessages.push(assistantMsg);

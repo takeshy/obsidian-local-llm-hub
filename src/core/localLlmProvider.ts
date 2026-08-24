@@ -18,13 +18,53 @@ import type { NodeHttpModule } from "./nodeCompat";
 // OpenAI-compatible API types
 interface OpenAiMessage {
   role: "system" | "user" | "assistant" | "tool";
-  content: string;
+  content: string | null;
+  reasoning_content?: string;
   tool_calls?: {
     id: string;
     type: "function";
     function: { name: string; arguments: string };
   }[];
   tool_call_id?: string;
+}
+
+/** Convert canonical chat history to the OpenAI-compatible wire format. */
+export function buildOpenAiMessages(messages: Message[], systemPrompt: string): OpenAiMessage[] {
+  const openaiMessages: OpenAiMessage[] = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  for (const msg of messages) {
+    if (msg.role === "tool") {
+      openaiMessages.push({
+        role: "tool",
+        content: msg.content,
+        tool_call_id: msg.toolCallId,
+      });
+    } else if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
+      openaiMessages.push({
+        role: "assistant",
+        // OpenAI-compatible servers expect a tool-only assistant turn to use
+        // null rather than an empty text response. This is especially relevant
+        // when llama.cpp renders the message through a model-specific template.
+        content: msg.content || null,
+        reasoning_content: msg.thinking,
+        tool_calls: msg.toolCalls.map(tc => ({
+          id: tc.id,
+          type: "function" as const,
+          function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+        })),
+      });
+    } else {
+      openaiMessages.push({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.llmContent ?? msg.content,
+        ...(msg.role === "assistant" && msg.thinking ? { reasoning_content: msg.thinking } : {}),
+      });
+    }
+  }
+
+  return openaiMessages;
 }
 
 // Ollama message format
@@ -519,34 +559,7 @@ async function* openaiChatStream(
   signal?: AbortSignal,
   tools?: ToolDefinition[],
 ): AsyncGenerator<StreamChunk> {
-  const openaiMessages: OpenAiMessage[] = [
-    { role: "system", content: systemPrompt },
-  ];
-
-  for (const msg of messages) {
-    if (msg.role === "tool") {
-      openaiMessages.push({
-        role: "tool",
-        content: msg.content,
-        tool_call_id: msg.toolCallId,
-      });
-    } else if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
-      openaiMessages.push({
-        role: "assistant",
-        content: msg.content,
-        tool_calls: msg.toolCalls.map(tc => ({
-          id: tc.id,
-          type: "function" as const,
-          function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
-        })),
-      });
-    } else {
-      openaiMessages.push({
-        role: msg.role === "user" ? "user" : "assistant",
-        content: msg.llmContent ?? msg.content,
-      });
-    }
-  }
+  const openaiMessages = buildOpenAiMessages(messages, systemPrompt);
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (config.apiKey) {
