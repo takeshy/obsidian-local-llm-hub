@@ -23,6 +23,7 @@ export type ProposeEditDecision = boolean | {
   accepted: boolean;
   feedback?: string;
   cancelled?: boolean;
+  openFile?: boolean;
 };
 
 // Callback for edit confirmation. A feedback-bearing rejection asks the model to revise its proposal.
@@ -30,6 +31,7 @@ export type ProposeEditCallback = (
   path: string,
   oldContent: string,
   newContent: string,
+  context?: { mode: "create" | "overwrite" | "rename"; targetPath?: string },
 ) => Promise<ProposeEditDecision>;
 
 // Callback for skill workflow execution
@@ -56,6 +58,12 @@ function rejectedEditResult(decision: ProposeEditDecision): ToolExecutionResult 
   };
   if (typeof decision !== "boolean" && decision.cancelled === true) result.cancelled = true;
   return result;
+}
+
+async function openFileIfRequested(app: App, file: TFile, decision?: ProposeEditDecision): Promise<void> {
+  if (typeof decision !== "boolean" && decision?.openFile) {
+    await app.workspace.getLeaf().openFile(file);
+  }
 }
 
 export async function executeToolCall(
@@ -107,12 +115,19 @@ export async function executeToolCall(
         if (existing) {
           return { success: false, result: `File already exists: ${path}` };
         }
+        let decision: ProposeEditDecision | undefined;
+        if (options.onProposeEdit) {
+          decision = await options.onProposeEdit(path, "", content, { mode: "create" });
+          const rejection = rejectedEditResult(decision);
+          if (rejection) return rejection;
+        }
         // Ensure parent folder exists
         const parentPath = path.substring(0, path.lastIndexOf("/"));
         if (parentPath && !app.vault.getAbstractFileByPath(parentPath)) {
           await app.vault.createFolder(parentPath);
         }
-        await app.vault.create(path, content);
+        const created = await app.vault.create(path, content);
+        await openFileIfRequested(app, created, decision);
         return { success: true, result: `Created: ${path}` };
       }
 
@@ -221,8 +236,10 @@ export async function executeToolCall(
           newContent = content;
         }
 
+        let decision: ProposeEditDecision | undefined;
         if (options.onProposeEdit) {
-          const rejection = rejectedEditResult(await options.onProposeEdit(path, existing, newContent));
+          decision = await options.onProposeEdit(path, existing, newContent);
+          const rejection = rejectedEditResult(decision);
           if (rejection) return rejection;
         }
 
@@ -232,6 +249,7 @@ export async function executeToolCall(
           historyManager.saveEdit({ path, modifiedContent: newContent, source: "propose_edit" });
         }
         await app.vault.modify(file, newContent);
+        await openFileIfRequested(app, file, decision);
         return { success: true, result: `Updated ${path} (${mode})` };
       }
 
@@ -248,7 +266,18 @@ export async function executeToolCall(
         if (app.vault.getAbstractFileByPath(newPath)) {
           return { success: false, result: `File already exists: ${newPath}` };
         }
+        let decision: ProposeEditDecision | undefined;
+        if (options.onProposeEdit) {
+          const content = await app.vault.cachedRead(file);
+          decision = await options.onProposeEdit(oldPath, content, content, {
+            mode: "rename",
+            targetPath: newPath,
+          });
+          const rejection = rejectedEditResult(decision);
+          if (rejection) return rejection;
+        }
         await app.fileManager.renameFile(file, newPath);
+        await openFileIfRequested(app, file, decision);
         return { success: true, result: `Renamed ${oldPath} → ${newPath}` };
       }
 
@@ -282,10 +311,12 @@ export async function executeToolCall(
         };
 
         if (options.onProposeEdit) {
-          const rejection = rejectedEditResult(await options.onProposeEdit(path, oldContent, newContent));
+          const decision = await options.onProposeEdit(path, oldContent, newContent);
+          const rejection = rejectedEditResult(decision);
           if (rejection) return rejection;
           await saveEditHistory();
           await app.vault.modify(file, newContent);
+          await openFileIfRequested(app, file, decision);
           return { success: true, result: `Edit applied to ${path}` };
         }
 
@@ -293,6 +324,55 @@ export async function executeToolCall(
         await saveEditHistory();
         await app.vault.modify(file, newContent);
         return { success: true, result: `Edit applied to ${path}` };
+      }
+
+      case "delete_note": {
+        const path = args.path as string;
+        assertVaultToolPathAllowed(path, allowedFolders);
+        const file = app.vault.getAbstractFileByPath(path);
+        if (!(file instanceof TFile)) return { success: false, result: `File not found: ${path}` };
+        assertVaultToolFileAllowed(file, allowedFolders);
+        const oldContent = await app.vault.cachedRead(file);
+        if (options.onProposeEdit) {
+          const decision = await options.onProposeEdit(path, oldContent, "", { mode: "overwrite" });
+          const rejection = rejectedEditResult(decision);
+          if (rejection) return rejection;
+        }
+        await app.fileManager.trashFile(file);
+        return { success: true, result: `Moved to trash: ${path}` };
+      }
+
+      case "bulk_propose_edit":
+      case "bulk_delete_notes":
+      case "bulk_rename_notes": {
+        const calls: ToolCall[] = [];
+        if (toolCall.name === "bulk_propose_edit") {
+          for (const edit of (args.edits as Array<Record<string, unknown>> | undefined) ?? []) {
+            calls.push({ id: toolCall.id, name: "propose_edit", arguments: edit });
+          }
+        } else if (toolCall.name === "bulk_delete_notes") {
+          for (const path of (args.paths as string[] | undefined) ?? []) {
+            calls.push({ id: toolCall.id, name: "delete_note", arguments: { path } });
+          }
+        } else {
+          for (const rename of (args.renames as Array<Record<string, unknown>> | undefined) ?? []) {
+            calls.push({ id: toolCall.id, name: "rename_note", arguments: rename });
+          }
+        }
+
+        if (calls.length === 0) return { success: false, result: "No operations were provided." };
+        const results: ToolExecutionResult[] = [];
+        for (const call of calls) {
+          const result = await executeToolCall(call, options);
+          results.push(result);
+          if (result.cancelled) {
+            return { success: false, cancelled: true, result: JSON.stringify(results) };
+          }
+        }
+        return {
+          success: results.every(result => result.success),
+          result: JSON.stringify(results),
+        };
       }
 
       case "execute_javascript": {

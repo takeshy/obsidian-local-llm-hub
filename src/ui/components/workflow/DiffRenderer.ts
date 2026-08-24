@@ -439,7 +439,8 @@ export function formatLineComments(
 
 export function createDiffViewToggle(
   parentEl: HTMLElement,
-  state: DiffRendererState
+  state: DiffRendererState,
+  onChange?: (mode: DiffViewMode) => void,
 ): void {
   const toggle = parentEl.createDiv({ cls: "llm-hub-diff-view-toggle" });
   const unifiedBtn = toggle.createEl("button", {
@@ -458,10 +459,12 @@ export function createDiffViewToggle(
 
   unifiedBtn.addEventListener("click", () => {
     state.setViewMode("unified");
+    onChange?.("unified");
     syncActive();
   });
   splitBtn.addEventListener("click", () => {
     state.setViewMode("split");
+    onChange?.("split");
     syncActive();
   });
 

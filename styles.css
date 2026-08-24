@@ -2506,6 +2506,43 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   font-weight: 600;
 }
 
+.llm-hub-workflow-confirm-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.llm-hub-workflow-confirm-fullscreen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+}
+
+.llm-hub-workflow-confirm-fullscreen svg {
+  width: 16px;
+  height: 16px;
+}
+
+.llm-hub-workflow-confirm-modal.is-fullscreen {
+  position: fixed !important;
+  inset: 8px !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.llm-hub-workflow-confirm-modal.is-fullscreen .llm-hub-workflow-confirm-resize-handle {
+  display: none;
+}
+
 .llm-hub-workflow-confirm-mode {
   font-size: 12px;
   padding: 4px 8px;
@@ -2555,6 +2592,15 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   gap: 8px;
   padding: 16px;
   border-top: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-confirm-open-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .llm-hub-workflow-confirm-actions button {

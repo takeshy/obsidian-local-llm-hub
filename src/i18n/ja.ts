@@ -568,6 +568,8 @@ export const ja: Record<string, string> = {
   "workflowConfirm.overwriteFile": "ファイルを上書き",
   "workflowConfirm.additions": "+{{count}}",
   "workflowConfirm.deletions": "-{{count}}",
+  "workflowConfirm.openFileAfterApply": "適用後にファイルを開く",
+  "workflowConfirm.renameFile": "ファイル名を変更",
 
   // Workflow selector
   "workflowSelector.title": "ワークフローを選択",
@@ -602,6 +604,7 @@ export const ja: Record<string, string> = {
   "diff.lineCommentsCount": "{{count}} 件の行コメント",
   "diff.generalFeedback": "全体のフィードバック（任意）",
   "diff.applyWithCommentsConfirm": "未送信の行コメントがあります。コメントを無視して変更を適用しますか？",
+  "diff.fullscreen": "全画面表示を切り替え",
 
   "workflowModal.changes": "ワークフロー YAML の変更",
   "workflowModal.skillInstructionsChanges": "SKILL.md 指示の変更",

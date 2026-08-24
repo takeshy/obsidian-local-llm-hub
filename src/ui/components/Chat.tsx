@@ -1045,10 +1045,21 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               app: plugin.app,
               mcpManager: plugin.mcpManager,
               vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
-              onProposeEdit: async (path, oldContent, newContent) => {
-                const modal = new EditConfirmationModal(plugin.app, path, newContent, "overwrite", oldContent);
+              onProposeEdit: async (path, oldContent, newContent, context) => {
+                const displayPath = context?.mode === "rename" && context.targetPath
+                  ? `${path} → ${context.targetPath}`
+                  : path;
+                const modal = new EditConfirmationModal(
+                  plugin.app,
+                  displayPath,
+                  newContent,
+                  context?.mode ?? "overwrite",
+                  oldContent,
+                );
                 const response = await modal.openAndWait();
-                if (response.action === "save") return true;
+                if (response.action === "save") {
+                  return { accepted: true, openFile: response.openFile };
+                }
                 if (response.action === "edit") {
                   return { accepted: false, feedback: response.content };
                 }

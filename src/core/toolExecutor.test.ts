@@ -182,6 +182,56 @@ describe("executeToolCall vault files", () => {
     expect(await vault.cachedRead(file)).toBe("before");
   });
 
+  it("requires confirmation before creating a note", async () => {
+    const vault = new MockVault();
+    const onProposeEdit = vi.fn(async () => ({ accepted: false, cancelled: true }));
+
+    const result = await executeToolCall(
+      call("create_note", { path: "Notes/New.md", content: "new" }),
+      { app: createApp(vault), onProposeEdit },
+    );
+
+    expect(result.cancelled).toBe(true);
+    expect(onProposeEdit).toHaveBeenCalledWith(
+      "Notes/New.md", "", "new", { mode: "create" },
+    );
+    expect(vault.getAbstractFileByPath("Notes/New.md")).toBeNull();
+  });
+
+  it("requires confirmation before renaming a note", async () => {
+    const vault = new MockVault();
+    vault.addFile("Notes/Old.md", "content");
+
+    const result = await executeToolCall(
+      call("rename_note", { oldPath: "Notes/Old.md", newPath: "Notes/New.md" }),
+      { app: createApp(vault), onProposeEdit: async () => false },
+    );
+
+    expect(result.success).toBe(false);
+    expect(vault.getAbstractFileByPath("Notes/Old.md")).toBeInstanceOf(TFile);
+    expect(vault.getAbstractFileByPath("Notes/New.md")).toBeNull();
+  });
+
+  it("stops remaining bulk edits after cancellation", async () => {
+    const vault = new MockVault();
+    const first = vault.addFile("Notes/One.md", "one");
+    const second = vault.addFile("Notes/Two.md", "two");
+
+    const result = await executeToolCall(
+      call("bulk_propose_edit", {
+        edits: [
+          { path: "Notes/One.md", content: "changed one" },
+          { path: "Notes/Two.md", content: "changed two" },
+        ],
+      }),
+      { app: createApp(vault), onProposeEdit: async () => ({ accepted: false, cancelled: true }) },
+    );
+
+    expect(result.cancelled).toBe(true);
+    expect(await vault.cachedRead(first)).toBe("one");
+    expect(await vault.cachedRead(second)).toBe("two");
+  });
+
   it("allows the whole vault when no allowed folders are configured", async () => {
     const vault = new MockVault();
     vault.addFile("Private/Secret.md", "secret");

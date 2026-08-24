@@ -515,6 +515,8 @@ export const en = {
   "workflowConfirm.overwriteFile": "Overwrite file",
   "workflowConfirm.additions": "+{{count}}",
   "workflowConfirm.deletions": "-{{count}}",
+  "workflowConfirm.openFileAfterApply": "Open file after applying",
+  "workflowConfirm.renameFile": "Rename file",
 
   // Workflow selector
   "workflowSelector.title": "Select workflow",
@@ -546,6 +548,7 @@ export const en = {
   "diff.lineCommentsCount": "{{count}} line comment(s)",
   "diff.generalFeedback": "General feedback (optional)",
   "diff.applyWithCommentsConfirm": "You have line comments that haven't been submitted. Apply changes anyway?",
+  "diff.fullscreen": "Toggle fullscreen",
 
   "workflowModal.changes": "Workflow YAML changes",
   "workflowModal.skillInstructionsChanges": "SKILL.md instructions changes",

@@ -1,7 +1,21 @@
-import { Modal, App, MarkdownRenderer, Component } from "obsidian";
+import { Modal, App, MarkdownRenderer, Component, setIcon } from "obsidian";
 import { t } from "src/i18n";
-import { createDiffViewToggle, renderDiffView, type DiffRendererState } from "./DiffRenderer";
+import { createDiffViewToggle, formatLineComments, renderDiffView, type DiffRendererState } from "./DiffRenderer";
+import {
+  getDiffFullscreen,
+  getDiffViewMode,
+  getOpenFileAfterApply,
+  setDiffFullscreen,
+  setDiffViewMode,
+  setOpenFileAfterApply,
+} from "./diffPreferences";
 export { computeLineDiff, type DiffLine, type DiffLineType } from "./lineDiff";
+
+export interface EditConfirmationResult {
+  action: "save" | "cancel" | "edit";
+  content?: string;
+  openFile?: boolean;
+}
 
 function setCssProps(el: HTMLElement, props: Partial<CSSStyleDeclaration>): void {
   for (const [name, value] of Object.entries(props)) {
@@ -22,7 +36,7 @@ export class EditConfirmationModal extends Modal {
   private originalContent: string;
   private hasOriginalContent: boolean;
   private mode: string;
-  private resolvePromise: ((value: { action: "save" | "cancel" | "edit"; content?: string }) => void) | null = null;
+  private resolvePromise: ((value: EditConfirmationResult) => void) | null = null;
   private component: Component;
   private isShowingAdditionalRequest = false;
   private additionalRequestEl: HTMLTextAreaElement | null = null;
@@ -71,11 +85,24 @@ export class EditConfirmationModal extends Modal {
     const titleRow = header.createDiv({ cls: "llm-hub-workflow-confirm-title-row" });
     titleRow.createEl("h3", { text: t("workflowConfirm.title") });
 
+    const titleActions = titleRow.createDiv({ cls: "llm-hub-workflow-confirm-title-actions" });
     const modeLabel = this.getModeLabel();
-    titleRow.createSpan({
+    titleActions.createSpan({
       text: modeLabel,
       cls: "llm-hub-workflow-confirm-mode",
     });
+
+    const fullscreenBtn = titleActions.createEl("button", {
+      cls: "llm-hub-workflow-confirm-fullscreen",
+      attr: { type: "button", title: t("diff.fullscreen") },
+    });
+    const setFullscreen = (fullscreen: boolean) => {
+      modalEl.toggleClass("is-fullscreen", fullscreen);
+      setIcon(fullscreenBtn, fullscreen ? "minimize-2" : "maximize-2");
+      setDiffFullscreen(this.app, fullscreen);
+    };
+    setFullscreen(getDiffFullscreen(this.app));
+    fullscreenBtn.addEventListener("click", () => setFullscreen(!modalEl.hasClass("is-fullscreen")));
 
     // File path display
     const pathRow = header.createDiv({ cls: "llm-hub-workflow-confirm-path" });
@@ -100,10 +127,10 @@ export class EditConfirmationModal extends Modal {
     this.component.load();
     if (this.hasOriginalContent || this.mode === "create") {
       this.diffState = renderDiffView(previewContent, this.originalContent, this.content, {
-        viewMode: "unified",
-        enableComments: false,
+        viewMode: getDiffViewMode(this.app),
+        enableComments: true,
       });
-      createDiffViewToggle(previewLabel, this.diffState);
+      createDiffViewToggle(previewLabel, this.diffState, mode => setDiffViewMode(this.app, mode));
     } else {
       // Fallback to markdown preview if no original content
       void MarkdownRenderer.render(
@@ -136,6 +163,12 @@ export class EditConfirmationModal extends Modal {
       cls: "llm-hub-workflow-confirm-actions",
     });
 
+    const openFileLabel = actions.createEl("label", { cls: "llm-hub-workflow-confirm-open-file" });
+    const openFileCheckbox = openFileLabel.createEl("input", { type: "checkbox" });
+    openFileCheckbox.checked = getOpenFileAfterApply(this.app);
+    openFileLabel.createSpan({ text: t("workflowConfirm.openFileAfterApply") });
+    openFileCheckbox.addEventListener("change", () => setOpenFileAfterApply(this.app, openFileCheckbox.checked));
+
     const cancelBtn = actions.createEl("button", { text: t("common.cancel") });
     cancelBtn.addEventListener("click", () => {
       this.resolvePromise?.({ action: "cancel" });
@@ -147,15 +180,28 @@ export class EditConfirmationModal extends Modal {
       cls: "mod-warning",
     });
     this.requestChangesBtn.addEventListener("click", () => {
+      const lineFeedback = this.diffState
+        ? formatLineComments(this.filePath, this.diffState.lineComments)
+        : "";
       if (this.isShowingAdditionalRequest) {
         // Second click: submit with additional request content
-        const additionalRequest = this.additionalRequestEl?.value || "";
+        const generalFeedback = this.additionalRequestEl?.value.trim() || "";
+        const additionalRequest = [lineFeedback, generalFeedback].filter(Boolean).join("\n\n");
+        if (!additionalRequest) {
+          this.additionalRequestEl?.focus();
+          return;
+        }
         this.resolvePromise?.({
           action: "edit",
           content: additionalRequest,
         });
         this.close();
       } else {
+        if (lineFeedback) {
+          this.resolvePromise?.({ action: "edit", content: lineFeedback });
+          this.close();
+          return;
+        }
         // First click: show textarea
         this.isShowingAdditionalRequest = true;
         additionalRequestContainer.removeClass("llm-hub-hidden");
@@ -171,7 +217,9 @@ export class EditConfirmationModal extends Modal {
       cls: "mod-cta",
     });
     confirmBtn.addEventListener("click", () => {
-      this.resolvePromise?.({ action: "save" });
+      if (this.diffState && this.diffState.lineComments.size > 0
+          && !window.confirm(t("diff.applyWithCommentsConfirm"))) return;
+      this.resolvePromise?.({ action: "save", openFile: openFileCheckbox.checked });
       this.close();
     });
 
@@ -190,6 +238,8 @@ export class EditConfirmationModal extends Modal {
         return t("workflowConfirm.appendToFile");
       case "overwrite":
         return t("workflowConfirm.overwriteFile");
+      case "rename":
+        return t("workflowConfirm.renameFile");
       default:
         return this.mode;
     }
@@ -337,7 +387,7 @@ export class EditConfirmationModal extends Modal {
   /**
    * Open the modal and wait for user response
    */
-  openAndWait(): Promise<{ action: "save" | "cancel" | "edit"; content?: string }> {
+  openAndWait(): Promise<EditConfirmationResult> {
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
       this.open();
@@ -360,7 +410,7 @@ export function promptForConfirmation(
   content: string,
   mode: string,
   originalContent?: string
-): Promise<{ action: "save" | "cancel" | "edit"; content?: string }> {
+): Promise<EditConfirmationResult> {
   const modal = new EditConfirmationModal(app, filePath, content, mode, originalContent);
   return modal.openAndWait();
 }

@@ -172,6 +172,82 @@ const proposeEdit: ToolDefinition = {
   },
 };
 
+const deleteNote: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "delete_note",
+    description: "Propose moving an existing text-based vault file to the trash. The user reviews its removal before it is applied.",
+    parameters: {
+      type: "object",
+      properties: { path: { type: "string", description: "File path to delete" } },
+      required: ["path"],
+    },
+  },
+};
+
+const bulkProposeEdit: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "bulk_propose_edit",
+    description: "Propose full-content edits to multiple existing vault files. Each diff requires user confirmation.",
+    parameters: {
+      type: "object",
+      properties: {
+        edits: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              path: { type: "string" },
+              content: { type: "string" },
+            },
+            required: ["path", "content"],
+          },
+        },
+      },
+      required: ["edits"],
+    },
+  },
+};
+
+const bulkDeleteNotes: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "bulk_delete_notes",
+    description: "Propose moving multiple vault files to the trash. Each deletion requires user confirmation.",
+    parameters: {
+      type: "object",
+      properties: { paths: { type: "array", items: { type: "string" } } },
+      required: ["paths"],
+    },
+  },
+};
+
+const bulkRenameNotes: ToolDefinition = {
+  type: "function",
+  function: {
+    name: "bulk_rename_notes",
+    description: "Propose renaming multiple vault files. Each rename requires user confirmation.",
+    parameters: {
+      type: "object",
+      properties: {
+        renames: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              oldPath: { type: "string" },
+              newPath: { type: "string" },
+            },
+            required: ["oldPath", "newPath"],
+          },
+        },
+      },
+      required: ["renames"],
+    },
+  },
+};
+
 export const SKILL_WORKFLOW_TOOL_NAME = "run_skill_workflow";
 
 export const skillWorkflowTool: ToolDefinition = {
@@ -203,7 +279,8 @@ const searchToolNames = new Set(["search_notes", "list_notes"]);
 // All vault tools
 const allVaultTools: ToolDefinition[] = [
   readTimeline, readNoteTool, createNote, updateNote, renameNote, createFolder,
-  searchNotes, listNotes, listFolders, getActiveNote, proposeEdit,
+  searchNotes, listNotes, listFolders, getActiveNote, proposeEdit, deleteNote,
+  bulkProposeEdit, bulkDeleteNotes, bulkRenameNotes,
 ];
 
 /**

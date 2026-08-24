@@ -108,8 +108,11 @@ export interface ToolDefinition {
 
 export interface ToolParameter {
   type: string;
-  description: string;
+  description?: string;
   enum?: string[];
+  properties?: Record<string, ToolParameter>;
+  required?: string[];
+  items?: ToolParameter;
 }
 
 // Tool call from LLM response
