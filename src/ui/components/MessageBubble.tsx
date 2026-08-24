@@ -227,16 +227,14 @@ export default function MessageBubble({
       {message.toolCalls && message.toolCalls.length > 0 && (
         <>
           <div className="llm-hub-tools-used">
-            <span className="llm-hub-tools-used-label">
-              {t("message.toolsUsed")}:
-            </span>
             {message.toolCalls.map((toolCall, index) => {
+              const { icon, label } = getToolDisplayInfo(toolCall.name);
               const failedWorkflowPath = failedWorkflowPaths.get(toolCall.id);
               const noteTarget = noteTargets.get(toolCall.id);
               return (
                 <span key={index} className="llm-hub-tool-indicator-group">
                   <span
-                    className={`llm-hub-tool-name${noteTarget ? " llm-hub-tool-clickable" : ""}`}
+                    className="llm-hub-tool-indicator llm-hub-tool-clickable"
                     onClick={() => {
                       if (noteTarget) {
                         void app.workspace.openLinkText(noteTarget, "", false).catch(() => {
@@ -246,13 +244,9 @@ export default function MessageBubble({
                         new Notice(getToolDetail(toolCall), 3000);
                       }
                     }}
-                    title={
-                      noteTarget
-                        ? t("message.clickToOpen", { source: noteTarget })
-                        : t("message.clickToSeeDetails")
-                    }
+                    title={getToolDetail(toolCall)}
                   >
-                    {toolCall.name}
+                    {icon} {label}
                   </span>
                   {failedWorkflowPath && (
                     <button
@@ -482,7 +476,8 @@ function getToolNoteTarget(
 
 function getToolDetail(toolCall: ToolCall): string {
   const args = toolCall.arguments;
-  const parts: string[] = [toolCall.name];
+  const { label } = getToolDisplayInfo(toolCall.name);
+  const parts: string[] = [`${label} (${toolCall.name})`];
 
   // Handle MCP tools - show all arguments
   if (toolCall.name.startsWith("mcp_")) {
@@ -514,6 +509,35 @@ function getToolDetail(toolCall: ToolCall): string {
   }
 
   return parts.join(": ");
+}
+
+function getToolDisplayInfo(toolName: string): { icon: string; label: string } {
+  if (toolName.startsWith("mcp_")) {
+    const parts = toolName.split("_");
+    if (parts.length >= 3) {
+      return { icon: "🔌", label: `${parts[1]}:${parts.slice(2).join("_")}` };
+    }
+    return { icon: "🔌", label: toolName.replace("mcp_", "") };
+  }
+
+  const toolDisplayMap: Record<string, { icon: string; label: string }> = {
+    read_timeline: { icon: "📅", label: t("tool.readTimeline") },
+    read_note: { icon: "📖", label: t("tool.read") },
+    create_note: { icon: "📝", label: t("tool.created") },
+    update_note: { icon: "✏️", label: t("tool.updated") },
+    delete_note: { icon: "🗑️", label: t("tool.deleted") },
+    rename_note: { icon: "📋", label: t("tool.renamed") },
+    search_notes: { icon: "🔍", label: t("tool.searched") },
+    list_notes: { icon: "📂", label: t("tool.listed") },
+    list_folders: { icon: "📁", label: t("tool.listedFolders") },
+    create_folder: { icon: "📁", label: t("tool.createdFolder") },
+    get_active_note: { icon: "📄", label: t("tool.gotActiveNote") },
+    propose_edit: { icon: "✏️", label: t("tool.editing") },
+    bulk_propose_edit: { icon: "✏️", label: t("tool.editing") },
+    bulk_delete_notes: { icon: "🗑️", label: t("tool.deleted") },
+    bulk_rename_notes: { icon: "📋", label: t("tool.renamed") },
+  };
+  return toolDisplayMap[toolName] || { icon: "🔧", label: toolName };
 }
 
 function formatTime(timestamp: number): string {

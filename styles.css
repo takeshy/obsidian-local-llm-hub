@@ -4843,16 +4843,15 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   gap: 4px;
 }
 
-.llm-hub-tools-used-label {
-  color: var(--text-accent);
-  font-weight: 500;
-}
-
-.llm-hub-tool-name {
+.llm-hub-tool-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
-  padding: 1px 6px;
-  background: var(--background-modifier-hover);
-  border-radius: 3px;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 /* ===== Search Panel ===== */

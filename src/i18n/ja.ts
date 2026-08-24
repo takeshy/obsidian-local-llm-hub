@@ -222,6 +222,20 @@ export const ja: Record<string, string> = {
   "message.clickToSeeDetails": "クリックして詳細を表示",
   "message.ragCitationOpen": "クリックして該当位置を開く",
 
+  // Tool display labels
+  "tool.readTimeline": "タイムライン読取",
+  "tool.read": "読取",
+  "tool.created": "作成",
+  "tool.updated": "更新",
+  "tool.deleted": "削除",
+  "tool.renamed": "名前変更",
+  "tool.searched": "検索",
+  "tool.listed": "一覧取得",
+  "tool.listedFolders": "フォルダ一覧",
+  "tool.createdFolder": "フォルダ作成",
+  "tool.gotActiveNote": "アクティブノート取得",
+  "tool.editing": "編集中",
+
   // Tabs
   "tab.chat": "チャット",
   "tab.workflowSkill": "ワークフロー / スキル",

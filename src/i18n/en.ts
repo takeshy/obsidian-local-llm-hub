@@ -222,6 +222,20 @@ export const en = {
   "message.clickToSeeDetails": "Click to see details",
   "message.ragCitationOpen": "Click to open at location",
 
+  // Tool display labels
+  "tool.readTimeline": "Read timeline",
+  "tool.read": "Read",
+  "tool.created": "Created",
+  "tool.updated": "Updated",
+  "tool.deleted": "Deleted",
+  "tool.renamed": "Renamed",
+  "tool.searched": "Searched",
+  "tool.listed": "Listed",
+  "tool.listedFolders": "Listed folders",
+  "tool.createdFolder": "Created folder",
+  "tool.gotActiveNote": "Got active note",
+  "tool.editing": "Editing",
+
   // Tabs
   "tab.chat": "Chat",
   "tab.workflowSkill": "Workflow / skill",
