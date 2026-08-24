@@ -1127,7 +1127,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         setStreamingThinking("");
 
         if (stopped) break;
-        const retryEmptyContinuation = pendingToolCalls.every(tc =>
+        const retryEmptyContinuation = pendingToolCalls.some(tc =>
           tc.name === "get_active_note" || tc.name === "read_note"
         );
         pendingToolCalls = await streamOneRoundWithRetry(true, retryEmptyContinuation);
