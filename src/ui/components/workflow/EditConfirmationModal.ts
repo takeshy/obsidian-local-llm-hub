@@ -1,20 +1,7 @@
 import { Modal, App, MarkdownRenderer, Component } from "obsidian";
 import { t } from "src/i18n";
-
-/**
- * Diff line types
- */
-export type DiffLineType = "unchanged" | "added" | "removed";
-
-/**
- * Represents a single line in the diff output
- */
-export interface DiffLine {
-  type: DiffLineType;
-  content: string;
-  oldLineNum?: number;
-  newLineNum?: number;
-}
+import { createDiffViewToggle, renderDiffView, type DiffRendererState } from "./DiffRenderer";
+export { computeLineDiff, type DiffLine, type DiffLineType } from "./lineDiff";
 
 function setCssProps(el: HTMLElement, props: Partial<CSSStyleDeclaration>): void {
   for (const [name, value] of Object.entries(props)) {
@@ -22,69 +9,6 @@ function setCssProps(el: HTMLElement, props: Partial<CSSStyleDeclaration>): void
       el.style.setProperty(name.replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`), value);
     }
   }
-}
-
-/**
- * Calculate line-based diff between two strings using LCS algorithm
- */
-export function computeLineDiff(oldText: string, newText: string): DiffLine[] {
-  const oldLines = oldText.split("\n");
-  const newLines = newText.split("\n");
-  const result: DiffLine[] = [];
-
-  // Build LCS table
-  const m = oldLines.length;
-  const n = newLines.length;
-  const lcs: number[][] = Array.from({ length: m + 1 }, () => Array<number>(n + 1).fill(0));
-
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      if (oldLines[i - 1] === newLines[j - 1]) {
-        lcs[i][j] = lcs[i - 1][j - 1] + 1;
-      } else {
-        lcs[i][j] = Math.max(lcs[i - 1][j], lcs[i][j - 1]);
-      }
-    }
-  }
-
-  // Backtrack to get diff
-  let i = m;
-  let j = n;
-  const diffStack: DiffLine[] = [];
-
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
-      diffStack.push({
-        type: "unchanged",
-        content: oldLines[i - 1],
-        oldLineNum: i,
-        newLineNum: j,
-      });
-      i--;
-      j--;
-    } else if (j > 0 && (i === 0 || lcs[i][j - 1] >= lcs[i - 1][j])) {
-      diffStack.push({
-        type: "added",
-        content: newLines[j - 1],
-        newLineNum: j,
-      });
-      j--;
-    } else {
-      diffStack.push({
-        type: "removed",
-        content: oldLines[i - 1],
-        oldLineNum: i,
-      });
-      i--;
-    }
-  }
-
-  // Reverse to get correct order
-  while (diffStack.length > 0) {
-    result.push(diffStack.pop()!);
-  }
-
-  return result;
 }
 
 /**
@@ -96,12 +20,14 @@ export class EditConfirmationModal extends Modal {
   private filePath: string;
   private content: string;
   private originalContent: string;
+  private hasOriginalContent: boolean;
   private mode: string;
   private resolvePromise: ((value: { action: "save" | "cancel" | "edit"; content?: string }) => void) | null = null;
   private component: Component;
   private isShowingAdditionalRequest = false;
   private additionalRequestEl: HTMLTextAreaElement | null = null;
   private requestChangesBtn: HTMLButtonElement | null = null;
+  private diffState: DiffRendererState | null = null;
 
   // Drag state
   private isDragging = false;
@@ -121,6 +47,7 @@ export class EditConfirmationModal extends Modal {
     this.filePath = filePath;
     this.content = content;
     this.originalContent = originalContent || "";
+    this.hasOriginalContent = originalContent !== undefined;
     this.mode = mode;
     this.component = new Component();
   }
@@ -171,30 +98,12 @@ export class EditConfirmationModal extends Modal {
 
     // Render diff view if we have original content, otherwise render markdown preview
     this.component.load();
-    if (this.originalContent || this.mode === "create") {
-      // For new files or when we have original content, show diff
-      const diffLines = computeLineDiff(this.originalContent, this.content);
-      const diffContainer = previewContent.createDiv({ cls: "llm-hub-workflow-confirm-diff-view" });
-
-      for (const line of diffLines) {
-        const lineEl = diffContainer.createDiv({
-          cls: `llm-hub-workflow-confirm-diff-line llm-hub-workflow-confirm-diff-${line.type}`,
-        });
-
-        // Line number gutter
-        const gutterEl = lineEl.createSpan({ cls: "llm-hub-workflow-confirm-diff-gutter" });
-        if (line.type === "removed") {
-          gutterEl.textContent = "-";
-        } else if (line.type === "added") {
-          gutterEl.textContent = "+";
-        } else {
-          gutterEl.textContent = " ";
-        }
-
-        // Line content
-        const lineContentEl = lineEl.createSpan({ cls: "llm-hub-workflow-confirm-diff-content" });
-        lineContentEl.textContent = line.content || " "; // Empty lines show space
-      }
+    if (this.hasOriginalContent || this.mode === "create") {
+      this.diffState = renderDiffView(previewContent, this.originalContent, this.content, {
+        viewMode: "unified",
+        enableComments: false,
+      });
+      createDiffViewToggle(previewLabel, this.diffState);
     } else {
       // Fallback to markdown preview if no original content
       void MarkdownRenderer.render(
@@ -417,6 +326,8 @@ export class EditConfirmationModal extends Modal {
   }
 
   onClose() {
+    this.diffState?.destroy();
+    this.diffState = null;
     this.component.unload();
     this.contentEl.empty();
     // If closed without clicking a button, treat as cancel

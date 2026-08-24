@@ -16,10 +16,21 @@ import {
 export interface ToolExecutionResult {
   success: boolean;
   result: string;
+  cancelled?: boolean;
 }
 
-// Callback for propose_edit confirmation
-export type ProposeEditCallback = (path: string, oldContent: string, newContent: string) => Promise<boolean>;
+export type ProposeEditDecision = boolean | {
+  accepted: boolean;
+  feedback?: string;
+  cancelled?: boolean;
+};
+
+// Callback for edit confirmation. A feedback-bearing rejection asks the model to revise its proposal.
+export type ProposeEditCallback = (
+  path: string,
+  oldContent: string,
+  newContent: string,
+) => Promise<ProposeEditDecision>;
 
 // Callback for skill workflow execution
 export type SkillWorkflowExecutor = (workflowId: string, variablesJson?: string) => Promise<string>;
@@ -30,6 +41,21 @@ export interface ToolExecutorOptions {
   mcpManager?: McpManager;
   onRunSkillWorkflow?: SkillWorkflowExecutor;
   vaultToolAllowedFolders?: string[];
+}
+
+function rejectedEditResult(decision: ProposeEditDecision): ToolExecutionResult | null {
+  const accepted = typeof decision === "boolean" ? decision : decision.accepted;
+  if (accepted) return null;
+
+  const feedback = typeof decision === "boolean" ? "" : decision.feedback?.trim() || "";
+  const result: ToolExecutionResult = {
+    success: false,
+    result: feedback
+      ? `Edit was not applied. The user requested these changes:\n${feedback}\nRevise the edit and propose it again.`
+      : "Edit was rejected by the user.",
+  };
+  if (typeof decision !== "boolean" && decision.cancelled === true) result.cancelled = true;
+  return result;
 }
 
 export async function executeToolCall(
@@ -194,6 +220,12 @@ export async function executeToolCall(
         } else {
           newContent = content;
         }
+
+        if (options.onProposeEdit) {
+          const rejection = rejectedEditResult(await options.onProposeEdit(path, existing, newContent));
+          if (rejection) return rejection;
+        }
+
         const historyManager = getEditHistoryManager();
         if (historyManager) {
           await historyManager.ensureSnapshot(path);
@@ -250,13 +282,11 @@ export async function executeToolCall(
         };
 
         if (options.onProposeEdit) {
-          const accepted = await options.onProposeEdit(path, oldContent, newContent);
-          if (accepted) {
-            await saveEditHistory();
-            await app.vault.modify(file, newContent);
-            return { success: true, result: `Edit applied to ${path}` };
-          }
-          return { success: false, result: "Edit was rejected by the user." };
+          const rejection = rejectedEditResult(await options.onProposeEdit(path, oldContent, newContent));
+          if (rejection) return rejection;
+          await saveEditHistory();
+          await app.vault.modify(file, newContent);
+          return { success: true, result: `Edit applied to ${path}` };
         }
 
         // No callback - apply directly

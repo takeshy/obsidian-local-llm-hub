@@ -112,7 +112,7 @@ const updateNote: ToolDefinition = {
   type: "function",
   function: {
     name: "update_note",
-    description: "Update the content of an existing text-based vault file. Supports replace, append, or prepend modes.",
+    description: "Propose an update to an existing text-based vault file. Supports replace, append, or prepend modes; the user reviews the resulting diff before it is applied.",
     parameters: {
       type: "object",
       properties: {

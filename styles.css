@@ -2418,11 +2418,13 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
    =============================================== */
 
 .llm-hub-workflow-confirm-modal {
-  width: 600px;
-  height: 500px;
-  min-width: 700px;
-  max-width: 90vw;
-  max-height: 80vh;
+  width: min(1000px, 92vw);
+  height: min(700px, 86vh);
+  min-width: min(700px, 92vw);
+  min-height: 400px;
+  max-width: 96vw;
+  max-height: 92vh;
+  position: relative;
 }
 
 .llm-hub-workflow-confirm-modal .modal-content {
@@ -2436,6 +2438,59 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
   padding: 16px;
   border-bottom: 1px solid var(--background-modifier-border);
   cursor: move;
+  user-select: none;
+}
+
+/* Visible edge/corner hit areas for the modal's resize handlers. */
+.llm-hub-workflow-confirm-resize-handle {
+  position: absolute;
+  z-index: 20;
+}
+
+.llm-hub-workflow-confirm-resize-n,
+.llm-hub-workflow-confirm-resize-s {
+  left: 12px;
+  right: 12px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.llm-hub-workflow-confirm-resize-n { top: -4px; }
+.llm-hub-workflow-confirm-resize-s { bottom: -4px; }
+
+.llm-hub-workflow-confirm-resize-e,
+.llm-hub-workflow-confirm-resize-w {
+  top: 12px;
+  bottom: 12px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.llm-hub-workflow-confirm-resize-e { right: -4px; }
+.llm-hub-workflow-confirm-resize-w { left: -4px; }
+
+.llm-hub-workflow-confirm-resize-ne,
+.llm-hub-workflow-confirm-resize-nw,
+.llm-hub-workflow-confirm-resize-se,
+.llm-hub-workflow-confirm-resize-sw {
+  width: 16px;
+  height: 16px;
+}
+
+.llm-hub-workflow-confirm-resize-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.llm-hub-workflow-confirm-resize-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.llm-hub-workflow-confirm-resize-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+.llm-hub-workflow-confirm-resize-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+
+.llm-hub-workflow-confirm-resize-se::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--text-faint);
+  border-bottom: 2px solid var(--text-faint);
 }
 
 .llm-hub-workflow-confirm-title-row {
@@ -6286,12 +6341,20 @@ body.llm-hub-hide-workspace-folder .nav-folder[data-path="LocalLlmHub"] {
 
 .llm-hub-diff-split-cell {
   width: 50%;
+  min-width: 0;
   display: flex;
   white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
   min-height: 1.5em;
   font-family: var(--font-monospace);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.llm-hub-diff-split-cell .llm-hub-diff-content {
+  flex: 0 0 auto;
+  min-width: calc(100% - 72px);
 }
 
 .llm-hub-diff-split-left {

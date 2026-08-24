@@ -56,6 +56,7 @@ import { formatError } from "src/utils/error";
 import { decodeBase64Utf8 } from "src/utils/base64";
 import { findFileMentionOccurrences } from "src/utils/mentionResolver";
 import { runtimeSkillPath } from "src/core/runtimeSkills";
+import { ensureAdapterFolder } from "src/core/vaultAdapter";
 
 export interface ChatRef {
   addAttachments: (attachments: Attachment[]) => void;
@@ -202,10 +203,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       try {
         const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
         const filePath = `${folder}/${lastId}.md`;
-        const file = plugin.app.vault.getAbstractFileByPath(filePath);
-        if (!(file instanceof TFile) || cancelled || userInteractedRef.current) return;
+        if (!(await plugin.app.vault.adapter.exists(filePath)) || cancelled || userInteractedRef.current) return;
 
-        const content = await plugin.app.vault.cachedRead(file);
+        const content = await plugin.app.vault.adapter.read(filePath);
         if (cancelled || userInteractedRef.current) return;
         const parsed = parseMarkdownToMessages(content);
         if (parsed?.messages && parsed.messages.length > 0) {
@@ -556,22 +556,14 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     const chatTitle = generateChatTitle(msgs);
     const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
 
-    // Ensure folder exists
-    if (!plugin.app.vault.getAbstractFileByPath(folder)) {
-      await plugin.app.vault.createFolder(folder);
-    }
+    await ensureAdapterFolder(plugin.app.vault.adapter, folder);
 
     const chatId = currentChatId || `chat-${Date.now()}`;
 
     const markdown = messagesToMarkdown(msgs, chatTitle, chatCreatedAt.current);
     const filePath = `${folder}/${chatId}.md`;
 
-    const existingFile = plugin.app.vault.getAbstractFileByPath(filePath);
-    if (existingFile instanceof TFile) {
-      await plugin.app.vault.modify(existingFile, markdown);
-    } else {
-      await plugin.app.vault.create(filePath, markdown);
-    }
+    await plugin.app.vault.adapter.write(filePath, markdown);
 
     if (!currentChatId) {
       setCurrentChatId(chatId);
@@ -601,23 +593,25 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   // Load chat histories
   const loadChatHistories = useCallback(async () => {
     const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
-    const folderFile = plugin.app.vault.getAbstractFileByPath(folder);
-    if (!folderFile) {
+    if (!(await plugin.app.vault.adapter.exists(folder))) {
       setChatHistories([]);
       return;
     }
 
     const histories: ChatHistory[] = [];
-    const files = plugin.app.vault.getMarkdownFiles()
-      .filter(f => f.path.startsWith(folder + "/"))
+    const listed = await plugin.app.vault.adapter.list(folder);
+    const files = (await Promise.all(listed.files
+      .filter(path => path.endsWith(".md"))
+      .map(async path => ({ path, stat: await plugin.app.vault.adapter.stat(path) }))))
+      .filter((file): file is { path: string; stat: NonNullable<typeof file.stat> } => file.stat !== null)
       .sort((a, b) => b.stat.mtime - a.stat.mtime);
 
     for (const file of files) {
       try {
-        const content = await plugin.app.vault.cachedRead(file);
+        const content = await plugin.app.vault.adapter.read(file.path);
         const parsed = parseMarkdownToMessages(content);
         if (parsed) {
-          const id = file.basename;
+          const id = file.path.slice(file.path.lastIndexOf("/") + 1, -3);
           const frontmatterTitle = content.match(/title:\s*"([^"]+)"/);
           const title = frontmatterTitle ? frontmatterTitle[1] : id;
 
@@ -665,6 +659,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     const file = plugin.app.vault.getAbstractFileByPath(filePath);
     if (file instanceof TFile) {
       await plugin.app.fileManager.trashFile(file);
+    } else if (await plugin.app.vault.adapter.exists(filePath)) {
+      await plugin.app.vault.adapter.remove(filePath);
     }
     if (currentChatId === history.id) {
       newChat();
@@ -1052,7 +1048,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               onProposeEdit: async (path, oldContent, newContent) => {
                 const modal = new EditConfirmationModal(plugin.app, path, newContent, "overwrite", oldContent);
                 const response = await modal.openAndWait();
-                return response.action === "save";
+                if (response.action === "save") return true;
+                if (response.action === "edit") {
+                  return { accepted: false, feedback: response.content };
+                }
+                return { accepted: false, cancelled: true };
               },
               onRunSkillWorkflow: skillWorkflowMap.size > 0
                 ? (workflowId, variablesJson) => executeSkillWorkflow(plugin, workflowId, variablesJson, skillWorkflowMap)
@@ -1079,16 +1079,23 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
             }
           }
           allToolResults.push({ toolCallId: tc.id, result: parsedResult });
+          if (result.cancelled) {
+            stopped = true;
+            break;
+          }
         }
 
         setStreamingContent("");
         setStreamingThinking("");
 
+        if (stopped) break;
         pendingToolCalls = await streamOneRound(true);
       }
 
-      if (stopped && fullContent) {
-        fullContent += `\n\n${t("chat.generationStopped")}`;
+      if (stopped) {
+        fullContent = fullContent
+          ? `${fullContent}\n\n${t("chat.generationStopped")}`
+          : t("chat.generationStopped");
       }
 
       const elapsedMs = Date.now() - startTime;

@@ -1,5 +1,5 @@
 import * as Diff from "diff";
-import { computeLineDiff, type DiffLine, type DiffLineType } from "./EditConfirmationModal";
+import { computeLineDiff, type DiffLine, type DiffLineType } from "./lineDiff";
 import { t } from "src/i18n";
 
 export { type DiffLine, type DiffLineType };

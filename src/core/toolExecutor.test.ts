@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TFile, TFolder, type App } from "obsidian";
 import type { ToolCall } from "../types";
 import { executeToolCall } from "./toolExecutor";
@@ -120,6 +120,68 @@ function call(name: string, args: Record<string, unknown>): ToolCall {
 }
 
 describe("executeToolCall vault files", () => {
+  it("asks for confirmation before update_note changes a file", async () => {
+    const vault = new MockVault();
+    const file = vault.addFile("Notes/Test.md", "before");
+    const onProposeEdit = vi.fn(async () => false);
+
+    const result = await executeToolCall(
+      call("update_note", { path: "Notes/Test.md", content: "after", mode: "replace" }),
+      { app: createApp(vault), onProposeEdit },
+    );
+
+    expect(onProposeEdit).toHaveBeenCalledWith("Notes/Test.md", "before", "after");
+    expect(result).toEqual({ success: false, result: "Edit was rejected by the user." });
+    expect(await vault.cachedRead(file)).toBe("before");
+  });
+
+  it("applies a confirmed append from update_note", async () => {
+    const vault = new MockVault();
+    const file = vault.addFile("Notes/Test.md", "before");
+
+    const result = await executeToolCall(
+      call("update_note", { path: "Notes/Test.md", content: "after", mode: "append" }),
+      { app: createApp(vault), onProposeEdit: async () => true },
+    );
+
+    expect(result.success).toBe(true);
+    expect(await vault.cachedRead(file)).toBe("before\nafter");
+  });
+
+  it("returns edit feedback to the model without changing the file", async () => {
+    const vault = new MockVault();
+    const file = vault.addFile("Notes/Test.md", "before");
+
+    const result = await executeToolCall(
+      call("update_note", { path: "Notes/Test.md", content: "after" }),
+      {
+        app: createApp(vault),
+        onProposeEdit: async () => ({ accepted: false, feedback: "Keep the heading." }),
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.result).toContain("Keep the heading.");
+    expect(result.result).toContain("propose it again");
+    expect(await vault.cachedRead(file)).toBe("before");
+  });
+
+  it("marks a cancelled edit so the chat can stop the tool loop", async () => {
+    const vault = new MockVault();
+    const file = vault.addFile("Notes/Test.md", "before");
+
+    const result = await executeToolCall(
+      call("update_note", { path: "Notes/Test.md", content: "after" }),
+      {
+        app: createApp(vault),
+        onProposeEdit: async () => ({ accepted: false, cancelled: true }),
+      },
+    );
+
+    expect(result.cancelled).toBe(true);
+    expect(await vault.cachedRead(file)).toBe("before");
+  });
+
   it("allows the whole vault when no allowed folders are configured", async () => {
     const vault = new MockVault();
     vault.addFile("Private/Secret.md", "secret");
