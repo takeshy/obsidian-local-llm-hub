@@ -108,4 +108,48 @@ describe("buildOpenAiMessages", () => {
       reasoning_content: "The active note is required.",
     });
   });
+
+  it("rehydrates bundled tool results from persisted assistant history", () => {
+    const messages: Message[] = [
+      {
+        role: "assistant",
+        content: "The note was updated.",
+        timestamp: 1,
+        toolCalls: [
+          { id: "call_read", name: "get_active_note", arguments: {} },
+          { id: "call_write", name: "update_note", arguments: { path: "note.md", content: "hello" } },
+        ],
+        toolResults: [
+          { toolCallId: "call_read", result: "Path: note.md\n\nこんにちは" },
+          { toolCallId: "call_write", result: { success: true } },
+        ],
+      },
+      { role: "user", content: "Now add a heading", timestamp: 2 },
+    ];
+
+    expect(buildOpenAiMessages(messages, "system")).toEqual([
+      { role: "system", content: "system" },
+      {
+        role: "assistant",
+        content: null,
+        reasoning_content: undefined,
+        tool_calls: [
+          {
+            id: "call_read",
+            type: "function",
+            function: { name: "get_active_note", arguments: "{}" },
+          },
+          {
+            id: "call_write",
+            type: "function",
+            function: { name: "update_note", arguments: JSON.stringify({ path: "note.md", content: "hello" }) },
+          },
+        ],
+      },
+      { role: "tool", content: "Path: note.md\n\nこんにちは", tool_call_id: "call_read" },
+      { role: "tool", content: JSON.stringify({ success: true }), tool_call_id: "call_write" },
+      { role: "assistant", content: "The note was updated." },
+      { role: "user", content: "Now add a heading" },
+    ]);
+  });
 });

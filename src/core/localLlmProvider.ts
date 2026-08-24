@@ -42,12 +42,13 @@ export function buildOpenAiMessages(messages: Message[], systemPrompt: string): 
         tool_call_id: msg.toolCallId,
       });
     } else if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
+      const hasBundledToolResults = msg.toolResults && msg.toolResults.length > 0;
       openaiMessages.push({
         role: "assistant",
         // OpenAI-compatible servers expect a tool-only assistant turn to use
         // null rather than an empty text response. This is especially relevant
         // when llama.cpp renders the message through a model-specific template.
-        content: msg.content || null,
+        content: hasBundledToolResults ? null : msg.content || null,
         reasoning_content: msg.thinking,
         tool_calls: msg.toolCalls.map(tc => ({
           id: tc.id,
@@ -55,6 +56,24 @@ export function buildOpenAiMessages(messages: Message[], systemPrompt: string): 
           function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
         })),
       });
+      // Display/persisted history bundles an entire tool chain into one
+      // assistant message. Rehydrate its tool results for the next user turn
+      // so the replay does not contain orphaned assistant tool calls.
+      if (hasBundledToolResults) {
+        const resultsByCallId = new Map(msg.toolResults!.map(result => [result.toolCallId, result.result]));
+        for (const toolCall of msg.toolCalls) {
+          if (!resultsByCallId.has(toolCall.id)) continue;
+          const result = resultsByCallId.get(toolCall.id);
+          openaiMessages.push({
+            role: "tool",
+            content: typeof result === "string" ? result : JSON.stringify(result),
+            tool_call_id: toolCall.id,
+          });
+        }
+        if (msg.content) {
+          openaiMessages.push({ role: "assistant", content: msg.content });
+        }
+      }
     } else {
       openaiMessages.push({
         role: msg.role === "user" ? "user" : "assistant",
@@ -580,6 +599,11 @@ async function* openaiChatStream(
     requestBody.tools = tools;
   }
   const body = JSON.stringify(requestBody);
+  // Node's http client otherwise sends request bodies with chunked transfer
+  // encoding. Some OpenAI-compatible local servers intermittently fail to
+  // consume a chunked tool-continuation request in full, so send the exact
+  // UTF-8 byte length just like fetch-based clients do.
+  headers["Content-Length"] = String(new TextEncoder().encode(body).byteLength);
 
   const url = new URL(`${config.baseUrl}${openaiPathPrefix(config)}/chat/completions`);
   const httpModule = getHttpModule(url.protocol);
@@ -615,6 +639,7 @@ async function* openaiChatStream(
 
       // Accumulate tool call arguments across SSE chunks
       const pendingToolCalls = new Map<number, { id: string; name: string; args: string }>();
+      let emittedToolCall = false;
 
       res.on("data", (chunk: Uint8Array) => {
         buffer += chunk.toString();
@@ -697,6 +722,12 @@ async function* openaiChatStream(
 
             // finish_reason: "tool_calls" (OpenAI) or "function_call" (legacy) means all tool calls are complete
             if (choice?.finish_reason === "tool_calls" || choice?.finish_reason === "function_call") {
+              if (pendingToolCalls.size === 0 && !emittedToolCall) {
+                // llama.cpp can intermittently report a tool-call finish while
+                // omitting all tool-call deltas. Let the caller retry the same
+                // round instead of silently treating it as an empty response.
+                chunks.push({ type: "incomplete_tool_call" });
+              }
               for (const [, tc] of pendingToolCalls) {
                 try {
                   const args = JSON.parse(tc.args) as unknown as Record<string, unknown>;
@@ -704,6 +735,7 @@ async function* openaiChatStream(
                 } catch {
                   chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });
                 }
+                emittedToolCall = true;
               }
               pendingToolCalls.clear();
             }

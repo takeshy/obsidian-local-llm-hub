@@ -10,6 +10,7 @@ import SkillSelector from "./SkillSelector";
 import OkfSelector from "./OkfSelector";
 import ModelSelector from "./ModelSelector";
 import { t } from "src/i18n";
+import { isCaretOnFirstLine, isCaretOnLastLine } from "./chat/chatUtils";
 
 interface SlashCommandItem {
   name: string;
@@ -49,6 +50,8 @@ interface InputAreaProps {
   okfBundles?: OkfBundle[];
   activeOkfBundleIds?: string[];
   onToggleOkfBundle?: (bundleId: string) => void;
+  inputHistory: string[];
+  onInputHistoryAdd: (prompt: string) => void;
 }
 
 export interface InputAreaHandle {
@@ -102,6 +105,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   okfBundles = [],
   activeOkfBundleIds = [],
   onToggleOkfBundle,
+  inputHistory,
+  onInputHistoryAdd,
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -119,6 +124,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mentionAutocompleteRef = useRef<HTMLDivElement>(null);
   const vaultToolMenuRef = useRef<HTMLDivElement>(null);
+  const historyIndexRef = useRef<number | null>(null);
+  const historyDraftRef = useRef("");
 
   useEffect(() => {
     if (showMentionAutocomplete && mentionAutocompleteRef.current) {
@@ -201,17 +208,23 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       );
       if (skillCmd?.skillPath) {
         const message = skillSlashMatch[2]?.trim() || "";
+        if (input.trim()) onInputHistoryAdd(input);
         setInput("");
         setPendingAttachments([]);
+        historyIndexRef.current = null;
+        historyDraftRef.current = "";
         void onSend(message, undefined, skillCmd.skillPath);
         return;
       }
     }
 
     if (input.trim() || pendingAttachments.length > 0) {
+      if (input.trim()) onInputHistoryAdd(input);
       void onSend(input, pendingAttachments.length > 0 ? pendingAttachments : undefined);
       setInput("");
       setPendingAttachments([]);
+      historyIndexRef.current = null;
+      historyDraftRef.current = "";
     }
   };
 
@@ -219,6 +232,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     const value = e.target.value;
     const cursorPos = e.target.selectionStart;
     setInput(value);
+    historyIndexRef.current = null;
 
     // Check for / slash command trigger (only at start of input)
     const slashMatch = value.match(/^\/(\S*)(\s.*)?$/);
@@ -366,6 +380,33 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       }
       if (e.key === "Escape") {
         setShowMentionAutocomplete(false);
+        return;
+      }
+    }
+
+    if (!e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && inputHistory.length > 0
+      && e.currentTarget.selectionStart === e.currentTarget.selectionEnd) {
+      const caret = e.currentTarget.selectionStart;
+      if (e.key === "ArrowUp" && isCaretOnFirstLine(input, caret)) {
+        e.preventDefault();
+        const nextIndex = historyIndexRef.current === null
+          ? inputHistory.length - 1
+          : Math.max(0, historyIndexRef.current - 1);
+        if (historyIndexRef.current === null) historyDraftRef.current = input;
+        historyIndexRef.current = nextIndex;
+        setInput(inputHistory[nextIndex]);
+        return;
+      }
+      if (e.key === "ArrowDown" && historyIndexRef.current !== null && isCaretOnLastLine(input, caret)) {
+        e.preventDefault();
+        const nextIndex = historyIndexRef.current + 1;
+        if (nextIndex >= inputHistory.length) {
+          historyIndexRef.current = null;
+          setInput(historyDraftRef.current);
+        } else {
+          historyIndexRef.current = nextIndex;
+          setInput(inputHistory[nextIndex]);
+        }
         return;
       }
     }

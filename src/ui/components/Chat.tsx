@@ -72,6 +72,12 @@ const CONTEXT_SKILL_PATHS = new Set([DASHBOARD_SKILL_PATH]);
 
 const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sentPromptHistory, setSentPromptHistory] = useState<string[]>(() => {
+    const saved = plugin.wsManager.workspaceState.sentPromptHistory;
+    return Array.isArray(saved)
+      ? saved.filter(prompt => typeof prompt === "string" && prompt.trim()).slice(-100)
+      : [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingThinking, setStreamingThinking] = useState("");
@@ -953,8 +959,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       const allToolCalls: ToolCall[] = [];
       const allToolResults: ToolResult[] = [];
       // Stream one round from the LLM, returns collected tool calls
-      const streamOneRound = async (useTools: boolean): Promise<ToolCall[]> => {
+      const streamOneRound = async (useTools: boolean): Promise<{
+        toolCalls: ToolCall[];
+        incompleteToolCall: boolean;
+        emptyText: boolean;
+      }> => {
         const pendingToolCalls: ToolCall[] = [];
+        let incompleteToolCall = false;
         fullContent = "";
         thinkingContent = "";
 
@@ -989,6 +1000,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
                 setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.arguments).join(", ")})...`);
               }
               break;
+            case "incomplete_tool_call":
+              incompleteToolCall = true;
+              break;
             case "error":
               throw new Error(chunk.error || "Unknown error");
             case "done":
@@ -997,13 +1011,26 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
           }
         }
 
-        return pendingToolCalls;
+        return { toolCalls: pendingToolCalls, incompleteToolCall, emptyText: fullContent.trim().length === 0 };
+      };
+
+      const streamOneRoundWithRetry = async (useTools: boolean, retryEmptyText = false): Promise<ToolCall[]> => {
+        const maxAttempts = 3;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const result = await streamOneRound(useTools);
+          const shouldRetry =
+            result.toolCalls.length === 0 &&
+            (result.incompleteToolCall || (retryEmptyText && result.emptyText));
+          if (!shouldRetry) return result.toolCalls;
+          console.warn(`[llm-hub] Server returned an incomplete tool continuation; retrying round (${attempt}/${maxAttempts})`);
+        }
+        throw new Error("The server repeatedly returned an incomplete response after a read tool result.");
       };
 
       // First round - try with tools
       let pendingToolCalls: ToolCall[];
       try {
-        pendingToolCalls = await streamOneRound(tools.length > 0);
+        pendingToolCalls = await streamOneRoundWithRetry(tools.length > 0);
       } catch (firstError) {
         if (tools.length > 0) {
           // Tools not supported by this model - set mode to none and show notice
@@ -1100,7 +1127,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         setStreamingThinking("");
 
         if (stopped) break;
-        pendingToolCalls = await streamOneRound(true);
+        const retryEmptyContinuation = pendingToolCalls.every(tc =>
+          tc.name === "get_active_note" || tc.name === "read_note"
+        );
+        pendingToolCalls = await streamOneRoundWithRetry(true, retryEmptyContinuation);
       }
 
       if (stopped) {
@@ -1291,6 +1321,15 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
             skillPath: skill.folderPath,
           })),
         ]}
+        inputHistory={sentPromptHistory}
+        onInputHistoryAdd={(prompt) => {
+          setSentPromptHistory(previous => {
+            const next = [...previous, prompt].slice(-100);
+            plugin.wsManager.workspaceState.sentPromptHistory = next;
+            void plugin.wsManager.saveWorkspaceState();
+            return next;
+          });
+        }}
       />
     </div>
   );

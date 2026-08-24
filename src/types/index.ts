@@ -71,6 +71,7 @@ export const DEFAULT_RAG_SETTING: RagSetting = {
 export interface WorkspaceState {
   selectedRagSetting: string | null;
   ragSettings: Record<string, RagSetting>;
+  sentPromptHistory?: string[];
 }
 
 export const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
@@ -172,7 +173,7 @@ export interface StreamChunk {
   // `replace_text` instructs the consumer to overwrite the accumulated text
   // buffer with `content`. Used to strip inline tool-call JSON out of the
   // visible response after it has already been streamed.
-  type: "text" | "thinking" | "tool_call" | "error" | "done" | "replace_text";
+  type: "text" | "thinking" | "tool_call" | "incomplete_tool_call" | "error" | "done" | "replace_text";
   content?: string;
   toolCall?: ToolCall;
   error?: string;
