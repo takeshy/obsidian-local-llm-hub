@@ -620,9 +620,9 @@ export class LocalLlmHubPlugin extends Plugin {
     activeDocument.querySelectorAll(".llm-hub-workspace-folder-hidden").forEach(el =>
       el.classList.remove("llm-hub-workspace-folder-hidden"));
     if (this.settings.hideWorkspaceFolder) {
-      activeDocument.querySelectorAll(".nav-folder").forEach(el => {
+      activeDocument.querySelectorAll(".nav-folder-title").forEach(el => {
         if (el.getAttribute("data-path") === this.settings.workspaceFolder) {
-          el.classList.add("llm-hub-workspace-folder-hidden");
+          el.parentElement?.classList.add("llm-hub-workspace-folder-hidden");
         }
       });
     }
