@@ -1024,7 +1024,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
           if (!shouldRetry) return result.toolCalls;
           console.warn(`[llm-hub] Server returned an incomplete tool continuation; retrying round (${attempt}/${maxAttempts})`);
         }
-        throw new Error("The server repeatedly returned an incomplete response after a read tool result.");
+        throw new Error("The server repeatedly returned an incomplete response after a tool result.");
       };
 
       // First round - try with tools
@@ -1127,10 +1127,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         setStreamingThinking("");
 
         if (stopped) break;
-        const retryEmptyContinuation = pendingToolCalls.some(tc =>
-          tc.name === "get_active_note" || tc.name === "read_note"
-        );
-        pendingToolCalls = await streamOneRoundWithRetry(true, retryEmptyContinuation);
+        // A continuation with neither text nor another tool call is not a
+        // useful completion. Retry it for every tool instead of maintaining a
+        // partial allowlist of read tools (which omitted list_notes and
+        // list_folders).
+        pendingToolCalls = await streamOneRoundWithRetry(true, true);
       }
 
       if (stopped) {
