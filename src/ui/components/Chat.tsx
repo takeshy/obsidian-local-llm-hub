@@ -30,8 +30,10 @@ import {
   formatRagSearchToolResult,
   MAX_DYNAMIC_RAG_RESULTS,
   MAX_RAG_SEARCHES_PER_TURN,
+  mergeRagCitations,
   RAG_SEARCH_TOOL,
   RAG_SEARCH_TOOL_NAME,
+  trimRagSearchHistory,
 } from "src/core/ragSearchTool";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
 import { resolveAgentPluginMcpServers } from "src/core/agentPlugins";
@@ -848,7 +850,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         ? plugin.getRagSearchSetting(selectedRagSetting)
         : undefined;
       if (selectedRagSetting && activeRagSetting) {
-        ragSearchCount++;
         try {
           const store = getRagStore();
           const results = await store.search(
@@ -858,6 +859,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
             llmConfig,
             plugin.app,
           );
+          // A search that threw never reached the index, so it must not consume
+          // the turn budget the model is told it has.
+          ragSearchCount++;
           if (results.length > 0) {
             hasRagContext = true;
             // Back-compat: deduped file paths for old saved chats.
@@ -973,11 +977,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       // call tools, while allowing capable models to refine the query.
       if (selectedRagSetting && activeRagSetting && !isAnythingLlm) {
         tools.push(RAG_SEARCH_TOOL);
-        systemPrompt += `\n\nThe selected RAG index is available through the ${RAG_SEARCH_TOOL_NAME} tool. The user's message has already been searched once. If the supplied context is insufficient, too broad, or suggests a better query, use ${RAG_SEARCH_TOOL_NAME} to refine it. At most ${MAX_RAG_SEARCHES_PER_TURN} RAG searches are allowed per turn including the automatic search; each additional search returns at most ${MAX_DYNAMIC_RAG_RESULTS} chunks.`;
+        systemPrompt += `\n\nThe selected RAG index is available through the ${RAG_SEARCH_TOOL_NAME} tool. The automatic search that produced the context above used the user's message verbatim as the query. That is a weak query for a follow-up question, for a pronoun-heavy request, or when the answer needs a term the user did not write, so the context above is a starting point rather than a complete retrieval. Whenever it looks off-topic, thin, or answers a broader question than the one asked, call ${RAG_SEARCH_TOOL_NAME} with a self-contained, rephrased query instead of answering from it. At most ${MAX_RAG_SEARCHES_PER_TURN} RAG searches are allowed per turn including the automatic search; each additional search returns at most ${MAX_DYNAMIC_RAG_RESULTS} chunks.`;
       }
 
       // Conversation messages for the API (includes tool call/result messages)
-      const conversationMessages: Message[] = [...messages, userMessage];
+      const conversationMessages: Message[] = [...trimRagSearchHistory(messages), userMessage];
       let fullContent = "";
       let thinkingContent = "";
       let stopped = false;
@@ -1095,7 +1099,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               const query = typeof tc.arguments.query === "string" ? tc.arguments.query.trim() : "";
               if (!query) return { success: false, result: "A non-empty query is required." };
 
-              ragSearchCount++;
               let results: RagSearchResult[];
               try {
                 results = await getRagStore().search(
@@ -1106,19 +1109,20 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
                   plugin.app,
                 );
               } catch (err) {
+                // Not counted against the budget: the index was never reached.
                 return { success: false, result: `RAG search failed: ${formatError(err)}` };
               }
+              ragSearchCount++;
               if (results.length > 0) {
                 ragSources = [...new Set([...(ragSources ?? []), ...results.map(item => item.filePath)])];
-                ragCitations = [
-                  ...(ragCitations ?? []),
-                  ...results.map(item => ({
-                    filePath: item.filePath,
-                    ...(item.heading ? { heading: item.heading } : {}),
-                    startOffset: item.startOffset,
-                    ...(item.pageLabel ? { pageLabel: item.pageLabel } : {}),
-                  })),
-                ];
+                // A refined query usually overlaps the automatic one, so the same
+                // chunk must not produce a second citation.
+                ragCitations = mergeRagCitations(ragCitations, results.map(item => ({
+                  filePath: item.filePath,
+                  ...(item.heading ? { heading: item.heading } : {}),
+                  startOffset: item.startOffset,
+                  ...(item.pageLabel ? { pageLabel: item.pageLabel } : {}),
+                })));
               }
               return {
                 success: true,
