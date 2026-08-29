@@ -117,9 +117,11 @@ Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral）で Vault を�
 
 `read_timeline` · `read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
 
-**All** / **No Search** / **Off** の 3 モードを入力エリアから切り替え。
+**All** / **No Discovery** / **Off** の 3 モードを入力エリアから切り替え。
 
 **設定 -> ワークスペース -> LLMのVaultツール許可フォルダ** で、LLMのVaultツールとLLMから起動されたSkill WorkflowがアクセスできるVault内フォルダを制限できます。空欄の場合はVault全体を許可します。この設定はRAGインデックス対象フォルダとは別で、RAG、手動添付、`@note`メンション、MCPツール、スクリプトは制限しません。
+
+チャット入力欄のVaultツールメニューは、モデルが使う組み込みVaultツールだけを制御します。**Vault: no discovery** は `search_notes` と `list_notes` を無効にし、時間とトークンを消費するVault探索を避けながら、明示的に参照したノートや現在のノートへの直接アクセスは維持します。RAGは無効になりません。RAGインデックスからの検索は、別のRAGトグルで切り替えます。
 
 ![ツール設定](docs/images/chat_tool_setting.png)
 

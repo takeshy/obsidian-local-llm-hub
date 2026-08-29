@@ -606,7 +606,10 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                       setShowVaultToolMenu(false);
                     }}
                   >
-                    {t(`input.vaultTool_${mode}` as Parameters<typeof t>[0])}
+                    <div>{t(`input.vaultTool_${mode}` as Parameters<typeof t>[0])}</div>
+                    <div className="llm-hub-vault-tool-item-desc">
+                      {t(`input.vaultTool_${mode}Desc` as Parameters<typeof t>[0])}
+                    </div>
                   </div>
                 ))}
                 {mcpServerInfos.length > 0 && (

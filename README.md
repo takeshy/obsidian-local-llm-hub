@@ -118,9 +118,11 @@ Models with function calling support (Qwen, Llama 3.1+, Mistral) can directly in
 
 `read_timeline` · `read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
 
-Three modes — **All**, **No Search**, **Off** — selectable from the input area.
+Three modes — **All**, **No Discovery**, **Off** — selectable from the input area.
 
 In **Settings -> Workspace -> LLM vault tool folders**, you can restrict LLM vault tools and LLM-triggered skill workflows to selected vault-relative folders. Leave it empty to allow the whole vault. This setting is separate from the RAG index folders setting and does not restrict RAG, manual attachments, `@note` mentions, MCP tools, or scripts.
+
+The chat input's Vault tool menu controls only the model's built-in Vault tools. **Vault: no discovery** disables `search_notes` and `list_notes`, avoiding slow, token-heavy Vault exploration while keeping direct access to explicitly referenced/current notes. It does not disable RAG; use the separate RAG toggle to control retrieval from the RAG index.
 
 ![Tool Settings](docs/images/chat_tool_setting.png)
 

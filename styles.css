@@ -627,7 +627,7 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   bottom: 100%;
   left: 0;
   margin-bottom: 4px;
-  min-width: 150px;
+  min-width: 280px;
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
@@ -650,6 +650,18 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 .llm-hub-vault-tool-item.selected {
   background: var(--interactive-accent);
   color: var(--text-on-accent);
+}
+
+.llm-hub-vault-tool-item-desc {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.llm-hub-vault-tool-item.selected .llm-hub-vault-tool-item-desc {
+  color: var(--text-on-accent);
+  opacity: 0.8;
 }
 
 .llm-hub-vault-tool-divider {
