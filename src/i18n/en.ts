@@ -257,6 +257,8 @@ export const en = {
   "input.vaultTool_allDesc": "Allow the model to find, read, and modify notes",
   "input.vaultTool_noSearchDesc": "Disable vault search and note listing; rag and explicitly referenced notes remain available",
   "input.vaultTool_noneDesc": "Disable all built-in vault tools",
+  "input.mcpServerEnabled": "Mcp server enabled: {{name}}",
+  "input.mcpServerDisable": "Disable mcp server: {{name}}",
   "input.model": "Model",
   "input.modelFilterPlaceholder": "Filter models...",
   "input.modelFilterEmpty": "No matching models",

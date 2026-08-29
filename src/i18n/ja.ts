@@ -257,6 +257,8 @@ export const ja: Record<string, string> = {
   "input.vaultTool_allDesc": "モデルによるノートの検索・読み取り・変更を許可",
   "input.vaultTool_noSearchDesc": "Vault検索とノート一覧取得を無効化。RAGと明示的に参照したノートは利用可能",
   "input.vaultTool_noneDesc": "組み込みVaultツールをすべて無効化",
+  "input.mcpServerEnabled": "MCPサーバー有効: {{name}}",
+  "input.mcpServerDisable": "MCPサーバーを無効化: {{name}}",
   "input.model": "モデル",
   "input.modelFilterPlaceholder": "モデルを絞り込み...",
   "input.modelFilterEmpty": "一致するモデルがありません",

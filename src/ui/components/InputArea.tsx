@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
-import { Send, Paperclip, StopCircle, Database } from "lucide-react";
+import { Send, Paperclip, StopCircle, Database, Wrench, X } from "lucide-react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
 import type { McpServerInfo } from "src/core/mcpManager";
@@ -482,6 +482,34 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
 
   return (
     <div className="llm-hub-input-container">
+      {/* MCP servers enabled for this chat */}
+      {mcpServerInfos.some((server) => enabledMcpServerIds.has(server.id)) && (
+        <div className="llm-hub-enabled-mcp-servers">
+          {mcpServerInfos
+            .filter((server) => enabledMcpServerIds.has(server.id))
+            .map((server) => (
+              <span
+                key={server.id}
+                className="llm-hub-enabled-mcp-server"
+                title={t("input.mcpServerEnabled", { name: server.name })}
+              >
+                <Wrench size={12} aria-hidden="true" />
+                <span className="llm-hub-enabled-mcp-server-name">{server.name}</span>
+                <button
+                  type="button"
+                  className="llm-hub-enabled-mcp-server-remove"
+                  onClick={() => onMcpServerToggle(server.id, false)}
+                  disabled={isLoading}
+                  title={t("input.mcpServerDisable", { name: server.name })}
+                  aria-label={t("input.mcpServerDisable", { name: server.name })}
+                >
+                  <X size={10} aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+        </div>
+      )}
+
       {/* Pending attachments display */}
       {pendingAttachments.length > 0 && (
         <div className="llm-hub-pending-attachments">

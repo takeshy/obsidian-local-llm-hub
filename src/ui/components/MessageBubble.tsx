@@ -8,12 +8,26 @@ import { isRuntimeSkillPath } from "src/core/runtimeSkills";
 import { SKILL_WORKFLOW_TOOL_NAME } from "src/core/tools";
 import { ChatView, VIEW_TYPE_LLM_CHAT } from "src/ui/ChatView";
 import { t } from "src/i18n";
+import { chatLinkFileRef } from "./chat/localFileLink";
 
 interface MessageBubbleProps {
   message: Message;
   isStreaming?: boolean;
   app: App;
   skillsFolder?: string;
+}
+
+function openLocalFile(path: string): void {
+  const electron = (window as {
+    require?: (id: string) => { shell?: { openPath: (filePath: string) => Promise<string> } };
+  }).require?.("electron");
+  if (!electron?.shell) {
+    new Notice(`Cannot open local file: ${path}`);
+    return;
+  }
+  void electron.shell.openPath(path).then((error) => {
+    if (error) new Notice(`Failed to open local file: ${error}`);
+  });
 }
 
 export default function MessageBubble({
@@ -68,6 +82,28 @@ export default function MessageBubble({
     ).then(() => {
       const container = contentRef.current;
       if (!container) return;
+
+      const vaultBasePath = (app.vault.adapter as unknown as { basePath?: string }).basePath ?? "";
+
+      // Treat local links under the Vault as Obsidian links. Files outside the
+      // Vault are opened through the desktop shell.
+      container.querySelectorAll("a[href]").forEach((link) => {
+        const href = link.getAttribute("href");
+        const target = href ? chatLinkFileRef(href, vaultBasePath) : null;
+        if (target?.scope === "vault") {
+          link.setAttribute("href", target.path);
+          link.setAttribute("data-href", target.path);
+          link.classList.remove("external-link");
+          link.classList.add("internal-link");
+          return;
+        }
+        if (!target) return;
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          openLocalFile(target.path);
+        });
+      });
 
       container.querySelectorAll("a.internal-link").forEach((link) => {
         link.addEventListener("click", (e) => {
