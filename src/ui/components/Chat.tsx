@@ -23,9 +23,16 @@ import {
 import { localLlmChatStream } from "src/core/localLlmProvider";
 import { getVaultTools, readNoteTool, skillWorkflowTool, SKILL_WORKFLOW_TOOL_NAME } from "src/core/tools";
 import { EXECUTE_JAVASCRIPT_TOOL } from "src/core/sandboxExecutor";
-import { executeToolCall } from "src/core/toolExecutor";
+import { executeToolCall, type ToolExecutionResult } from "src/core/toolExecutor";
 import { GET_WORKFLOW_SPEC_TOOL, GET_WORKFLOW_SPEC_TOOL_NAME, handleGetWorkflowSpec } from "src/workflow/workflowSpec";
-import { getRagStore } from "src/core/ragStore";
+import { getRagStore, type RagSearchResult } from "src/core/ragStore";
+import {
+  formatRagSearchToolResult,
+  MAX_DYNAMIC_RAG_RESULTS,
+  MAX_RAG_SEARCHES_PER_TURN,
+  RAG_SEARCH_TOOL,
+  RAG_SEARCH_TOOL_NAME,
+} from "src/core/ragSearchTool";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
 import { resolveAgentPluginMcpServers } from "src/core/agentPlugins";
 import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
@@ -49,6 +56,7 @@ import {
   formatHistoryDate,
 } from "./chat/chatHistory";
 import { resolveEffectiveSkillPaths } from "./chat/contextSkills";
+import { buildNoDiscoverySystemPrompt } from "./chat/noDiscoveryPrompt";
 import MessageList from "./MessageList";
 import InputArea, { type InputAreaHandle } from "./InputArea";
 import { t } from "src/i18n";
@@ -834,46 +842,50 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       // RAG context injection (only when a setting is selected AND RAG is enabled for this session)
       let ragSources: string[] | undefined;
       let ragCitations: RagCitation[] | undefined;
-      if (selectedRagSetting && ragEnabled) {
-        const ragSetting = plugin.getRagSearchSetting(selectedRagSetting);
-        if (ragSetting) {
-          try {
-            const store = getRagStore();
-            const results = await store.search(
-              selectedRagSetting,
-              resolvedContent,
-              ragSetting,
-              llmConfig,
-              plugin.app,
-            );
-            if (results.length > 0) {
-              // Back-compat: deduped file paths for old saved chats.
-              ragSources = [...new Set(results.map(r => r.filePath))];
-              // New: one citation per result chunk, preserving order.
-              // Only location fields are stored; `snippet` is intentionally omitted
-              // because ragCitations are serialized into chat history (no note content
-              // in saved chats). Tooltip preview is derived at render time from chunk text.
-              ragCitations = results.map(r => ({
-                filePath: r.filePath,
-                ...(r.heading ? { heading: r.heading } : {}),
-                startOffset: r.startOffset,
-                ...(r.pageLabel ? { pageLabel: r.pageLabel } : {}),
-              }));
-              const ragContext = results
-                .map(r => {
-                  const loc = r.pageLabel
-                    ? `[Source: ${r.filePath} (${r.pageLabel})]`
-                    : r.heading
-                      ? `[Source: ${r.filePath} > ${r.heading}]`
-                      : `[Source: ${r.filePath}]`;
-                  return `${loc}\n${r.text}`;
-                })
-                .join("\n\n---\n\n");
-              systemPrompt += `\n\nRelevant context from user's notes (use this to answer the question):\n\n${ragContext}`;
-            }
-          } catch (err) {
-            console.warn("RAG search failed:", formatError(err));
+      let hasRagContext = false;
+      let ragSearchCount = 0;
+      const activeRagSetting = selectedRagSetting && ragEnabled
+        ? plugin.getRagSearchSetting(selectedRagSetting)
+        : undefined;
+      if (selectedRagSetting && activeRagSetting) {
+        ragSearchCount++;
+        try {
+          const store = getRagStore();
+          const results = await store.search(
+            selectedRagSetting,
+            resolvedContent,
+            activeRagSetting,
+            llmConfig,
+            plugin.app,
+          );
+          if (results.length > 0) {
+            hasRagContext = true;
+            // Back-compat: deduped file paths for old saved chats.
+            ragSources = [...new Set(results.map(r => r.filePath))];
+            // New: one citation per result chunk, preserving order.
+            // Only location fields are stored; `snippet` is intentionally omitted
+            // because ragCitations are serialized into chat history (no note content
+            // in saved chats). Tooltip preview is derived at render time from chunk text.
+            ragCitations = results.map(r => ({
+              filePath: r.filePath,
+              ...(r.heading ? { heading: r.heading } : {}),
+              startOffset: r.startOffset,
+              ...(r.pageLabel ? { pageLabel: r.pageLabel } : {}),
+            }));
+            const ragContext = results
+              .map(r => {
+                const loc = r.pageLabel
+                  ? `[Source: ${r.filePath} (${r.pageLabel})]`
+                  : r.heading
+                    ? `[Source: ${r.filePath} > ${r.heading}]`
+                    : `[Source: ${r.filePath}]`;
+                return `${loc}\n${r.text}`;
+              })
+              .join("\n\n---\n\n");
+            systemPrompt += `\n\nRelevant context from user's notes (use this to answer the question):\n\n${ragContext}`;
           }
+        } catch (err) {
+          console.warn("RAG search failed:", formatError(err));
         }
       }
 
@@ -889,6 +901,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
           systemPrompt += skillPrompt;
           skillsUsedNames = loadedSkillsList.map(s => s.name);
         }
+      }
+
+      if (vaultToolMode === "noSearch") {
+        systemPrompt += buildNoDiscoverySystemPrompt({
+          ragRequested: Boolean(selectedRagSetting && ragEnabled),
+          hasRagContext,
+        });
       }
 
       // Tested Agent Plugin MCP servers are connected only for turns where a
@@ -948,6 +967,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
       if (activeOkfBundleIds.length > 0 && !isAnythingLlm) {
         tools.push(READ_OKF_DOCUMENT_TOOL);
+      }
+
+      // Keep automatic retrieval for compatibility with models that cannot
+      // call tools, while allowing capable models to refine the query.
+      if (selectedRagSetting && activeRagSetting && !isAnythingLlm) {
+        tools.push(RAG_SEARCH_TOOL);
+        systemPrompt += `\n\nThe selected RAG index is available through the ${RAG_SEARCH_TOOL_NAME} tool. The user's message has already been searched once. If the supplied context is insufficient, too broad, or suggests a better query, use ${RAG_SEARCH_TOOL_NAME} to refine it. At most ${MAX_RAG_SEARCHES_PER_TURN} RAG searches are allowed per turn including the automatic search; each additional search returns at most ${MAX_DYNAMIC_RAG_RESULTS} chunks.`;
       }
 
       // Conversation messages for the API (includes tool call/result messages)
@@ -1055,7 +1081,55 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         for (const tc of pendingToolCalls) {
           setStreamingContent(fullContent + `\n\n🔧 ${tc.name}...`);
 
-          const result = tc.name === GET_WORKFLOW_SPEC_TOOL_NAME
+          const result: ToolExecutionResult = tc.name === RAG_SEARCH_TOOL_NAME
+            ? await (async () => {
+              if (!selectedRagSetting || !activeRagSetting) {
+                return { success: false, result: "RAG is not enabled for this turn." };
+              }
+              if (ragSearchCount >= MAX_RAG_SEARCHES_PER_TURN) {
+                return {
+                  success: false,
+                  result: `RAG search limit reached (${MAX_RAG_SEARCHES_PER_TURN} searches per turn, including automatic retrieval).`,
+                };
+              }
+              const query = typeof tc.arguments.query === "string" ? tc.arguments.query.trim() : "";
+              if (!query) return { success: false, result: "A non-empty query is required." };
+
+              ragSearchCount++;
+              let results: RagSearchResult[];
+              try {
+                results = await getRagStore().search(
+                  selectedRagSetting,
+                  query,
+                  { ...activeRagSetting, topK: Math.min(activeRagSetting.topK, MAX_DYNAMIC_RAG_RESULTS) },
+                  llmConfig,
+                  plugin.app,
+                );
+              } catch (err) {
+                return { success: false, result: `RAG search failed: ${formatError(err)}` };
+              }
+              if (results.length > 0) {
+                ragSources = [...new Set([...(ragSources ?? []), ...results.map(item => item.filePath)])];
+                ragCitations = [
+                  ...(ragCitations ?? []),
+                  ...results.map(item => ({
+                    filePath: item.filePath,
+                    ...(item.heading ? { heading: item.heading } : {}),
+                    startOffset: item.startOffset,
+                    ...(item.pageLabel ? { pageLabel: item.pageLabel } : {}),
+                  })),
+                ];
+              }
+              return {
+                success: true,
+                result: formatRagSearchToolResult(
+                  query,
+                  results,
+                  MAX_RAG_SEARCHES_PER_TURN - ragSearchCount,
+                ),
+              };
+            })()
+            : tc.name === GET_WORKFLOW_SPEC_TOOL_NAME
             ? { success: true, result: handleGetWorkflowSpec(tc.arguments, plugin) }
             : tc.name === READ_OKF_DOCUMENT_TOOL_NAME
               ? {
