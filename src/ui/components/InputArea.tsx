@@ -480,13 +480,14 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     return [...SUPPORTED_TYPES.image, ...SUPPORTED_TYPES.pdf, ...SUPPORTED_TYPES.text, ".md", ".txt"].join(",");
   };
 
+  const enabledMcpServers = mcpServerInfos.filter((server) => enabledMcpServerIds.has(server.id));
+
   return (
     <div className="llm-hub-input-container">
       {/* MCP servers enabled for this chat */}
-      {mcpServerInfos.some((server) => enabledMcpServerIds.has(server.id)) && (
+      {enabledMcpServers.length > 0 && (
         <div className="llm-hub-enabled-mcp-servers">
-          {mcpServerInfos
-            .filter((server) => enabledMcpServerIds.has(server.id))
+          {enabledMcpServers
             .map((server) => (
               <span
                 key={server.id}

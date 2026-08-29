@@ -221,6 +221,10 @@ export const en = {
   "message.clickToOpen": "Click to open: {{source}}",
   "message.clickToSeeDetails": "Click to see details",
   "message.ragCitationOpen": "Click to open at location",
+  "message.openLocalFileConfirm": "Open a file outside the vault? {{path}}",
+  "message.openLocalFileOpen": "Open",
+  "message.openLocalFileUnavailable": "Cannot open local file: {{path}}",
+  "message.openLocalFileFailed": "Failed to open local file: {{error}}",
 
   // Tool display labels
   "tool.readTimeline": "Read timeline",

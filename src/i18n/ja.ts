@@ -221,6 +221,10 @@ export const ja: Record<string, string> = {
   "message.clickToOpen": "クリックして開く: {{source}}",
   "message.clickToSeeDetails": "クリックして詳細を表示",
   "message.ragCitationOpen": "クリックして該当位置を開く",
+  "message.openLocalFileConfirm": "Vault外のファイルを開きますか？ {{path}}",
+  "message.openLocalFileOpen": "開く",
+  "message.openLocalFileUnavailable": "ローカルファイルを開けません: {{path}}",
+  "message.openLocalFileFailed": "ローカルファイルを開けませんでした: {{error}}",
 
   // Tool display labels
   "tool.readTimeline": "タイムライン読取",
