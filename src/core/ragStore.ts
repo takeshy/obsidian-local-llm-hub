@@ -4,10 +4,11 @@
  * Supports multiple named RAG settings, each with its own index.
  */
 
-import { type App, TFile, loadPdfJs } from "obsidian";
+import { type App, TFile } from "obsidian";
 import type { LocalLlmConfig, RagSetting } from "../types";
 import { WORKSPACE_FOLDER } from "../types";
 import { generateEmbeddings, generateEmbedding } from "./embeddingProvider";
+import { extractPdfText, type PdfExtractResult } from "./pdfText";
 import {
   saveRagIndex,
   loadRagIndex,
@@ -919,69 +920,6 @@ export function getRagStore(): RagStore {
 }
 
 // --- Utility functions ---
-
-interface PdfExtractResult {
-  text: string;
-  numPages: number;
-  /** Character offset where each page starts. pageOffsets[i] = offset of page i+1. */
-  pageOffsets: number[];
-}
-
-interface PdfJsDocument {
-  numPages: number;
-  getPage(pageNumber: number): Promise<PdfJsPage>;
-}
-
-interface PdfJsPage {
-  getTextContent(): Promise<PdfJsTextContent>;
-}
-
-interface PdfJsTextContent {
-  items: PdfJsTextItem[];
-}
-
-interface PdfJsTextItem {
-  str?: unknown;
-}
-
-interface PdfJsLib {
-  getDocument(source: { data: ArrayBuffer }): { promise: Promise<PdfJsDocument> };
-}
-
-/**
- * Extract text from a PDF file using Obsidian's built-in PDF.js.
- * Returns null if the PDF has no extractable text (e.g. scanned/image-only).
- * Throws on read/parse errors so callers can preserve existing index data.
- */
-async function extractPdfText(app: App, file: TFile): Promise<PdfExtractResult | null> {
-  const buffer = await app.vault.readBinary(file);
-  const pdfjsLib = await loadPdfJs() as PdfJsLib;
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  const pageTexts: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const text = content.items.map((item) => typeof item.str === "string" ? item.str : "").join(" ");
-    pageTexts.push(text.trim() ? text : "");
-  }
-  // Build joined text with page offset tracking
-  const parts: string[] = [];
-  const pageOffsets: number[] = [];
-  let offset = 0;
-  for (let i = 0; i < pageTexts.length; i++) {
-    if (pageTexts[i]) {
-      if (parts.length > 0) offset++; // for "\n" separator
-      pageOffsets.push(offset);
-      parts.push(pageTexts[i]);
-      offset += pageTexts[i].length;
-    } else {
-      // Empty page: point to where next text will start
-      pageOffsets.push(offset);
-    }
-  }
-  if (parts.length === 0) return null;
-  return { text: parts.join("\n"), numPages: pdf.numPages, pageOffsets };
-}
 
 /**
  * Compute a page label (e.g. "pages 2-5 of 24") for a chunk based on its offset and length.

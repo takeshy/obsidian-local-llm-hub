@@ -26,6 +26,15 @@ export function getVaultTextFiles(app: App): TFile[] {
   return app.vault.getFiles().filter(isVaultTextFile);
 }
 
+/** Files read_note can return: text files plus PDFs (attached or text-extracted). */
+export function isVaultReadableFile(file: TFile): boolean {
+  return isVaultTextFile(file) || file.extension.toLowerCase() === "pdf";
+}
+
+export function getVaultReadableFiles(app: App): TFile[] {
+  return app.vault.getFiles().filter(isVaultReadableFile);
+}
+
 export function hasExplicitExtension(filePath: string): boolean {
   const normalized = filePath.trim().replace(/\/+$/, "");
   const lastSlash = normalized.lastIndexOf("/");

@@ -18,7 +18,10 @@ import type { NodeHttpModule } from "./nodeCompat";
 // OpenAI-compatible API types
 interface OpenAiMessage {
   role: "system" | "user" | "assistant" | "tool";
-  content: string | null;
+  content: string | null | Array<{
+    type: "file";
+    file: { filename: string; file_data: string };
+  }>;
   reasoning_content?: string;
   tool_calls?: {
     id: string;
@@ -33,6 +36,31 @@ export function buildOpenAiMessages(messages: Message[], systemPrompt: string): 
   const openaiMessages: OpenAiMessage[] = [
     { role: "system", content: systemPrompt },
   ];
+  let pendingPdfAttachments: NonNullable<Message["attachments"]> = [];
+  const queuePdfAttachments = (attachments: Message["attachments"]) => {
+    for (const attachment of attachments ?? []) {
+      if (attachment.type !== "pdf") continue;
+      // The same PDF can be read more than once in a turn; sending its base64
+      // payload twice only wastes context.
+      const key = attachment.sourcePath ?? attachment.name;
+      if (pendingPdfAttachments.some(queued => (queued.sourcePath ?? queued.name) === key)) continue;
+      pendingPdfAttachments.push(attachment);
+    }
+  };
+  const flushPdfAttachments = () => {
+    if (pendingPdfAttachments.length === 0) return;
+    openaiMessages.push({
+      role: "user",
+      content: pendingPdfAttachments.map(attachment => ({
+        type: "file" as const,
+        file: {
+          filename: attachment.name,
+          file_data: `data:${attachment.mimeType};base64,${attachment.data}`,
+        },
+      })),
+    });
+    pendingPdfAttachments = [];
+  };
 
   for (const msg of messages) {
     if (msg.role === "tool") {
@@ -41,7 +69,9 @@ export function buildOpenAiMessages(messages: Message[], systemPrompt: string): 
         content: msg.content,
         tool_call_id: msg.toolCallId,
       });
+      queuePdfAttachments(msg.attachments);
     } else if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
+      flushPdfAttachments();
       const hasBundledToolResults = msg.toolResults && msg.toolResults.length > 0;
       openaiMessages.push({
         role: "assistant",
@@ -60,21 +90,27 @@ export function buildOpenAiMessages(messages: Message[], systemPrompt: string): 
       // assistant message. Rehydrate its tool results for the next user turn
       // so the replay does not contain orphaned assistant tool calls.
       if (hasBundledToolResults) {
-        const resultsByCallId = new Map(msg.toolResults!.map(result => [result.toolCallId, result.result]));
+        const resultsByCallId = new Map(msg.toolResults!.map(result => [result.toolCallId, result]));
         for (const toolCall of msg.toolCalls) {
-          if (!resultsByCallId.has(toolCall.id)) continue;
-          const result = resultsByCallId.get(toolCall.id);
+          const bundled = resultsByCallId.get(toolCall.id);
+          if (!bundled) continue;
+          const result = bundled.result;
           openaiMessages.push({
             role: "tool",
             content: typeof result === "string" ? result : JSON.stringify(result),
             tool_call_id: toolCall.id,
           });
+          // Re-attach PDFs read in an earlier turn, otherwise the replayed tool
+          // result claims a PDF is available that the model can no longer see.
+          queuePdfAttachments(bundled.attachments);
         }
         if (msg.content) {
+          flushPdfAttachments();
           openaiMessages.push({ role: "assistant", content: msg.content });
         }
       }
     } else {
+      flushPdfAttachments();
       openaiMessages.push({
         role: msg.role === "user" ? "user" : "assistant",
         content: msg.llmContent ?? msg.content,
@@ -82,6 +118,7 @@ export function buildOpenAiMessages(messages: Message[], systemPrompt: string): 
       });
     }
   }
+  flushPdfAttachments();
 
   return openaiMessages;
 }

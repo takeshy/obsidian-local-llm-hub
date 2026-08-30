@@ -67,6 +67,7 @@ import { decodeBase64Utf8 } from "src/utils/base64";
 import { findFileMentionOccurrences } from "src/utils/mentionResolver";
 import { runtimeSkillPath } from "src/core/runtimeSkills";
 import { ensureAdapterFolder } from "src/core/vaultAdapter";
+import { extractPdfText, formatExtractedPdfText } from "src/core/pdfText";
 
 export interface ChatRef {
   addAttachments: (attachments: Attachment[]) => void;
@@ -482,7 +483,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   }, [plugin]);
 
   const refreshVaultFiles = useCallback(() => {
-    const files = plugin.app.vault.getMarkdownFiles()
+    const files = plugin.app.vault.getFiles()
+      .filter(file => file.extension === "md" || file.extension === "pdf")
       .map(f => f.path)
       .sort();
     setVaultFiles(files);
@@ -518,6 +520,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       resolved = resolved.replace(/\{content\}/g, noteContent || "(no active note)");
     }
 
+    // Tool-capable local models receive the complete vault-relative path and
+    // can call read_note themselves (including choosing PDF pages). Inline
+    // file text only when Vault tools are disabled or unavailable.
+    const shouldInlineFileMentions = vaultToolMode === "none"
+      || plugin.settings.llmConfig.framework === "anythingllm";
+    if (!shouldInlineFileMentions) return resolved;
+
     // Resolve file references (bare file paths from @ mentions). Walk actual
     // vault files (longest path first) so paths with spaces/unicode/regex
     // special chars match. The `requireWhitespaceBoundary` mode enforces that
@@ -525,11 +534,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     // positives where a bare `.includes(file.path)` check would splice file
     // content into the middle of unrelated tokens like `seefoo.md` or
     // `foo.md/child` when only `foo.md` exists in the vault.
-    const mdFiles = plugin.app.vault.getMarkdownFiles();
-    const fileByPath = new Map<string, TFile>(mdFiles.map(f => [f.path, f]));
+    const mentionableFiles = plugin.app.vault.getFiles()
+      .filter(file => file.extension === "md" || file.extension === "pdf");
+    const fileByPath = new Map<string, TFile>(mentionableFiles.map(f => [f.path, f]));
     const occurrences = findFileMentionOccurrences(
       resolved,
-      mdFiles.map(f => f.path),
+      mentionableFiles.map(f => f.path),
       { requireWhitespaceBoundary: true }
     );
     if (occurrences.length === 0) return resolved;
@@ -546,7 +556,17 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       const file = fileByPath.get(path);
       if (!file) continue;
       try {
-        const content = await plugin.app.vault.cachedRead(file);
+        // Inlined PDFs get the same cap as read_note: a long text layer would
+        // otherwise fill the whole context in the modes that inline mentions.
+        let content: string;
+        if (file.extension === "pdf") {
+          const extracted = await extractPdfText(plugin.app, file);
+          content = extracted
+            ? formatExtractedPdfText(extracted)
+            : "(this PDF has no extractable text — it is likely scanned or image-only)";
+        } else {
+          content = await plugin.app.vault.cachedRead(file);
+        }
         const replacement = `From "${path}":\n${content}`;
         for (const h of hits) {
           splices.push({ start: h.start, end: h.end, replacement });
@@ -563,7 +583,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     }
 
     return resolved;
-  }, [plugin]);
+  }, [plugin, vaultToolMode]);
 
   // Save chat history
   const saveCurrentChat = useCallback(async (msgs: Message[]) => {
@@ -958,9 +978,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         tools.push(skillWorkflowTool);
       }
 
-      // Add execute_javascript tool
+      // Add execute_javascript tool, and tell the model how to reach mentioned
+      // files: their content is not inlined for tool-capable models (see
+      // resolveMessageVariables), so it has to fetch them itself.
       if (vaultToolMode !== "none" && !isAnythingLlm) {
         tools.push(EXECUTE_JAVASCRIPT_TOOL);
+        systemPrompt += "\n\nA bare vault-relative path in the user's message (for example `folder/note.md` or `folder/document.pdf`) is a file the user referenced by mention, not a literal string. Its content is not inlined into the message. Call read_note with that exact path before answering anything that depends on it.";
       }
 
       // Workflow spec lookup tool — enables the LLM to fetch authoritative
@@ -1150,6 +1173,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               app: plugin.app,
               mcpManager: plugin.mcpManager,
               vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
+              pdfInputMode: llmConfig.pdfInputMode === "native" && llmConfig.framework !== "ollama"
+                ? "native"
+                : "extract-text",
               onProposeEdit: async (path, oldContent, newContent, context) => {
                 const displayPath = context?.mode === "rename" && context.targetPath
                   ? `${path} → ${context.targetPath}`
@@ -1180,6 +1206,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
             timestamp: Date.now(),
             toolCallId: tc.id,
             toolName: tc.name,
+            attachments: result.attachments,
           };
           conversationMessages.push(toolResultMsg);
 
@@ -1194,7 +1221,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               }
             }
           }
-          allToolResults.push({ toolCallId: tc.id, result: parsedResult });
+          allToolResults.push({ toolCallId: tc.id, result: parsedResult, attachments: result.attachments });
           if (result.cancelled) {
             stopped = true;
             break;

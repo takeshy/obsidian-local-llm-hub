@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { TFile, TFolder, type App } from "obsidian";
 import type { ToolCall } from "../types";
 import { executeToolCall } from "./toolExecutor";
+import { extractPdfText } from "./pdfText";
+
+vi.mock("./pdfText", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./pdfText")>()),
+  extractPdfText: vi.fn(async () => ({ text: "Extracted PDF text", numPages: 1, pageOffsets: [0] })),
+}));
 
 class MockVault {
   private files = new Map<string, TFile>();
@@ -36,7 +42,7 @@ class MockVault {
     return parent;
   }
 
-  addFile(path: string, content: string): TFile {
+  addFile(path: string, content: string, size = content.length): TFile {
     const file = new TFile();
     const name = path.split("/").pop() ?? path;
     const lastDot = name.lastIndexOf(".");
@@ -44,7 +50,7 @@ class MockVault {
     file.name = name;
     file.basename = lastDot > 0 ? name.slice(0, lastDot) : name;
     file.extension = lastDot > 0 ? name.slice(lastDot + 1) : "";
-    file.stat = { size: content.length, mtime: 0, ctime: 0 };
+    file.stat = { size, mtime: 0, ctime: 0 };
     const parentPath = path.substring(0, path.lastIndexOf("/"));
     const parent = parentPath ? this.addFolder(parentPath) : this.root;
     file.parent = parent;
@@ -72,6 +78,10 @@ class MockVault {
 
   async cachedRead(file: TFile): Promise<string> {
     return this.contents.get(file.path) ?? "";
+  }
+
+  async readBinary(file: TFile): Promise<ArrayBuffer> {
+    return new TextEncoder().encode(this.contents.get(file.path) ?? "").buffer;
   }
 
   async create(path: string, content: string): Promise<void> {
@@ -366,5 +376,94 @@ describe("executeToolCall vault files", () => {
     expect(result.success).toBe(true);
     expect(vault.getAbstractFileByPath("Archive/Board.canvas")).toBeInstanceOf(TFile);
     expect(vault.getAbstractFileByPath("Archive/Board.canvas.md")).toBeNull();
+  });
+
+  it("extracts PDF text in the default mode", async () => {
+    const vault = new MockVault();
+    vault.addFile("Docs/report.pdf", "%PDF");
+    const result = await executeToolCall(call("read_note", { path: "Docs/report.pdf" }), {
+      app: createApp(vault),
+    });
+
+    expect(result).toEqual({ success: true, result: "Extracted PDF text" });
+  });
+
+  it("returns a native PDF attachment when explicitly enabled", async () => {
+    const vault = new MockVault();
+    vault.addFile("Docs/report.pdf", "%PDF");
+    const result = await executeToolCall(call("read_note", { path: "Docs/report.pdf" }), {
+      app: createApp(vault),
+      pdfInputMode: "native",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.attachments).toEqual([expect.objectContaining({
+      name: "report.pdf",
+      type: "pdf",
+      mimeType: "application/pdf",
+    })]);
+  });
+
+  it("falls back to extracted text when a native PDF exceeds the size limit", async () => {
+    const vault = new MockVault();
+    vault.addFile("Docs/huge.pdf", "%PDF", 40 * 1024 * 1024);
+    const result = await executeToolCall(call("read_note", { path: "Docs/huge.pdf" }), {
+      app: createApp(vault),
+      pdfInputMode: "native",
+    });
+
+    expect(result).toEqual({ success: true, result: "Extracted PDF text" });
+    expect(result.attachments).toBeUndefined();
+  });
+
+  it("truncates a very long PDF text layer", async () => {
+    const longText = "x".repeat(80_000);
+    vi.mocked(extractPdfText).mockResolvedValueOnce({ text: longText, numPages: 400, pageOffsets: [0, 40_000, 70_000] });
+    const vault = new MockVault();
+    vault.addFile("Docs/long.pdf", "%PDF");
+    const result = await executeToolCall(call("read_note", { path: "Docs/long.pdf" }), {
+      app: createApp(vault),
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.result.length).toBeLessThan(longText.length);
+    expect(result.result).toContain("of 400 pages");
+  });
+
+  it("lists and finds PDFs alongside text files", async () => {
+    const vault = new MockVault();
+    vault.addFile("Docs/note.md", "hello");
+    vault.addFile("Docs/report.pdf", "%PDF");
+    const app = createApp(vault);
+
+    const listed = await executeToolCall(call("list_notes", { folder: "Docs" }), { app });
+    expect(listed.result.split("\n")).toEqual(["Docs/note.md", "Docs/report.pdf"]);
+
+    const found = await executeToolCall(call("search_notes", { query: "report" }), { app });
+    expect(found.result).toContain("Docs/report.pdf");
+    expect(found.result).toContain("read_note");
+  });
+
+  it("rejects unsupported binary files instead of returning mojibake", async () => {
+    const vault = new MockVault();
+    vault.addFile("Assets/photo.png", "binary");
+    const result = await executeToolCall(call("read_note", { path: "Assets/photo.png" }), {
+      app: createApp(vault),
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.result).toContain("not a readable note");
+  });
+
+  it("explains when a scanned PDF has no extractable text", async () => {
+    vi.mocked(extractPdfText).mockResolvedValueOnce(null);
+    const vault = new MockVault();
+    vault.addFile("Docs/scanned.pdf", "%PDF");
+    const result = await executeToolCall(call("read_note", { path: "Docs/scanned.pdf" }), {
+      app: createApp(vault),
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.result).toContain("no extractable text");
   });
 });

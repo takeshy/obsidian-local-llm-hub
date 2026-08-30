@@ -3,6 +3,8 @@ export type LlmFramework = "ollama" | "lm-studio" | "anythingllm" | "vllm";
 
 // Vault tool mode for RAG
 export type VaultToolMode = "all" | "noSearch" | "none";
+// "auto" is a legacy value kept for stored configs; it behaves like "extract-text".
+export type PdfInputMode = "auto" | "native" | "extract-text";
 
 // Local LLM configuration (OpenAI-compatible API)
 export interface LocalLlmConfig {
@@ -12,6 +14,7 @@ export interface LocalLlmConfig {
   apiKey?: string;              // Optional API key (for services that require it)
   temperature?: number;         // 0.0-2.0 (undefined = server default)
   maxTokens?: number;           // Max response tokens (undefined = server default)
+  pdfInputMode?: PdfInputMode;  // auto defaults to extracted text for local servers
 }
 
 export const DEFAULT_LOCAL_LLM_CONFIG: LocalLlmConfig = {
@@ -128,6 +131,7 @@ export interface ToolCall {
 export interface ToolResult {
   toolCallId: string;
   result: unknown;
+  attachments?: Attachment[];  // in-memory only (not persisted to chat history)
 }
 
 // Chat message types

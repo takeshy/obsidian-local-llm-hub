@@ -21,11 +21,11 @@ export const readNoteTool: ToolDefinition = {
   type: "function",
   function: {
     name: "read_note",
-    description: "Read the full content of a text-based vault file by its file path.",
+    description: "Read a supported vault file by its path. Text files return their content; PDFs are attached for PDF-capable models or have their text extracted as a fallback.",
     parameters: {
       type: "object",
       properties: {
-        path: { type: "string", description: "File path relative to vault root (e.g. 'folder/note.md' or 'folder/board.canvas')" },
+        path: { type: "string", description: "File path relative to vault root (e.g. 'folder/note.md', 'folder/board.canvas', or 'folder/document.pdf')" },
       },
       required: ["path"],
     },
@@ -52,7 +52,7 @@ const searchNotes: ToolDefinition = {
   type: "function",
   function: {
     name: "search_notes",
-    description: "Search text-based vault files containing the given query text in their content or filename.",
+    description: "Search vault files containing the given query text in their content or filename. PDFs match by filename only — read their contents with read_note.",
     parameters: {
       type: "object",
       properties: {
@@ -68,7 +68,7 @@ const listNotes: ToolDefinition = {
   type: "function",
   function: {
     name: "list_notes",
-    description: "List text-based vault files in a folder. Returns file paths.",
+    description: "List readable vault files (text files and PDFs) in a folder. Returns file paths.",
     parameters: {
       type: "object",
       properties: {

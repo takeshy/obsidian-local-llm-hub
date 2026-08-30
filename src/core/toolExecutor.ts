@@ -1,10 +1,11 @@
 import { TFile, TFolder, type App } from "obsidian";
-import type { ToolCall } from "../types";
+import type { Attachment, PdfInputMode, ToolCall } from "../types";
 import type { McpManager } from "./mcpManager";
 import { getEditHistoryManager } from "./editHistory";
 import { executeSandboxedJS } from "./sandboxExecutor";
-import { ensureMarkdownExtensionIfMissing, getVaultTextFiles } from "./vaultFileTypes";
+import { ensureMarkdownExtensionIfMissing, getVaultReadableFiles, isVaultReadableFile, isVaultTextFile } from "./vaultFileTypes";
 import { readTimelineEntriesForDay, sanitizeTimelineName } from "./timelineReader";
+import { extractPdfText, formatExtractedPdfText } from "./pdfText";
 import {
   assertVaultToolFileAllowed,
   assertVaultToolFolderNavigable,
@@ -17,7 +18,11 @@ export interface ToolExecutionResult {
   success: boolean;
   result: string;
   cancelled?: boolean;
+  attachments?: Attachment[];
 }
+
+/** Base64 inflates by 4/3, while compatible gateways commonly cap requests near 32 MB. */
+const MAX_NATIVE_PDF_BYTES = 15 * 1024 * 1024;
 
 export type ProposeEditDecision = boolean | {
   accepted: boolean;
@@ -43,6 +48,7 @@ export interface ToolExecutorOptions {
   mcpManager?: McpManager;
   onRunSkillWorkflow?: SkillWorkflowExecutor;
   vaultToolAllowedFolders?: string[];
+  pdfInputMode?: PdfInputMode;
 }
 
 function rejectedEditResult(decision: ProposeEditDecision): ToolExecutionResult | null {
@@ -103,6 +109,44 @@ export async function executeToolCall(
           return { success: false, result: `File not found: ${path}` };
         }
         assertVaultToolFileAllowed(file, allowedFolders);
+        const extension = file.extension.toLowerCase();
+        if (!isVaultReadableFile(file)) {
+          return {
+            success: false,
+            result: `"${file.path}" is not a readable note (unsupported file type "${extension || "none"}").`,
+          };
+        }
+        if (extension === "pdf") {
+          // Oversized PDFs use their text layer instead of creating an
+          // over-limit request or a very large temporary base64 string.
+          if (options.pdfInputMode === "native" && (file.stat?.size ?? 0) <= MAX_NATIVE_PDF_BYTES) {
+            const buffer = await app.vault.readBinary(file);
+            let binary = "";
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.length; i += 0x8000) {
+              binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+            }
+            return {
+              success: true,
+              result: `PDF attached: ${file.path}`,
+              attachments: [{
+                name: file.name,
+                type: "pdf",
+                mimeType: "application/pdf",
+                data: btoa(binary),
+                sourcePath: file.path,
+              }],
+            };
+          }
+          const extracted = await extractPdfText(app, file);
+          if (!extracted?.text.trim()) {
+            return {
+              success: false,
+              result: "The PDF has no extractable text. Enable native PDF input with a PDF-capable local server and model to read scanned pages, images, charts, or diagrams.",
+            };
+          }
+          return { success: true, result: formatExtractedPdfText(extracted) };
+        }
         const content = await app.vault.cachedRead(file);
         return { success: true, result: content };
       }
@@ -134,12 +178,20 @@ export async function executeToolCall(
       case "search_notes": {
         const query = (args.query as string).toLowerCase();
         const limit = parseInt(args.limit as string || "10", 10);
-        const files = getVaultTextFiles(app)
+        const files = getVaultReadableFiles(app)
           .filter((file) => isFileAllowedForVaultTools(file, allowedFolders));
         const results: { path: string; snippet: string }[] = [];
 
         for (const file of files) {
           if (results.length >= limit) break;
+          // PDFs are binary, so they can only be matched by filename here; the
+          // model reads their contents with read_note.
+          if (!isVaultTextFile(file)) {
+            if (file.path.toLowerCase().includes(query)) {
+              results.push({ path: file.path, snippet: "(PDF — call read_note for its contents)" });
+            }
+            continue;
+          }
           // Check filename
           if (file.path.toLowerCase().includes(query)) {
             const content = await app.vault.cachedRead(file);
@@ -157,7 +209,7 @@ export async function executeToolCall(
         }
 
         if (results.length === 0) {
-          return { success: true, result: "No text-based vault files found matching the query." };
+          return { success: true, result: "No readable vault files found matching the query." };
         }
         return {
           success: true,
@@ -169,7 +221,7 @@ export async function executeToolCall(
         const folder = (args.folder as string) || "";
         if (folder) assertVaultToolPathAllowed(folder, allowedFolders);
         const recursive = (args.recursive as string) === "true";
-        const files = getVaultTextFiles(app)
+        const files = getVaultReadableFiles(app)
           .filter((file) => isFileAllowedForVaultTools(file, allowedFolders))
           .filter(f => {
             if (!folder) return recursive || !f.path.includes("/");
@@ -180,7 +232,7 @@ export async function executeToolCall(
           .map(f => f.path)
           .sort();
 
-        return { success: true, result: files.length > 0 ? files.join("\n") : "No text-based vault files found." };
+        return { success: true, result: files.length > 0 ? files.join("\n") : "No readable vault files found." };
       }
 
       case "list_folders": {

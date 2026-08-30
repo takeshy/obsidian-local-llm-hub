@@ -1,7 +1,7 @@
 import { Modal, App, Setting, Notice } from "obsidian";
 import { fetchLocalLlmModels } from "src/core/localLlmProvider";
 import { t } from "src/i18n";
-import type { LocalLlmConfig, LlmFramework } from "src/types";
+import type { LocalLlmConfig, LlmFramework, PdfInputMode } from "src/types";
 
 export class LocalLlmModal extends Modal {
   private config: LocalLlmConfig;
@@ -103,6 +103,18 @@ export class LocalLlmModal extends Modal {
           });
         text.inputEl.type = "password";
       });
+
+    new Setting(contentEl)
+      .setName(t("settings.llmModal.pdfInputMode"))
+      .setDesc(t("settings.llmModal.pdfInputModeDesc"))
+      .addDropdown(dropdown => dropdown
+        .addOption("extract-text", t("settings.llmModal.pdfInputExtractText"))
+        .addOption("native", t("settings.llmModal.pdfInputNative"))
+        // Stored configs may still hold the legacy "auto", which extracts text.
+        .setValue(this.config.pdfInputMode === "native" ? "native" : "extract-text")
+        .onChange(value => {
+          this.config.pdfInputMode = value as PdfInputMode;
+        }));
 
     // Fetch models button
     const fetchSetting = new Setting(contentEl)

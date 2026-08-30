@@ -49,6 +49,80 @@ describe("fetchEmbeddingModels", () => {
 });
 
 describe("buildOpenAiMessages", () => {
+  it("forwards a PDF returned by a tool as an OpenAI file input", () => {
+    const messages: Message[] = [{
+      role: "tool",
+      content: "PDF attached: report.pdf",
+      timestamp: 1,
+      toolCallId: "call_pdf",
+      toolName: "read_note",
+      attachments: [{ name: "report.pdf", type: "pdf", mimeType: "application/pdf", data: "JVBERg==" }],
+    }];
+
+    expect(buildOpenAiMessages(messages, "system")).toEqual([
+      { role: "system", content: "system" },
+      { role: "tool", content: "PDF attached: report.pdf", tool_call_id: "call_pdf" },
+      {
+        role: "user",
+        content: [{
+          type: "file",
+          file: { filename: "report.pdf", file_data: "data:application/pdf;base64,JVBERg==" },
+        }],
+      },
+    ]);
+  });
+
+  it("keeps every parallel tool result before the PDF user input", () => {
+    const messages: Message[] = [
+      { role: "tool", content: "PDF attached", timestamp: 1, toolCallId: "pdf", attachments: [{ name: "a.pdf", type: "pdf", mimeType: "application/pdf", data: "AA==" }] },
+      { role: "tool", content: "other result", timestamp: 2, toolCallId: "other" },
+    ];
+    const wire = buildOpenAiMessages(messages, "system");
+
+    expect(wire.map(message => message.role)).toEqual(["system", "tool", "tool", "user"]);
+  });
+
+  it("re-attaches a PDF read in an earlier turn from the bundled tool results", () => {
+    const messages: Message[] = [
+      { role: "user", content: "Summarize report.pdf", timestamp: 1 },
+      {
+        role: "assistant",
+        content: "It is a quarterly report.",
+        timestamp: 2,
+        toolCalls: [{ id: "call_pdf", name: "read_note", arguments: { path: "report.pdf" } }],
+        toolResults: [{
+          toolCallId: "call_pdf",
+          result: "PDF attached: report.pdf",
+          attachments: [{ name: "report.pdf", type: "pdf", mimeType: "application/pdf", data: "JVBERg==" }],
+        }],
+      },
+      { role: "user", content: "What does page 2 say?", timestamp: 3 },
+    ];
+
+    const wire = buildOpenAiMessages(messages, "system");
+
+    expect(wire.map(message => message.role)).toEqual([
+      "system", "user", "assistant", "tool", "user", "assistant", "user",
+    ]);
+    expect(wire[4].content).toEqual([{
+      type: "file",
+      file: { filename: "report.pdf", file_data: "data:application/pdf;base64,JVBERg==" },
+    }]);
+  });
+
+  it("sends the same PDF once when a turn reads it twice", () => {
+    const attachment = { name: "report.pdf", type: "pdf" as const, mimeType: "application/pdf", data: "JVBERg==", sourcePath: "Docs/report.pdf" };
+    const messages: Message[] = [
+      { role: "tool", content: "PDF attached", timestamp: 1, toolCallId: "a", attachments: [attachment] },
+      { role: "tool", content: "PDF attached", timestamp: 2, toolCallId: "b", attachments: [attachment] },
+    ];
+
+    const wire = buildOpenAiMessages(messages, "system");
+
+    expect(wire.map(message => message.role)).toEqual(["system", "tool", "tool", "user"]);
+    expect(wire[3].content).toHaveLength(1);
+  });
+
   it("replays reasoning and uses null content for a tool-only assistant turn", () => {
     const messages: Message[] = [
       { role: "user", content: "Update the active note", timestamp: 1 },
