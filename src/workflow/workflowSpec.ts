@@ -411,13 +411,14 @@ Workflows can be triggered automatically by Obsidian vault events. When triggere
 
 | Variable | Available On | Description |
 |----------|-------------|-------------|
-| \`_eventType\` | All events | Event type: \`create\`, \`modify\`, \`delete\`, \`rename\`, \`file-open\` |
-| \`_eventFilePath\` | All events | Full path of the affected file (e.g., "folder/note.md") |
-| \`_eventFile\` | All events | JSON object: \`{"path": "...", "basename": "...", "name": "...", "extension": "..."}\` |
+| \`_eventType\` | All events | Event type: \`startup\`, \`create\`, \`modify\`, \`delete\`, \`rename\`, \`file-open\` |
+| \`_eventFilePath\` | File events | Full path of the affected file (e.g., "folder/note.md") |
+| \`_eventFile\` | File events | JSON object: \`{"path": "...", "basename": "...", "name": "...", "extension": "..."}\` |
 | \`_eventFileContent\` | create, modify, file-open | The file's text content |
 | \`_eventOldPath\` | rename only | The previous file path before rename |
 
 ### Event Types
+- **startup**: The Obsidian workspace is ready after startup (runs once and has no file variables)
 - **create**: A new file is created in the vault
 - **modify**: A file is saved (debounced, won't fire on every keystroke)
 - **delete**: A file is deleted from the vault

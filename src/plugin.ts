@@ -163,6 +163,7 @@ export class LocalLlmHubPlugin extends Plugin {
       void this.ensureChatViewExists();
       this.workflowManager.registerHotkeys();
       this.workflowManager.registerEventListeners();
+      void this.workflowManager.triggerStartupWorkflows();
     });
 
     // Track active markdown view and capture selection when switching to chat

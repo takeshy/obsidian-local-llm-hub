@@ -3,6 +3,7 @@ import type { ObsidianEventType, WorkflowEventTrigger } from "src/types";
 import { t } from "src/i18n";
 
 const EVENT_LABELS: Record<ObsidianEventType, { name: string; desc: string }> = {
+  startup: { name: "Startup", desc: "Triggered once when the Obsidian workspace is ready" },
   create: { name: "File created", desc: "Triggered when a new file is created" },
   modify: { name: "File modified", desc: "Triggered when a file is saved" },
   delete: { name: "File deleted", desc: "Triggered when a file is deleted" },
@@ -10,7 +11,7 @@ const EVENT_LABELS: Record<ObsidianEventType, { name: string; desc: string }> = 
   "file-open": { name: "File opened", desc: "Triggered when a file is opened" },
 };
 
-const ALL_EVENTS: ObsidianEventType[] = ["create", "modify", "delete", "rename", "file-open"];
+const ALL_EVENTS: ObsidianEventType[] = ["startup", "create", "modify", "delete", "rename", "file-open"];
 
 export class EventTriggerModal extends Modal {
   private workflowId: string;
@@ -71,7 +72,7 @@ export class EventTriggerModal extends Modal {
 
     new Setting(contentEl)
       .setName(t("workflow.filePattern"))
-      .setDesc(t("workflow.filePatternDesc"))
+      .setDesc(`${t("workflow.filePatternDesc")} Ignored for startup triggers.`)
       .addText((text) => {
         text.setPlaceholder("**/*.md");
         text.setValue(this.filePattern);

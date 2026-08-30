@@ -228,7 +228,7 @@ export interface SlashCommand {
 }
 
 // Obsidian event types for workflow triggers
-export type ObsidianEventType = "create" | "modify" | "delete" | "rename" | "file-open";
+export type ObsidianEventType = "startup" | "create" | "modify" | "delete" | "rename" | "file-open";
 
 // Workflow event trigger
 export interface WorkflowEventTrigger {

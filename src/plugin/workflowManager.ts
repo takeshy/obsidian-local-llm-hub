@@ -321,6 +321,18 @@ export class WorkflowManager {
     );
   }
 
+  /** Execute workflows configured for startup once the workspace is ready. */
+  async triggerStartupWorkflows(): Promise<void> {
+    try {
+      await this.migrateLegacyWorkflowIds();
+    } catch (err) {
+      console.error("[LocalLlmHub] workflow ID migration failed:", err);
+    }
+    const triggers = this.plugin.settings.enabledWorkflowEventTriggers;
+    if (!triggers || triggers.length === 0) return;
+    await this.executeMatchingWorkflows("startup", undefined, {}, triggers);
+  }
+
   /**
    * Handle a workflow event trigger.
    * Includes event loop prevention and debouncing for modify events.
@@ -368,7 +380,7 @@ export class WorkflowManager {
    */
   private async executeMatchingWorkflows(
     eventType: ObsidianEventType,
-    filePath: string,
+    filePath: string | undefined,
     eventData: { file?: TFile; oldPath?: string },
     triggers: WorkflowEventTrigger[]
   ): Promise<void> {
@@ -380,7 +392,7 @@ export class WorkflowManager {
       }
 
       // Check file pattern if specified
-      if (trigger.filePattern) {
+      if (eventType !== "startup" && trigger.filePattern && filePath !== undefined) {
         if (!matchFilePattern(trigger.filePattern, filePath)) {
           return false;
         }
@@ -420,7 +432,7 @@ export class WorkflowManager {
   private async executeFromEvent(
     trigger: WorkflowEventTrigger,
     eventType: ObsidianEventType,
-    filePath: string,
+    filePath: string | undefined,
     eventData: { file?: TFile; oldPath?: string }
   ): Promise<void> {
     const workflowFilePath = trigger.workflowId;
@@ -434,7 +446,9 @@ export class WorkflowManager {
 
     // Event loop prevention: mark the trigger file as being processed
     // This prevents workflows from re-triggering on the same file they just modified
-    this.workflowModifiedFiles.add(filePath);
+    if (filePath !== undefined) {
+      this.workflowModifiedFiles.add(filePath);
+    }
 
     // Also mark the workflow file itself to prevent self-modification loops
     this.workflowModifiedFiles.add(workflowFilePath);
@@ -442,7 +456,9 @@ export class WorkflowManager {
     // Set up cleanup timer to remove the file from the blocked set
     // Use a longer timeout to account for async file operations
     const cleanupTimeout = window.setTimeout(() => {
-      this.workflowModifiedFiles.delete(filePath);
+      if (filePath !== undefined) {
+        this.workflowModifiedFiles.delete(filePath);
+      }
       this.workflowModifiedFiles.delete(workflowFilePath);
     }, 2000); // 2 seconds should be enough for most workflows
 
@@ -458,7 +474,9 @@ export class WorkflowManager {
 
       // Set event-specific variables
       setEventVariable(input.variables, "_eventType", eventType);
-      setEventVariable(input.variables, "_eventFilePath", filePath);
+      if (filePath !== undefined) {
+        setEventVariable(input.variables, "_eventFilePath", filePath);
+      }
 
       if (eventData.file) {
         setEventVariable(input.variables, "_eventFile", JSON.stringify({

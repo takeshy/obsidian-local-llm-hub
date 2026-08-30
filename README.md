@@ -81,7 +81,7 @@ Load any workflow, click **AI Modify**, describe the change. The same plan → g
 
 ### Event Triggers & Hotkeys
 
-- **Event triggers** — auto-run workflows on file create / modify / delete / rename / open
+- **Event triggers** — auto-run workflows on startup or file create / modify / delete / rename / open
 - **Hotkey support** — assign keyboard shortcuts to any named workflow
 - **Execution history** — review past runs with step-by-step details
 
