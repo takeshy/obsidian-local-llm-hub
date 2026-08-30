@@ -85,6 +85,20 @@ Load any workflow, click **AI Modify**, describe the change. The same plan → g
 - **Hotkey support** — assign keyboard shortcuts to any named workflow
 - **Execution history** — review past runs with step-by-step details
 
+#### Example: Sync a RAG Index on Startup
+
+Create a workflow with a `rag-sync` node, select the RAG setting you want to update, and leave the path empty to run a full sync.
+
+![RAG sync workflow](docs/images/rag_workflow.png)
+
+Open **Configure event triggers**, enable **Startup**, and save. The workflow will run once the Obsidian workspace is ready.
+
+![Startup event trigger](docs/images/rag_event_trigger.png)
+
+Use **History** to confirm that the sync completed and to review its input, output, and duration.
+
+![RAG sync execution history](docs/images/rag_execute_log.png)
+
 See the OKF workflow node reference at
 [docs/okf/local-llm-hub-help/features/workflow-nodes.md](docs/okf/local-llm-hub-help/features/workflow-nodes.md).
 

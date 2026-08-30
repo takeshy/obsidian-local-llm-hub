@@ -85,6 +85,20 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 - **ホットキー対応** — 任意の名前付きワークフローにキーボードショートカットを割り当て
 - **実行履歴** — 過去のワークフロー実行をステップごとに確認
 
+#### 例：起動時に RAG インデックスを同期
+
+`rag-sync` ノードを使ったワークフローを作成し、更新する RAG 設定を選択します。パスを空欄にすると全体同期になります。
+
+![RAG 同期ワークフロー](docs/images/rag_workflow.png)
+
+**イベントトリガーを設定** を開き、**起動時** を有効にして保存します。Obsidian のワークスペース準備完了後に、このワークフローが一度実行されます。
+
+![起動時イベントトリガー](docs/images/rag_event_trigger.png)
+
+**履歴** から同期の完了を確認し、入力・出力・実行時間を参照できます。
+
+![RAG 同期の実行履歴](docs/images/rag_execute_log.png)
+
 ノードリファレンスは OKF 版の [workflow-nodes.md](docs/okf/local-llm-hub-help/features/workflow-nodes.md) を参照してください。
 
 ---
