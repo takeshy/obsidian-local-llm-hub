@@ -14,10 +14,11 @@ export interface TabContainerRef {
 
 interface TabContainerProps {
   plugin: LocalLlmHubPlugin;
+  onToggleSidebarWidth: () => boolean;
 }
 
 const TabContainer = forwardRef<TabContainerRef, TabContainerProps>(
-  ({ plugin }, ref) => {
+  ({ plugin, onToggleSidebarWidth }, ref) => {
     const [activeTab, setActiveTab] = useState<TabType>("chat");
     const chatRef = useRef<ChatRef>(null);
 
@@ -55,7 +56,7 @@ const TabContainer = forwardRef<TabContainerRef, TabContainerProps>(
         </div>
         <div className="llm-hub-tab-content">
           <div className={`llm-hub-tab-panel ${activeTab === "chat" ? "is-active" : ""}`}>
-            <Chat ref={chatRef} plugin={plugin} />
+            <Chat ref={chatRef} plugin={plugin} onToggleSidebarWidth={onToggleSidebarWidth} />
           </div>
           <div className={`llm-hub-tab-panel ${activeTab === "search" ? "is-active" : ""}`}>
             <SearchPanel plugin={plugin} onChatWithResults={handleChatWithResults} />

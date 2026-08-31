@@ -9,6 +9,7 @@ export class ChatView extends ItemView {
   plugin: LocalLlmHubPlugin;
   reactRoot!: Root;
   private tabContainerRef: TabContainerRef | null = null;
+  private widenedSidebar: HTMLElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: LocalLlmHubPlugin) {
     super(leaf);
@@ -44,13 +45,27 @@ export class ChatView extends ItemView {
           this.tabContainerRef = ref;
         }}
         plugin={this.plugin}
+        onToggleSidebarWidth={() => this.toggleSidebarWidth()}
       />
     );
     this.reactRoot = root;
   }
 
   async onClose(): Promise<void> {
+    this.widenedSidebar?.removeClass("llm-hub-wide-sidebar");
     this.reactRoot?.unmount();
     await Promise.resolve();
+  }
+
+  private toggleSidebarWidth(): boolean {
+    const sidebar = this.containerEl.closest<HTMLElement>(
+      ".workspace-split.mod-left-split, .workspace-split.mod-right-split"
+    );
+    if (!sidebar) return false;
+    sidebar.toggleClass("llm-hub-wide-sidebar", !sidebar.hasClass("llm-hub-wide-sidebar"));
+    const isWide = sidebar.hasClass("llm-hub-wide-sidebar");
+    this.widenedSidebar = isWide ? sidebar : null;
+    window.setTimeout(() => this.leaf.onResize(), 0);
+    return isWide;
   }
 }

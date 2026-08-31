@@ -1,6 +1,6 @@
 import { Notice, Setting } from "obsidian";
 import { t } from "src/i18n";
-import { SKILLS_FOLDER, WORKSPACE_FOLDER } from "src/types";
+import { DEFAULT_SETTINGS, SKILLS_FOLDER, WORKSPACE_FOLDER } from "src/types";
 import { isUnsafePath, normalizePathSeparators } from "src/core/pathAccess";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { normalizeVaultScopePath } from "src/core/vaultToolScope";
@@ -151,6 +151,23 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
           plugin.settings.saveChatHistory = value;
           await plugin.saveSettings();
         });
+    });
+
+  new Setting(containerEl)
+    .setName(t("settings.maxSavedChatHistories"))
+    .setDesc(t("settings.maxSavedChatHistoriesDesc"))
+    .addText((text) => {
+      text.setValue(String(plugin.settings.maxSavedChatHistories));
+      text.inputEl.type = "number";
+      text.inputEl.min = "0";
+      text.inputEl.step = "1";
+      text.inputEl.addEventListener("blur", () => {
+        const parsed = Number.parseInt(text.inputEl.value, 10);
+        const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_SETTINGS.maxSavedChatHistories;
+        plugin.settings.maxSavedChatHistories = value;
+        text.inputEl.value = String(value);
+        void plugin.saveSettings();
+      });
     });
 
   new Setting(containerEl)

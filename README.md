@@ -124,6 +124,8 @@ Configure your LLM server and models in Local LLM Hub, then select a Local LLM H
 
 Streaming chat with your local LLM. Thinking display, file attachments, `@` mentions for vault notes, multiple sessions.
 
+The header includes an expand/shrink control for the sidebar and a **Save as note** action. Manual exports use `YYYYMMDD-HHmmss_Chat title.md`, contain compact conversation content without history metadata, and overwrite the same chat's export when saved again.
+
 ![Chat with RAG](docs/images/chat_with_rag.png)
 
 ### Vault Tools (Function Calling)
@@ -249,6 +251,12 @@ Portable Agent Plugin MCP servers are managed from **Settings → Agent plugins*
 ### Workspace Settings
 
 Use **LLM vault tool folders** to control which folders automatic LLM vault operations can access. An empty value allows the whole vault.
+
+Automatic chat history can be limited to a maximum number of saved chats; `0` keeps all histories. Existing installations default to unlimited and new installations to 100.
+
+### Chat Settings
+
+Set **Manual chat save folder** to a vault-relative destination for Save as note. Leave it blank to use the vault root.
 
 ![Workspace Settings](docs/images/setting_workspace.png)
 

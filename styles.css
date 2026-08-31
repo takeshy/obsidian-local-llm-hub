@@ -124,6 +124,15 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   overflow: hidden;
 }
 
+.workspace-split.mod-left-split.llm-hub-wide-sidebar,
+.workspace-split.mod-right-split.llm-hub-wide-sidebar {
+  width: min(50vw, 800px) !important;
+}
+
+.is-mobile .llm-hub-sidebar-width-btn {
+  display: none;
+}
+
 .llm-hub-chat {
   display: flex;
   flex-direction: column;

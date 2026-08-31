@@ -1,6 +1,13 @@
 import type { Message, RagCitation } from "src/types";
 import { t } from "src/i18n";
 
+export function messagesToCompactMarkdown(msgs: Message[]): string {
+  return msgs.map((msg) => {
+    const role = msg.role === "user" ? "You" : (msg.model || "Assistant");
+    return `## ${role}\n\n${msg.content.trim()}`;
+  }).join("\n\n");
+}
+
 // Convert messages to Markdown format
 export function messagesToMarkdown(
   msgs: Message[],

@@ -8,7 +8,7 @@ import {
   useImperativeHandle,
 } from "react";
 import { TFile, Notice } from "obsidian";
-import { Plus, History, Trash2, FileText, Loader2, Check } from "lucide-react";
+import { Plus, History, Trash2, FileText, Loader2, Check, Maximize2, Minimize2 } from "lucide-react";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import {
   type Message,
@@ -54,6 +54,7 @@ import { promptForPassword } from "src/ui/passwordPrompt";
 import { buildErrorMessage, type ChatHistory } from "./chat/chatUtils";
 import {
   messagesToMarkdown,
+  messagesToCompactMarkdown,
   parseMarkdownToMessages,
   formatHistoryDate,
 } from "./chat/chatHistory";
@@ -76,12 +77,13 @@ export interface ChatRef {
 
 interface ChatProps {
   plugin: LocalLlmHubPlugin;
+  onToggleSidebarWidth: () => boolean;
 }
 
 const DASHBOARD_SKILL_PATH = runtimeSkillPath("dashboard-hub", "dashboard");
 const CONTEXT_SKILL_PATHS = new Set([DASHBOARD_SKILL_PATH]);
 
-const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
+const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sentPromptHistory, setSentPromptHistory] = useState<string[]>(() => {
     const saved = plugin.wsManager.workspaceState.sentPromptHistory;
@@ -96,6 +98,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
   const [showHistory, setShowHistory] = useState(false);
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [saveNoteState, setSaveNoteState] = useState<"idle" | "saving" | "saved">("idle");
+  const [isSidebarWide, setIsSidebarWide] = useState(false);
+  const savedNotePathsRef = useRef(new Map<string, string>());
 
   const [currentModel, setCurrentModel] = useState(plugin.settings.llmConfig.model);
   const [ragSettingNames, setRagSettingNames] = useState<string[]>(plugin.getRagSettingNames());
@@ -601,6 +605,17 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
 
     await plugin.app.vault.adapter.write(filePath, markdown);
 
+    const limit = Math.max(0, plugin.settings.maxSavedChatHistories);
+    if (limit > 0) {
+      const listed = await plugin.app.vault.adapter.list(folder);
+      const files = (await Promise.all(listed.files.filter(path => path.endsWith(".md")).map(async path => ({
+        path,
+        stat: await plugin.app.vault.adapter.stat(path),
+      })))).filter((file): file is { path: string; stat: NonNullable<typeof file.stat> } => file.stat !== null)
+        .sort((a, b) => b.stat.mtime - a.stat.mtime);
+      await Promise.all(files.slice(limit).map(file => plugin.app.vault.adapter.remove(file.path)));
+    }
+
     if (!currentChatId) {
       setCurrentChatId(chatId);
     }
@@ -612,19 +627,26 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
     setSaveNoteState("saving");
     try {
       const chatTitle = generateChatTitle(messages);
-      const markdown = messagesToMarkdown(messages, chatTitle, chatCreatedAt.current);
+      const markdown = messagesToCompactMarkdown(messages);
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
-      const fileName = `chat-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.md`;
-      await plugin.app.vault.create(fileName, markdown);
-      new Notice(t("chat.savedAsNote", { path: fileName }));
+      const dateTime = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      const safeTitle = chatTitle.replace(/[\\/:*?"<>|#^[\]\r\n]+/g, " ").replace(/\s+/g, " ").replace(/^\.+|\.+$/g, "").trim().slice(0, 80) || "Chat";
+      const folder = plugin.settings.manualChatSaveFolder.trim();
+      if (folder) await ensureAdapterFolder(plugin.app.vault.adapter, folder);
+      const chatKey = currentChatId ?? String(messages[0].timestamp);
+      const newPath = `${folder ? `${folder}/` : ""}${dateTime}_${safeTitle}.md`;
+      const filePath = savedNotePathsRef.current.get(chatKey) ?? newPath;
+      await plugin.app.vault.adapter.write(filePath, markdown);
+      savedNotePathsRef.current.set(chatKey, filePath);
+      new Notice(t("chat.savedAsNote", { path: filePath }));
       setSaveNoteState("saved");
       window.setTimeout(() => setSaveNoteState("idle"), 3000);
     } catch (error) {
       new Notice(t("common.error") + formatError(error));
       setSaveNoteState("idle");
     }
-  }, [saveNoteState, messages, plugin]);
+  }, [saveNoteState, messages, currentChatId, plugin]);
 
   // Load chat histories
   const loadChatHistories = useCallback(async () => {
@@ -1250,6 +1272,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
       {/* Header */}
       <div className="llm-hub-chat-header">
         <div className="llm-hub-header-actions">
+          <button
+            className="llm-hub-header-btn llm-hub-sidebar-width-btn"
+            onClick={() => setIsSidebarWide(onToggleSidebarWidth())}
+            title={isSidebarWide ? t("chat.narrowSidebar") : t("chat.widenSidebar")}
+          >
+            {isSidebarWide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
           <button
             className="llm-hub-header-btn"
             onClick={() => { void handleSaveAsNote(); }}

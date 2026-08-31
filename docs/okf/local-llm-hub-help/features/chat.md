@@ -15,3 +15,7 @@ The Chat view sends the conversation to the selected configured model. Local LLM
 Chat can include context from the vault through RAG and from enabled OKF bundles. If RAG is selected, semantic search results are injected into the prompt. If OKF bundles are enabled in the input area, their curated Markdown summaries are added as domain context.
 
 Users should start a new chat when switching topics if they do not want prior conversation history included.
+
+The expand/shrink control toggles a desktop sidebar between normal and expanded widths. Save as note exports a non-empty conversation as compact Markdown named `YYYYMMDD-HHmmss_Chat title.md`, without history frontmatter or restoration metadata. Saving the same chat again during the session overwrites the export. Chat settings control its vault-relative destination; blank uses the vault root.
+
+Automatic history is separate. Its maximum saved chat setting removes oldest histories above the limit; zero is unlimited. Existing installations default to unlimited, while new installations default to 100.

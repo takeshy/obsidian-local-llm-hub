@@ -2,6 +2,7 @@ import { PluginSettingTab, App, Setting, type SettingDefinitionItem } from "obsi
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { displayLlmSettings } from "src/ui/settings/llmSettings";
 import { displayWorkspaceSettings } from "src/ui/settings/workspaceSettings";
+import { displayChatSettings } from "src/ui/settings/chatSettings";
 import { displayRagSettings } from "src/ui/settings/ragSettings";
 import { displayKnowledgeSettings } from "src/ui/settings/knowledgeSettings";
 import { displayExternalSkillSettings } from "src/ui/settings/externalSkillSettings";
@@ -40,6 +41,7 @@ export class SettingsTab extends PluginSettingTab {
     return [
       section("Language models", containerEl => displayLlmSettings(containerEl, ctx)),
       section("Workspaces", containerEl => displayWorkspaceSettings(containerEl, ctx)),
+      section("Chat", containerEl => displayChatSettings(containerEl, ctx)),
       section("Retrieval-augmented generation", containerEl => displayRagSettings(containerEl, ctx)),
       section("Knowledge", containerEl => displayKnowledgeSettings(containerEl, ctx)),
       section("External skills", containerEl => displayExternalSkillSettings(containerEl, ctx)),

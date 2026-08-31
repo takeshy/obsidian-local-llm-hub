@@ -285,6 +285,8 @@ export interface LocalLlmHubSettings {
   /** Legacy RAG settings kept for migration only. Use WorkspaceState.ragSettings instead. */
   ragConfig?: RagConfig;
   saveChatHistory: boolean;
+  maxSavedChatHistories: number;
+  manualChatSaveFolder: string;
   systemPrompt: string;
   encryption: EncryptionSettings;
   editHistory: EditHistorySettings;
@@ -334,6 +336,8 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   llmVerified: false,
   availableModels: [],
   saveChatHistory: true,
+  maxSavedChatHistories: 100,
+  manualChatSaveFolder: "",
   systemPrompt: "",
   encryption: { ...DEFAULT_ENCRYPTION_SETTINGS },
   editHistory: { ...DEFAULT_EDIT_HISTORY_SETTINGS },
