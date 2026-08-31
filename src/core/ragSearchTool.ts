@@ -11,7 +11,7 @@ export const RAG_SEARCH_TOOL: ToolDefinition = {
   type: "function",
   function: {
     name: RAG_SEARCH_TOOL_NAME,
-    description: "Search the selected RAG index with a focused semantic query. Use this when the automatically retrieved context is missing, too broad, or suggests a better follow-up query. Searches only the configured RAG index; it does not scan the vault directly.",
+    description: "Search the selected RAG index with a focused semantic query when the request may depend on indexed vault knowledge. Searches only the configured RAG index; it does not scan the vault directly.",
     parameters: {
       type: "object",
       properties: {

@@ -34,6 +34,7 @@ interface InputAreaProps {
   selectedRagSetting: string | null;
   onRagSettingChange: (setting: string | null) => void;
   ragEnabled: boolean;
+  ragSearchAvailable: boolean;
   onRagToggle: (enabled: boolean) => void;
   vaultToolMode: VaultToolMode;
   onVaultToolModeChange: (mode: VaultToolMode) => void;
@@ -88,6 +89,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   ragSettingNames,
   selectedRagSetting,
   ragEnabled,
+  ragSearchAvailable,
   onRagToggle,
   onRagSettingChange,
   vaultToolMode,
@@ -500,7 +502,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                   type="button"
                   className="llm-hub-enabled-mcp-server-remove"
                   onClick={() => onMcpServerToggle(server.id, false)}
-                  disabled={isLoading}
+                  disabled={isLoading || !ragSearchAvailable}
                   title={t("input.mcpServerDisable", { name: server.name })}
                   aria-label={t("input.mcpServerDisable", { name: server.name })}
                 >
@@ -717,7 +719,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                 models={availableModels}
                 value={currentModel}
                 onChange={onModelChange}
-                disabled={isLoading}
+                disabled={isLoading || !ragSearchAvailable}
               />
             </>
           )}

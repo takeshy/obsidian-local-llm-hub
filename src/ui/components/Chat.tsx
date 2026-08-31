@@ -861,57 +861,13 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         systemPrompt += await buildOkfSystemPrompt(plugin.app, okfRoot, externalOkfBundleIds);
       }
 
-      // RAG context injection (only when a setting is selected AND RAG is enabled for this session)
       let ragSources: string[] | undefined;
       let ragCitations: RagCitation[] | undefined;
-      let hasRagContext = false;
+      const hasRagContext = false;
       let ragSearchCount = 0;
       const activeRagSetting = selectedRagSetting && ragEnabled
         ? plugin.getRagSearchSetting(selectedRagSetting)
         : undefined;
-      if (selectedRagSetting && activeRagSetting) {
-        try {
-          const store = getRagStore();
-          const results = await store.search(
-            selectedRagSetting,
-            resolvedContent,
-            activeRagSetting,
-            llmConfig,
-            plugin.app,
-          );
-          // A search that threw never reached the index, so it must not consume
-          // the turn budget the model is told it has.
-          ragSearchCount++;
-          if (results.length > 0) {
-            hasRagContext = true;
-            // Back-compat: deduped file paths for old saved chats.
-            ragSources = [...new Set(results.map(r => r.filePath))];
-            // New: one citation per result chunk, preserving order.
-            // Only location fields are stored; `snippet` is intentionally omitted
-            // because ragCitations are serialized into chat history (no note content
-            // in saved chats). Tooltip preview is derived at render time from chunk text.
-            ragCitations = results.map(r => ({
-              filePath: r.filePath,
-              ...(r.heading ? { heading: r.heading } : {}),
-              startOffset: r.startOffset,
-              ...(r.pageLabel ? { pageLabel: r.pageLabel } : {}),
-            }));
-            const ragContext = results
-              .map(r => {
-                const loc = r.pageLabel
-                  ? `[Source: ${r.filePath} (${r.pageLabel})]`
-                  : r.heading
-                    ? `[Source: ${r.filePath} > ${r.heading}]`
-                    : `[Source: ${r.filePath}]`;
-                return `${loc}\n${r.text}`;
-              })
-              .join("\n\n---\n\n");
-            systemPrompt += `\n\nRelevant context from user's notes (use this to answer the question):\n\n${ragContext}`;
-          }
-        } catch (err) {
-          console.warn("RAG search failed:", formatError(err));
-        }
-      }
 
       // Skill instructions injection (include skillPath from slash command even if state hasn't updated yet)
       let skillsUsedNames: string[] | undefined;
@@ -996,11 +952,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         tools.push(READ_OKF_DOCUMENT_TOOL);
       }
 
-      // Keep automatic retrieval for compatibility with models that cannot
-      // call tools, while allowing capable models to refine the query.
       if (selectedRagSetting && activeRagSetting && !isAnythingLlm) {
         tools.push(RAG_SEARCH_TOOL);
-        systemPrompt += `\n\nThe selected RAG index is available through the ${RAG_SEARCH_TOOL_NAME} tool. The automatic search that produced the context above used the user's message verbatim as the query. That is a weak query for a follow-up question, for a pronoun-heavy request, or when the answer needs a term the user did not write, so the context above is a starting point rather than a complete retrieval. Whenever it looks off-topic, thin, or answers a broader question than the one asked, call ${RAG_SEARCH_TOOL_NAME} with a self-contained, rephrased query instead of answering from it. At most ${MAX_RAG_SEARCHES_PER_TURN} RAG searches are allowed per turn including the automatic search; each additional search returns at most ${MAX_DYNAMIC_RAG_RESULTS} chunks.`;
+        systemPrompt += `\n\nThe selected RAG index is available through the ${RAG_SEARCH_TOOL_NAME} tool. Use it with a self-contained, focused semantic query when the user's request may depend on indexed vault knowledge. Do not claim that the index lacks relevant information before searching it. At most ${MAX_RAG_SEARCHES_PER_TURN} RAG searches are allowed per turn; each search returns at most ${MAX_DYNAMIC_RAG_RESULTS} chunks.`;
       }
 
       // Conversation messages for the API (includes tool call/result messages)
@@ -1116,7 +1070,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
               if (ragSearchCount >= MAX_RAG_SEARCHES_PER_TURN) {
                 return {
                   success: false,
-                  result: `RAG search limit reached (${MAX_RAG_SEARCHES_PER_TURN} searches per turn, including automatic retrieval).`,
+                  result: `RAG search limit reached (${MAX_RAG_SEARCHES_PER_TURN} searches per turn).`,
                 };
               }
               const query = typeof tc.arguments.query === "string" ? tc.arguments.query.trim() : "";
@@ -1394,6 +1348,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin }, ref) => {
         ragSettingNames={ragSettingNames}
         selectedRagSetting={selectedRagSetting}
         ragEnabled={ragEnabled}
+        ragSearchAvailable={llmConfig.framework !== "anythingllm"}
         onRagToggle={setRagEnabled}
         onRagSettingChange={(setting) => {
           setSelectedRagSetting(setting);
