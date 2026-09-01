@@ -2,7 +2,7 @@ import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Modal, TFile, type Editor,
 import { ChatView, VIEW_TYPE_LLM_CHAT } from "src/ui/ChatView";
 import { CryptView, CRYPT_VIEW_TYPE } from "src/ui/CryptView";
 import { SettingsTab } from "src/ui/SettingsTab";
-import { type LocalLlmHubSettings, type RagSetting, DEFAULT_SETTINGS } from "src/types";
+import { type LocalLlmHubSettings, type LocalLlmProfile, type RagSetting, DEFAULT_SETTINGS } from "src/types";
 import { WorkspaceStateManager } from "src/core/workspaceStateManager";
 import { getRagStore } from "src/core/ragStore";
 import { initLocale, t } from "src/i18n";
@@ -484,6 +484,7 @@ export class LocalLlmHubPlugin extends Plugin {
   async loadSettings(): Promise<void> {
     const data = await this.loadData() as Partial<LocalLlmHubSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+    let needsSave = false;
     if (data && Object.keys(data).length > 0 && data.maxSavedChatHistories === undefined) {
       this.settings.maxSavedChatHistories = 0;
     }
@@ -499,6 +500,24 @@ export class LocalLlmHubPlugin extends Plugin {
     }
     if (!this.settings.llmConfig.framework) {
       this.settings.llmConfig.framework = "ollama";
+    }
+    if (!this.settings.llmProfiles || Object.keys(this.settings.llmProfiles).length === 0) {
+      const profileName = "Default";
+      this.settings.llmProfiles = {
+        [profileName]: {
+          config: { ...this.settings.llmConfig },
+          availableModels: [...(this.settings.availableModels || [])],
+          verified: this.settings.llmVerified,
+        },
+      };
+      this.settings.selectedLlmProfile = profileName;
+      needsSave = true;
+    } else if (!this.settings.llmProfiles[this.settings.selectedLlmProfile]) {
+      this.settings.selectedLlmProfile = Object.keys(this.settings.llmProfiles)[0];
+      this.applySelectedLlmProfile();
+      needsSave = true;
+    } else {
+      this.applySelectedLlmProfile();
     }
     if (!this.settings.slashCommands) {
       this.settings.slashCommands = [];
@@ -517,7 +536,6 @@ export class LocalLlmHubPlugin extends Plugin {
     }
     // Migrate legacy settings from saved data
     const raw = this.settings as unknown as Record<string, unknown>;
-    let needsSave = false;
     if ("skillsFolderPath" in raw) {
       if (typeof raw.skillsFolderPath === "string" && !(data && "skillsFolder" in data)) {
         this.settings.skillsFolder = raw.skillsFolderPath;
@@ -605,6 +623,7 @@ export class LocalLlmHubPlugin extends Plugin {
   }
 
   async saveSettings(): Promise<void> {
+    this.syncSelectedLlmProfile();
     await this.saveData(this.settings);
     getRagStore().workspaceFolder = this.settings.workspaceFolder;
     this.settingsEmitter.emit("settings-updated", this.settings);
@@ -617,6 +636,68 @@ export class LocalLlmHubPlugin extends Plugin {
 
     // Update workspace folder visibility
     this.updateWorkspaceFolderVisibility();
+  }
+
+  applySelectedLlmProfile(): void {
+    const profile = this.settings.llmProfiles[this.settings.selectedLlmProfile];
+    if (!profile) return;
+    this.settings.llmConfig = { ...profile.config };
+    this.settings.availableModels = [...profile.availableModels];
+    this.settings.llmVerified = profile.verified;
+  }
+
+  syncSelectedLlmProfile(): void {
+    const name = this.settings.selectedLlmProfile;
+    if (!name || !this.settings.llmProfiles[name]) return;
+    this.settings.llmProfiles[name] = {
+      config: { ...this.settings.llmConfig },
+      availableModels: [...this.settings.availableModels],
+      verified: this.settings.llmVerified,
+    };
+  }
+
+  async selectLlmProfile(name: string): Promise<void> {
+    if (!this.settings.llmProfiles[name]) throw new Error(`LLM profile not found: ${name}`);
+    this.syncSelectedLlmProfile();
+    this.settings.selectedLlmProfile = name;
+    this.applySelectedLlmProfile();
+    await this.saveSettings();
+  }
+
+  async createLlmProfile(name: string): Promise<void> {
+    if (this.settings.llmProfiles[name]) throw new Error(`LLM profile already exists: ${name}`);
+    const profile: LocalLlmProfile = {
+      config: { ...DEFAULT_SETTINGS.llmConfig },
+      availableModels: [],
+      verified: false,
+    };
+    this.syncSelectedLlmProfile();
+    this.settings.llmProfiles[name] = profile;
+    this.settings.selectedLlmProfile = name;
+    this.applySelectedLlmProfile();
+    await this.saveSettings();
+  }
+
+  async renameLlmProfile(oldName: string, newName: string): Promise<void> {
+    if (!this.settings.llmProfiles[oldName]) throw new Error(`LLM profile not found: ${oldName}`);
+    if (oldName !== newName && this.settings.llmProfiles[newName]) throw new Error(`LLM profile already exists: ${newName}`);
+    if (oldName === newName) return;
+    this.settings.llmProfiles[newName] = this.settings.llmProfiles[oldName];
+    delete this.settings.llmProfiles[oldName];
+    if (this.settings.selectedLlmProfile === oldName) this.settings.selectedLlmProfile = newName;
+    await this.saveSettings();
+  }
+
+  async deleteLlmProfile(name: string): Promise<void> {
+    const names = Object.keys(this.settings.llmProfiles);
+    if (!this.settings.llmProfiles[name]) throw new Error(`LLM profile not found: ${name}`);
+    if (names.length <= 1) throw new Error("At least one LLM profile is required");
+    delete this.settings.llmProfiles[name];
+    if (this.settings.selectedLlmProfile === name) {
+      this.settings.selectedLlmProfile = Object.keys(this.settings.llmProfiles)[0];
+      this.applySelectedLlmProfile();
+    }
+    await this.saveSettings();
   }
 
   private updateWorkspaceFolderVisibility(): void {

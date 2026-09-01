@@ -14,6 +14,7 @@ export interface LocalLlmConfig {
   apiKey?: string;              // Optional API key (for services that require it)
   temperature?: number;         // 0.0-2.0 (undefined = server default)
   maxTokens?: number;           // Max response tokens (undefined = server default)
+  streamIdleTimeoutSeconds?: number; // Seconds without streamed data before aborting (undefined = 120)
   pdfInputMode?: PdfInputMode;  // auto defaults to extracted text for local servers
 }
 
@@ -22,6 +23,12 @@ export const DEFAULT_LOCAL_LLM_CONFIG: LocalLlmConfig = {
   baseUrl: "http://localhost:11434",
   model: "",
 };
+
+export interface LocalLlmProfile {
+  config: LocalLlmConfig;
+  availableModels: string[];
+  verified: boolean;
+}
 
 // RAG chunking strategy
 export type ChunkStrategy = "fixed" | "sentence" | "block";
@@ -282,6 +289,8 @@ export interface LocalLlmHubSettings {
   llmConfig: LocalLlmConfig;
   llmVerified: boolean;
   availableModels: string[];
+  llmProfiles: Record<string, LocalLlmProfile>;
+  selectedLlmProfile: string;
   /** Legacy RAG settings kept for migration only. Use WorkspaceState.ragSettings instead. */
   ragConfig?: RagConfig;
   saveChatHistory: boolean;
@@ -335,6 +344,8 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   llmConfig: DEFAULT_LOCAL_LLM_CONFIG,
   llmVerified: false,
   availableModels: [],
+  llmProfiles: {},
+  selectedLlmProfile: "Default",
   saveChatHistory: true,
   maxSavedChatHistories: 100,
   manualChatSaveFolder: "",

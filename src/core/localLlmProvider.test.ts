@@ -4,7 +4,7 @@ const requestUrl = vi.hoisted(() => vi.fn());
 
 vi.mock("obsidian", () => ({ requestUrl }));
 
-import { buildOpenAiMessages, fetchEmbeddingModels } from "./localLlmProvider";
+import { buildOpenAiMessages, fetchEmbeddingModels, getStreamIdleTimeoutMs } from "./localLlmProvider";
 import type { LocalLlmConfig, Message } from "../types";
 
 const config: LocalLlmConfig = {
@@ -13,6 +13,21 @@ const config: LocalLlmConfig = {
   apiKey: "",
   model: "",
 };
+
+describe("getStreamIdleTimeoutMs", () => {
+  it("uses 120 seconds by default", () => {
+    expect(getStreamIdleTimeoutMs(config)).toBe(120_000);
+  });
+
+  it("uses the configured timeout", () => {
+    expect(getStreamIdleTimeoutMs({ ...config, streamIdleTimeoutSeconds: 300 })).toBe(300_000);
+  });
+
+  it("falls back to the default for invalid persisted values", () => {
+    expect(getStreamIdleTimeoutMs({ ...config, streamIdleTimeoutSeconds: 0 })).toBe(120_000);
+    expect(getStreamIdleTimeoutMs({ ...config, streamIdleTimeoutSeconds: Number.NaN })).toBe(120_000);
+  });
+});
 
 describe("fetchEmbeddingModels", () => {
   beforeEach(() => {

@@ -592,9 +592,10 @@ async function* ollamaChatStream(
       }
       if (streamDone) break;
       if (signal?.aborted) return;
-      const ok = await signal$.wait(STREAM_IDLE_TIMEOUT_MS);
+      const idleTimeoutMs = getStreamIdleTimeoutMs(config);
+      const ok = await signal$.wait(idleTimeoutMs);
       if (!ok) {
-        yield { type: "error", error: "Stream timed out: no data received for 2 minutes" };
+        yield { type: "error", error: formatStreamIdleTimeoutError(idleTimeoutMs) };
         req.destroy();
         return;
       }
@@ -854,9 +855,10 @@ async function* openaiChatStream(
       }
       if (streamDone) break;
       if (signal?.aborted) return;
-      const ok = await signal$.wait(STREAM_IDLE_TIMEOUT_MS);
+      const idleTimeoutMs = getStreamIdleTimeoutMs(config);
+      const ok = await signal$.wait(idleTimeoutMs);
       if (!ok) {
-        yield { type: "error", error: "Stream timed out: no data received for 2 minutes" };
+        yield { type: "error", error: formatStreamIdleTimeoutError(idleTimeoutMs) };
         req.destroy();
         return;
       }
@@ -868,6 +870,17 @@ async function* openaiChatStream(
 
 /** Idle timeout for stream chunks (ms). If no data arrives for this duration, treat it as a stall. */
 const STREAM_IDLE_TIMEOUT_MS = 120_000;
+
+export function getStreamIdleTimeoutMs(config: LocalLlmConfig): number {
+  const seconds = config.streamIdleTimeoutSeconds;
+  return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0
+    ? seconds * 1000
+    : STREAM_IDLE_TIMEOUT_MS;
+}
+
+function formatStreamIdleTimeoutError(timeoutMs: number): string {
+  return `Stream timed out: no data received for ${timeoutMs / 1000} seconds`;
+}
 
 /**
  * Robust signaling queue for bridging Node.js event callbacks to an async generator.

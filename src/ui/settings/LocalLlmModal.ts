@@ -195,6 +195,22 @@ export class LocalLlmModal extends Modal {
         text.inputEl.step = "1";
       });
 
+    new Setting(contentEl)
+      .setName(t("settings.llmModal.streamIdleTimeout"))
+      .setDesc(t("settings.llmModal.streamIdleTimeoutDesc"))
+      .addText((text) => {
+        text
+          .setPlaceholder("120")
+          .setValue(this.config.streamIdleTimeoutSeconds != null ? String(this.config.streamIdleTimeoutSeconds) : "")
+          .onChange((value) => {
+            const trimmed = value.trim();
+            this.config.streamIdleTimeoutSeconds = trimmed ? parseInt(trimmed, 10) : undefined;
+          });
+        text.inputEl.type = "number";
+        text.inputEl.min = "1";
+        text.inputEl.step = "1";
+      });
+
     // Save / Cancel
     new Setting(contentEl)
       .addButton((btn) =>
