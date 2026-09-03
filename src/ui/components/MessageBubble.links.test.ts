@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chatLinkFileRef } from "./chat/localFileLink";
+import { getReadNotePageRange } from "./toolDisplay";
 
 describe("chatLinkFileRef", () => {
   it("converts a Windows path under the vault to a vault-relative path", () => {
@@ -73,5 +74,18 @@ describe("chatLinkFileRef", () => {
   it("ignores anchor-only and mailto links", () => {
     expect(chatLinkFileRef("#Heading", "C:\\Vault")).toBeNull();
     expect(chatLinkFileRef("mailto:someone@example.com", "C:\\Vault")).toBeNull();
+  });
+});
+
+describe("getReadNotePageRange", () => {
+  it("formats complete and open-ended PDF page ranges", () => {
+    expect(getReadNotePageRange("read_note", { startPage: 3, endPage: 7 })).toBe("pages 3-7");
+    expect(getReadNotePageRange("read_note", { startPage: 3 })).toBe("pages 3-end");
+    expect(getReadNotePageRange("read_note", { endPage: 7 })).toBe("pages 1-7");
+  });
+
+  it("omits page details for unspecified pages and other tools", () => {
+    expect(getReadNotePageRange("read_note", {})).toBeNull();
+    expect(getReadNotePageRange("create_note", { startPage: 3, endPage: 7 })).toBeNull();
   });
 });

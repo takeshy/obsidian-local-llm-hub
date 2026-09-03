@@ -388,6 +388,36 @@ describe("executeToolCall vault files", () => {
     expect(result).toEqual({ success: true, result: "Extracted PDF text" });
   });
 
+  it("passes the selected page range to PDF text extraction", async () => {
+    vi.mocked(extractPdfText).mockResolvedValueOnce({
+      text: "Selected PDF text",
+      numPages: 10,
+      pageOffsets: [0, 10, 20, 30, 40],
+    });
+    const vault = new MockVault();
+    const file = vault.addFile("Docs/report.pdf", "%PDF");
+
+    const result = await executeToolCall(call("read_note", { path: "Docs/report.pdf", startPage: 3, endPage: 7 }), {
+      app: createApp(vault),
+    });
+
+    expect(extractPdfText).toHaveBeenLastCalledWith(expect.anything(), file, 3, 7);
+    expect(result.result).toContain("PDF pages 3-7");
+  });
+
+  it("rejects invalid PDF page ranges", async () => {
+    const vault = new MockVault();
+    vault.addFile("Docs/report.pdf", "%PDF");
+
+    const result = await executeToolCall(
+      call("read_note", { path: "Docs/report.pdf", startPage: 5, endPage: 2 }),
+      { app: createApp(vault) },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.result).toContain("less than or equal");
+  });
+
   it("returns a native PDF attachment when explicitly enabled", async () => {
     const vault = new MockVault();
     vault.addFile("Docs/report.pdf", "%PDF");

@@ -9,6 +9,7 @@ import { SKILL_WORKFLOW_TOOL_NAME } from "src/core/tools";
 import { ChatView, VIEW_TYPE_LLM_CHAT } from "src/ui/ChatView";
 import { t } from "src/i18n";
 import { chatLinkFileRef } from "./chat/localFileLink";
+import { getReadNotePageRange } from "./toolDisplay";
 import { ConfirmModal } from "./ConfirmModal";
 
 interface MessageBubbleProps {
@@ -554,6 +555,9 @@ function getToolDetail(toolCall: ToolCall): string {
   } else if (typeof args.folder === "string") {
     parts.push(args.folder);
   }
+
+  const pageRange = getReadNotePageRange(toolCall.name, args);
+  if (pageRange) parts.push(pageRange);
 
   return parts.join(": ");
 }

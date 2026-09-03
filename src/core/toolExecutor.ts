@@ -6,6 +6,7 @@ import { executeSandboxedJS } from "./sandboxExecutor";
 import { ensureMarkdownExtensionIfMissing, getVaultReadableFiles, isVaultReadableFile, isVaultTextFile } from "./vaultFileTypes";
 import { readTimelineEntriesForDay, sanitizeTimelineName } from "./timelineReader";
 import { extractPdfText, formatExtractedPdfText } from "./pdfText";
+import { PDFDocument } from "pdf-lib";
 import {
   assertVaultToolFileAllowed,
   assertVaultToolFolderNavigable,
@@ -103,6 +104,15 @@ export async function executeToolCall(
 
       case "read_note": {
         const path = args.path as string;
+        const startPage = args.startPage == null ? undefined : Number(args.startPage);
+        const endPage = args.endPage == null ? undefined : Number(args.endPage);
+        if ((startPage !== undefined && (!Number.isInteger(startPage) || startPage < 1))
+          || (endPage !== undefined && (!Number.isInteger(endPage) || endPage < 1))) {
+          return { success: false, result: "startPage and endPage must be positive integers" };
+        }
+        if (startPage !== undefined && endPage !== undefined && startPage > endPage) {
+          return { success: false, result: "startPage must be less than or equal to endPage" };
+        }
         assertVaultToolPathAllowed(path, allowedFolders);
         const file = app.vault.getAbstractFileByPath(path);
         if (!(file instanceof TFile)) {
@@ -117,35 +127,58 @@ export async function executeToolCall(
           };
         }
         if (extension === "pdf") {
+          const hasPageRange = startPage !== undefined || endPage !== undefined;
           // Oversized PDFs use their text layer instead of creating an
           // over-limit request or a very large temporary base64 string.
-          if (options.pdfInputMode === "native" && (file.stat?.size ?? 0) <= MAX_NATIVE_PDF_BYTES) {
+          if (options.pdfInputMode === "native" && (hasPageRange || (file.stat?.size ?? 0) <= MAX_NATIVE_PDF_BYTES)) {
             const buffer = await app.vault.readBinary(file);
-            let binary = "";
-            const bytes = new Uint8Array(buffer);
-            for (let i = 0; i < bytes.length; i += 0x8000) {
-              binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+            let attachmentBytes: Uint8Array<ArrayBufferLike> = new Uint8Array(buffer);
+            let attachedPageRange: string | undefined;
+            if (hasPageRange) {
+              const source = await PDFDocument.load(attachmentBytes, { ignoreEncryption: true });
+              const totalPages = source.getPageCount();
+              const from = startPage ?? 1;
+              const to = Math.min(endPage ?? totalPages, totalPages);
+              if (from > totalPages) {
+                return { success: false, result: `startPage ${from} exceeds the PDF's ${totalPages} pages` };
+              }
+              const selected = await PDFDocument.create();
+              const indices = Array.from({ length: to - from + 1 }, (_, index) => from - 1 + index);
+              const pages = await selected.copyPages(source, indices);
+              for (const page of pages) selected.addPage(page);
+              attachmentBytes = await selected.save();
+              attachedPageRange = `${from}-${to}`;
             }
-            return {
-              success: true,
-              result: `PDF attached: ${file.path}`,
-              attachments: [{
-                name: file.name,
-                type: "pdf",
-                mimeType: "application/pdf",
-                data: btoa(binary),
-                sourcePath: file.path,
-              }],
-            };
+            if (attachmentBytes.byteLength <= MAX_NATIVE_PDF_BYTES) {
+              let binary = "";
+              const bytes = attachmentBytes;
+              for (let i = 0; i < bytes.length; i += 0x8000) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+              }
+              return {
+                success: true,
+                result: `PDF${attachedPageRange ? ` pages ${attachedPageRange}` : ""} attached: ${file.path}`,
+                attachments: [{
+                  name: file.name,
+                  type: "pdf",
+                  mimeType: "application/pdf",
+                  data: btoa(binary),
+                  sourcePath: file.path,
+                }],
+              };
+            }
           }
-          const extracted = await extractPdfText(app, file);
+          const extracted = await extractPdfText(app, file, startPage, endPage);
           if (!extracted?.text.trim()) {
             return {
               success: false,
               result: "The PDF has no extractable text. Enable native PDF input with a PDF-capable local server and model to read scanned pages, images, charts, or diagrams.",
             };
           }
-          return { success: true, result: formatExtractedPdfText(extracted) };
+          const pageRange = hasPageRange
+            ? `PDF pages ${startPage ?? 1}-${Math.min(endPage ?? extracted.numPages, extracted.numPages)}\n\n`
+            : "";
+          return { success: true, result: pageRange + formatExtractedPdfText(extracted) };
         }
         const content = await app.vault.cachedRead(file);
         return { success: true, result: content };

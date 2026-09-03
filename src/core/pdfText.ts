@@ -16,12 +16,19 @@ interface PdfJsLib {
 }
 
 /** Extract the text layer from a PDF, preserving the starting offset of each page. */
-export async function extractPdfText(app: App, file: TFile): Promise<PdfExtractResult | null> {
+export async function extractPdfText(
+  app: App,
+  file: TFile,
+  startPage?: number,
+  endPage?: number,
+): Promise<PdfExtractResult | null> {
   const buffer = await app.vault.readBinary(file);
   const pdfjsLib = await loadPdfJs() as PdfJsLib;
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const pageTexts: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
+  const from = startPage ?? 1;
+  const to = Math.min(endPage ?? pdf.numPages, pdf.numPages);
+  for (let i = from; i <= to; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
     const text = content.items.map(item => typeof item.str === "string" ? item.str : "").join(" ");
