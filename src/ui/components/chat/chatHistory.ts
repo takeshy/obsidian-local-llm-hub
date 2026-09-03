@@ -42,6 +42,16 @@ export function messagesToMarkdown(
     if (msg.skillsUsed) metadata.skillsUsed = msg.skillsUsed;
     if (msg.toolCalls && msg.toolCalls.length > 0) {
       metadata.toolCallNames = [...new Set(msg.toolCalls.map(tc => tc.name))];
+      metadata.toolCalls = msg.toolCalls.map((toolCall) => ({
+        name: toolCall.name,
+        arguments: toolCall.name === "read_note"
+          ? {
+            ...(typeof toolCall.arguments.path === "string" ? { path: toolCall.arguments.path } : {}),
+            ...(typeof toolCall.arguments.startPage === "number" ? { startPage: toolCall.arguments.startPage } : {}),
+            ...(typeof toolCall.arguments.endPage === "number" ? { endPage: toolCall.arguments.endPage } : {}),
+          }
+          : {},
+      }));
     }
     if (msg.usage) metadata.usage = msg.usage;
     if (msg.elapsedMs) metadata.elapsedMs = msg.elapsedMs;
@@ -113,7 +123,15 @@ export function parseMarkdownToMessages(content: string): { messages: Message[];
             if (meta.ragSources) message.ragSources = meta.ragSources as string[];
             if (meta.ragCitations) message.ragCitations = meta.ragCitations as RagCitation[];
             if (meta.skillsUsed) message.skillsUsed = meta.skillsUsed as string[];
-            if (meta.toolCallNames) {
+            if (Array.isArray(meta.toolCalls)) {
+              message.toolCalls = (meta.toolCalls as Array<Record<string, unknown>>).map((toolCall, index) => ({
+                id: `history-${index}`,
+                name: typeof toolCall.name === "string" ? toolCall.name : "unknown",
+                arguments: toolCall.arguments && typeof toolCall.arguments === "object"
+                  ? toolCall.arguments as Record<string, unknown>
+                  : {},
+              }));
+            } else if (meta.toolCallNames) {
               message.toolCalls = (meta.toolCallNames as string[]).map(name => ({
                 id: "", name, arguments: {},
               }));

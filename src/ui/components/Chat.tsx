@@ -983,6 +983,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       const conversationMessages: Message[] = [...trimRagSearchHistory(messages), userMessage];
       let fullContent = "";
       let thinkingContent = "";
+      let currentRoundThinking = "";
       let stopped = false;
       let usage: Message["usage"] | undefined;
       const allToolCalls: ToolCall[] = [];
@@ -996,7 +997,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         const pendingToolCalls: ToolCall[] = [];
         let incompleteToolCall = false;
         fullContent = "";
-        thinkingContent = "";
+        currentRoundThinking = "";
 
         for await (const chunk of localLlmChatStream(
           llmConfig,
@@ -1020,6 +1021,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
               setStreamingContent(fullContent);
               break;
             case "thinking":
+              currentRoundThinking += chunk.content || "";
               thinkingContent += chunk.content || "";
               setStreamingThinking(thinkingContent);
               break;
@@ -1076,7 +1078,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           role: "assistant",
           content: fullContent,
           timestamp: Date.now(),
-          thinking: thinkingContent || undefined,
+          thinking: currentRoundThinking || undefined,
           toolCalls: pendingToolCalls,
         };
         conversationMessages.push(assistantMsg);
@@ -1205,7 +1207,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         }
 
         setStreamingContent("");
-        setStreamingThinking("");
 
         if (stopped) break;
         // A continuation with neither text nor another tool call is not a
