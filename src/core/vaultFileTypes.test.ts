@@ -21,6 +21,7 @@ describe("vaultFileTypes", () => {
   it("recognizes supported text-based vault files", () => {
     expect(isVaultTextFile(makeFile("Board.canvas"))).toBe(true);
     expect(isVaultTextFile(makeFile("View.base"))).toBe(true);
+    expect(isVaultTextFile(makeFile("Workspace.dashboard"))).toBe(true);
     expect(isVaultTextFile(makeFile("Config.json"))).toBe(true);
     expect(isVaultTextFile(makeFile("Image.png"))).toBe(false);
   });
