@@ -87,6 +87,7 @@ export class McpClient {
   private stderrLog: string[] = [];
   private framing: McpFraming;
   private protocolEra: McpProtocolEra | null = null;
+  private processFailure: Error | null = null;
 
   constructor(
     private command: string,
@@ -105,6 +106,7 @@ export class McpClient {
   }
 
   async start(): Promise<void> {
+    this.processFailure = null;
     const childEnv = { ...getNodeProcessEnv(), ...this.env };
     if (this.pluginRoot) {
       if (!this.pluginData || !this.cwd) throw new Error("Agent Plugin paths are incomplete");
@@ -139,6 +141,14 @@ export class McpClient {
     this.process.on("error", (err) => {
       console.error("[MCP process error]", err.message);
       this._ready = false;
+      this.processFailure = new Error(`MCP process error: ${err.message}`);
+      // A spawn failure (for example, command not found) does not necessarily
+      // emit "close" promptly. Reject requests here so callers receive the
+      // underlying process error instead of waiting for an MCP timeout.
+      for (const [, handler] of this.pending) {
+        handler.reject(this.processFailure);
+      }
+      this.pending.clear();
     });
 
     this.process.on("close", (code) => {
@@ -305,6 +315,10 @@ export class McpClient {
     return new Promise((resolve, reject) => {
       if (!this.process || this.process.killed) {
         reject(new Error("MCP process not running"));
+        return;
+      }
+      if (this.processFailure) {
+        reject(this.processFailure);
         return;
       }
 
