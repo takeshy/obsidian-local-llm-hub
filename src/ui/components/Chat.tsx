@@ -1150,6 +1150,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
               : await executeToolCall(tc, {
               app: plugin.app,
               mcpManager: plugin.mcpManager,
+              vaultToolMode,
               vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
               pdfInputMode: llmConfig.pdfInputMode === "native" && llmConfig.framework !== "ollama"
                 ? "native"

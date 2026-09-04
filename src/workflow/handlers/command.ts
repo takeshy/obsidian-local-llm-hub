@@ -1,6 +1,6 @@
 import { App } from "obsidian";
 import type { LocalLlmHubPlugin } from "../../plugin";
-import type { StreamChunkUsage, Message, ToolCall, ToolDefinition } from "../../types";
+import type { StreamChunkUsage, Message, ToolCall, ToolDefinition, VaultToolMode } from "../../types";
 import { localLlmChatStream } from "../../core/localLlmProvider";
 import { getVaultTools } from "../../core/tools";
 import { EXECUTE_JAVASCRIPT_TOOL } from "../../core/sandboxExecutor";
@@ -98,9 +98,10 @@ Please revise the output based on the user's feedback above.`;
 
   // Build tools: vault tools + MCP tools
   const useTools = node.properties["enableTools"] !== "false";
+  const vaultToolMode = (node.properties["vaultTools"] || "noSearch") as VaultToolMode;
   let tools: ToolDefinition[] | undefined;
   if (useTools) {
-    const vaultTools = getVaultTools("noSearch");
+    const vaultTools = getVaultTools(vaultToolMode);
     const mcpTools = plugin.mcpManager.getAllTools();
     const combined = [...vaultTools, ...mcpTools, EXECUTE_JAVASCRIPT_TOOL];
     tools = combined.length > 0 ? combined : undefined;
@@ -184,6 +185,8 @@ Please revise the output based on the user's feedback above.`;
       const result = await executeToolCall(tc, {
         app,
         mcpManager: plugin.mcpManager,
+        vaultToolMode,
+        skipMcpApproval: node.properties["confirm"] === "false",
         vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
       });
       const toolResultMsg: Message = {

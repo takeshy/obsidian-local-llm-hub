@@ -1,3 +1,4 @@
+import { requireMcpApproval } from "./mcpApproval";
 import type { McpServerConfig, ToolDefinition } from "../types";
 import { normalizeSpawnCommand } from "./commandLine";
 import { McpClient } from "./mcpClient";
@@ -10,6 +11,7 @@ export interface McpServerInfo {
 }
 
 export class McpManager {
+  private serverConfigs = new Map<string, McpServerConfig>();
   private clients = new Map<string, McpClient>();
   private serverNames = new Map<string, string>();
   private connecting = new Set<string>();
@@ -22,6 +24,7 @@ export class McpManager {
         await client.stop();
         this.clients.delete(id);
         this.serverNames.delete(id);
+        this.serverConfigs.delete(id);
       }
     }
 
@@ -47,6 +50,7 @@ export class McpManager {
         await existing.stop();
         this.clients.delete(config.id);
         this.serverNames.delete(config.id);
+        this.serverConfigs.delete(config.id);
       }
 
       const { command, args } = normalizeSpawnCommand(config.command, config.args);
@@ -54,6 +58,7 @@ export class McpManager {
       try {
         await client.start();
         this.clients.set(config.id, client);
+        this.serverConfigs.set(config.id, { ...config, args: [...config.args], env: config.env ? { ...config.env } : undefined });
         this.serverNames.set(config.id, config.name);
         return { success: true };
       } catch (err) {
@@ -74,6 +79,7 @@ export class McpManager {
       await client.stop();
       this.clients.delete(id);
       this.serverNames.delete(id);
+      this.serverConfigs.delete(id);
     }
   }
 
@@ -83,6 +89,7 @@ export class McpManager {
     }
     this.clients.clear();
     this.serverNames.clear();
+    this.serverConfigs.clear();
   }
 
   private sanitizeName(name: string): string {
@@ -94,7 +101,7 @@ export class McpManager {
     return `mcp__${this.sanitizeName(serverName)}__${toolName}`;
   }
 
-  private resolveNamespacedTool(name: string): { client: McpClient; originalName: string } | null {
+  private resolveNamespacedTool(name: string): { client: McpClient; originalName: string; config: McpServerConfig } | null {
     for (const [id, client] of this.clients) {
       if (!client.ready) continue;
       const serverName = this.serverNames.get(id) || id;
@@ -102,7 +109,8 @@ export class McpManager {
       if (name.startsWith(prefix)) {
         const originalName = name.slice(prefix.length);
         if (client.getToolNames().includes(originalName)) {
-          return { client, originalName };
+          const config = this.serverConfigs.get(id);
+          if (config) return { client, originalName, config };
         }
       }
     }
@@ -127,9 +135,13 @@ export class McpManager {
     return tools;
   }
 
-  async callTool(name: string, args: Record<string, unknown>): Promise<string> {
+  async callTool(name: string, args: Record<string, unknown>, skipApproval = false): Promise<string> {
     const resolved = this.resolveNamespacedTool(name);
     if (!resolved) throw new Error(`MCP tool not found: ${name}`);
+    if (!skipApproval) await requireMcpApproval(resolved.config, resolved.originalName, args);
+    if (this.clients.get(resolved.config.id) !== resolved.client || !resolved.client.ready) {
+      throw new Error("MCP server connection changed during approval");
+    }
     return resolved.client.callTool(resolved.originalName, args);
   }
 

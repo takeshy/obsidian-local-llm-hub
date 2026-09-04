@@ -1,3 +1,5 @@
+import { setMcpApprovalHandler, sameMcpConnection } from "./core/mcpApproval";
+import { McpApprovalModal } from "./ui/components/McpApprovalModal";
 import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Modal, TFile, type Editor, type EventRef } from "obsidian";
 import { ChatView, VIEW_TYPE_LLM_CHAT } from "src/ui/ChatView";
 import { CryptView, CRYPT_VIEW_TYPE } from "src/ui/CryptView";
@@ -87,6 +89,34 @@ export class LocalLlmHubPlugin extends Plugin {
 
   onload(): void {
     initLocale();
+
+    let approvalModal: McpApprovalModal | undefined;
+    setMcpApprovalHandler({
+      getServer: server => this.settings.mcpServers.find(saved => sameMcpConnection(saved, server)),
+      request: async (server, tool, args, canRemember) => {
+        approvalModal = new McpApprovalModal(this.app, server, tool, args, canRemember);
+        try {
+          return await approvalModal.openAndWait();
+        } finally {
+          approvalModal = undefined;
+        }
+      },
+      remember: async (server, tool) => {
+        const previous = server.allowedTools;
+        server.allowedTools = [...new Set([...(previous ?? []), tool])];
+        try {
+          await this.saveSettings();
+        } catch (error) {
+          server.allowedTools = previous;
+          throw error;
+        }
+      },
+    });
+    this.register(() => {
+      setMcpApprovalHandler(undefined);
+      approvalModal?.close();
+    });
+
 
     // Views restored by Obsidian can render before the asynchronous settings
     // load completes. Keep a usable default workspace state available from the

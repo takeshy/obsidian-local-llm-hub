@@ -107,6 +107,9 @@ Pause execution.
 
 #### command
 Execute LLM prompt.
+- **enableTools** (optional): "true" (default) or "false". Enable built-in Vault, connected MCP, and JavaScript tools.
+- **vaultTools** (optional): "noSearch" (default), "all", "readOnly" (search/read without file changes), or "none". External MCP and skill tools have separate permissions.
+- **confirm** (optional): "true" (default) uses server MCP approval settings. Set "false" to skip MCP approval for this node, including automatic execution.
 - **prompt** (required): Prompt template (supports {{variables}})
 - **enableThinking** (optional): "true" (default) or "false". Enable deep thinking mode
 - **attachments** (optional): Comma-separated variable names containing FileExplorerData

@@ -89,6 +89,7 @@ export class SlashCommandModal extends Modal {
           .addOption("current", t("settings.commandVaultToolModeCurrent"))
           .addOption("all", t("input.vaultTool_all"))
           .addOption("noSearch", t("input.vaultTool_noSearch"))
+          .addOption("readOnly", t("input.vaultTool_readOnly"))
           .addOption("none", t("input.vaultTool_none"))
           .setValue(this.command.vaultToolMode ?? "current")
           .onChange((value) => {

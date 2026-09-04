@@ -142,6 +142,8 @@ The chat input's Vault tool menu controls only the model's built-in Vault tools.
 
 ![Tool Settings](docs/images/chat_tool_setting.png)
 
+**Vault: read only** allows search and reading while blocking built-in tools that create, edit, delete, or rename files and folders. Select it in the chat Vault tool menu or a slash command. External MCP and skill tools retain their own permissions.
+
 ### MCP Servers
 
 Connect local [MCP](https://modelcontextprotocol.io/) servers to extend the AI with external tools. MCP tools are merged with vault tools and routed via function calling — all running as **local child processes**.
@@ -245,6 +247,10 @@ You can also enable **Use external index** and enter one external index director
 3. Toggle on — connects automatically via stdio
 
 Portable Agent Plugin MCP servers are managed from **Settings → Agent plugins** instead of being added manually. Package updates are reviewed and installed as a new commit-pinned version.
+
+**Tool approval:** Calls require approval by default. The dialog shows the server, tool, and arguments and offers **Allow once**, **Always allow this tool**, and **Deny**. Closing it denies the call. Enable **Always approve** in a server’s settings to skip all confirmations, or remove a tool from its allowed list and save to require approval again. Servers not saved in MCP settings only support one-time approval.
+
+Workflow `command` nodes accept `confirm: "false"` to skip MCP approval, including automatic execution. Set `vaultTools: "readOnly"` to limit built-in Vault tools to search and reading; the default remains `noSearch`. These options are available in the node editor. Local LLM Hub calls MCP through command nodes and has no standalone `mcp` node.
 
 ![MCP & Encryption Settings](docs/images/setting_mcp_server_and_encryption.png)
 

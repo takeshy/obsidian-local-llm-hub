@@ -1,5 +1,20 @@
 // English translations (base language)
 export const en = {
+  "nodeEditor.mcpConfirm": "Confirm mcp tool calls",
+  "nodeEditor.mcpConfirm.desc": "Set false to skip mcp approval for this node, including automatic execution.",
+  "settings.mcpAutoApprove": "Always approve",
+  "settings.mcpAutoApprove.desc": "Allow all tools on this server without asking. When off, ask before running tools outside the allowed list.",
+  "settings.mcpAllowedTools": "Allowed tools",
+  "settings.mcpAllowedTools.desc": "These tools run without asking. Remove a tool and save to require approval again.",
+  "mcp.approval.title": "Approve mcp tool call",
+  "mcp.approval.tool": "Tool",
+  "mcp.approval.arguments": "Arguments",
+  "mcp.approval.deny": "Deny",
+  "mcp.approval.once": "Allow once",
+  "mcp.approval.always": "Always allow this tool",
+  "input.vaultTool_readOnly": "Vault: read only",
+  "input.vaultTool_readOnlyDesc": "Search and read without creating, editing, deleting, or renaming files",
+  "nodeEditor.vaultTools.desc": "Built-in vault tool access. External mcp and skill tools have separate permissions.",
   // Common
   "common.cancel": "Cancel",
   "common.save": "Save",

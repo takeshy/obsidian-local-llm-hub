@@ -1,5 +1,20 @@
 // Japanese translations
 export const ja: Record<string, string> = {
+  "nodeEditor.mcpConfirm": "MCPツール実行の確認",
+  "nodeEditor.mcpConfirm.desc": "falseにすると、自動実行を含め、このノードでのMCP承認を省略します。",
+  "settings.mcpAutoApprove": "常に承認",
+  "settings.mcpAutoApprove.desc": "このサーバーの全ツールを確認なしで許可します。OFFの場合は許可リスト以外のツールを実行する前に確認します。",
+  "settings.mcpAllowedTools": "許可リスト",
+  "settings.mcpAllowedTools.desc": "確認なしで実行するツールです。リストから削除して保存すると、再び承認が必要になります。",
+  "mcp.approval.title": "MCPツール実行の承認",
+  "mcp.approval.tool": "ツール名",
+  "mcp.approval.arguments": "実行引数",
+  "mcp.approval.deny": "拒否",
+  "mcp.approval.once": "今回だけ許可",
+  "mcp.approval.always": "このツールを常に許可",
+  "input.vaultTool_readOnly": "Vault: 読み取り専用",
+  "input.vaultTool_readOnlyDesc": "検索・読み取りのみ許可し、ファイルの作成・編集・削除・名前変更を禁止",
+  "nodeEditor.vaultTools.desc": "組み込みVaultツールのアクセス範囲です。外部MCPやスキルの権限は別途設定します。",
   // Common
   "common.cancel": "キャンセル",
   "common.save": "保存",

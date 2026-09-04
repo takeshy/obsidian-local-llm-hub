@@ -289,10 +289,21 @@ const allVaultTools: ToolDefinition[] = [
  * Get vault tools based on the current mode.
  * - "all": all tools
  * - "noSearch": all tools except search_notes and list_notes
+ * - "readOnly": search and read tools only
  * - "none": no tools
  */
 export function getVaultTools(mode: VaultToolMode): ToolDefinition[] {
+  if (mode === "readOnly") return allVaultTools.filter(tool => isVaultToolAllowed(tool.function.name, mode));
   if (mode === "none") return [];
   if (mode === "noSearch") return allVaultTools.filter(t => !searchToolNames.has(t.function.name));
   return allVaultTools;
+}
+
+/** External MCP and skill tools have independent permissions. */
+export function isVaultToolAllowed(name: string, mode: VaultToolMode): boolean {
+  if (!allVaultTools.some(tool => tool.function.name === name)) return true;
+  if (mode === "none") return false;
+  if (mode === "noSearch") return !searchToolNames.has(name);
+  if (mode === "readOnly") return ["read_timeline", "read_note", "search_notes", "list_notes", "list_folders", "get_active_note"].includes(name);
+  return true;
 }

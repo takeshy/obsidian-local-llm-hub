@@ -17,6 +17,7 @@ Vault tool modes:
 
 - All: full vault tool access.
 - No Search: disables search/list style tools while keeping direct read/write operations.
+- Read only: allows search and reading but blocks built-in tools that create, edit, delete, or rename files and folders. MCP and skill tools retain their own permissions.
 - Off: disables vault tools.
 
 ## Folder access

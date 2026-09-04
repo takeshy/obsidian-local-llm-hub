@@ -1,3 +1,4 @@
+import { isVaultToolAllowed } from "./tools";
 import { TFile, TFolder, type App } from "obsidian";
 import type { Attachment, PdfInputMode, ToolCall } from "../types";
 import type { McpManager } from "./mcpManager";
@@ -50,6 +51,8 @@ export interface ToolExecutorOptions {
   onRunSkillWorkflow?: SkillWorkflowExecutor;
   vaultToolAllowedFolders?: string[];
   pdfInputMode?: PdfInputMode;
+  skipMcpApproval?: boolean;
+  vaultToolMode?: import("../types").VaultToolMode;
 }
 
 function rejectedEditResult(decision: ProposeEditDecision): ToolExecutionResult | null {
@@ -82,6 +85,9 @@ export async function executeToolCall(
   const allowedFolders = options.vaultToolAllowedFolders;
 
   try {
+    if (options.vaultToolMode === "readOnly" && !isVaultToolAllowed(toolCall.name, options.vaultToolMode)) {
+      return { success: false, result: `Vault tool is disabled in ${options.vaultToolMode} mode: ${toolCall.name}` };
+    }
     switch (toolCall.name) {
       case "read_timeline": {
         const timelineName = sanitizeTimelineName((args.timelineName as string | undefined) || "Timeline");
@@ -490,7 +496,7 @@ export async function executeToolCall(
         // Try MCP tools
         if (options.mcpManager?.hasTool(toolCall.name)) {
           try {
-            const result = await options.mcpManager.callTool(toolCall.name, args);
+            const result = await options.mcpManager.callTool(toolCall.name, args, options.skipMcpApproval);
             return { success: true, result };
           } catch (err) {
             console.error("[MCP tool error]", toolCall.name, err);

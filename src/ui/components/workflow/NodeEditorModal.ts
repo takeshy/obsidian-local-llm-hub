@@ -211,6 +211,8 @@ export class NodeEditorModal extends Modal {
         break;
 
       case "command": {
+        this.addDropdown(container, "confirm", t("nodeEditor.mcpConfirm"), ["true", "false"], t("nodeEditor.mcpConfirm.desc"));
+        this.addDropdown(container, "vaultTools", t("input.vaultToolTitle"), ["noSearch", "all", "readOnly", "none"], t("nodeEditor.vaultTools.desc"));
         this.addTextArea(container, "prompt", t("nodeEditor.prompt"), t("nodeEditor.prompt.placeholder"), true);
 
         // Build model options from llmConfig

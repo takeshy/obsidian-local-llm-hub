@@ -6721,3 +6721,11 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   padding: 0;
   border: 0;
 }
+
+.llm-hub-mcp-approval-args {
+  max-height: 40vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}

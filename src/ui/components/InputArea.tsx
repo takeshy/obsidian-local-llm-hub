@@ -628,7 +628,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
             </button>
             {showVaultToolMenu && (
               <div className="llm-hub-vault-tool-menu">
-                {(["all", "noSearch", "none"] as const).map((mode) => (
+                {(["all", "noSearch", "readOnly", "none"] as const).map((mode) => (
                   <div
                     key={mode}
                     className={`llm-hub-vault-tool-item ${vaultToolMode === mode ? "selected" : ""}`}

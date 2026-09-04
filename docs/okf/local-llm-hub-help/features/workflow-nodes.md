@@ -21,6 +21,10 @@ Top-level options:
 
 Variable interpolation uses `{{name}}` inside string fields.
 
+## MCP approval and Vault access
+
+The `command` node accepts `confirm: "false"` to skip MCP approval, including automatic execution. Otherwise each server's approval settings apply. `vaultTools` accepts `noSearch` (default), `all`, `readOnly`, or `none`. Read-only mode allows Vault search and reading without file changes; external MCP and skill tools have separate permissions. `enableTools: "false"` disables all tools for the node. These settings do not change the `note` node's own confirmation behavior.
+
 ## Core nodes
 
 - `command`: sends `prompt` to the configured local or OpenAI-compatible chat model and stores the text response in `saveTo`. It can use `attachments` from `file-explorer` data. Use this for LLM reasoning, summaries, rewrites, extraction, and generated Markdown or HTML.

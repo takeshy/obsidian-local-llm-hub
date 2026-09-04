@@ -2,7 +2,7 @@
 export type LlmFramework = "ollama" | "lm-studio" | "anythingllm" | "vllm";
 
 // Vault tool mode for RAG
-export type VaultToolMode = "all" | "noSearch" | "none";
+export type VaultToolMode = "all" | "noSearch" | "readOnly" | "none";
 // "auto" is a legacy value kept for stored configs; it behaves like "extract-text".
 export type PdfInputMode = "auto" | "native" | "extract-text";
 
@@ -268,6 +268,8 @@ export interface McpServerConfig {
   env?: Record<string, string>;
   framing: McpFraming;
   enabled: boolean;
+  autoApprove?: boolean;
+  allowedTools?: string[];
   toolHints?: string[];
   cwd?: string;
   pluginRoot?: string;

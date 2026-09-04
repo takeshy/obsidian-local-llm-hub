@@ -150,7 +150,7 @@ class McpServerModal extends Modal {
     super(app);
     this.isNew = !existing;
     this.config = existing
-      ? { ...existing, args: [...existing.args], env: existing.env ? { ...existing.env } : undefined }
+      ? { ...existing, allowedTools: [...(existing.allowedTools ?? [])], args: [...existing.args], env: existing.env ? { ...existing.env } : undefined }
       : {
           id: crypto.randomUUID(),
           name: "",
@@ -178,6 +178,27 @@ class McpServerModal extends Modal {
           .setValue(this.config.name)
           .onChange((v) => { this.config.name = v; })
       );
+
+    new Setting(contentEl)
+      .setName(t("settings.mcpAutoApprove"))
+      .setDesc(t("settings.mcpAutoApprove.desc"))
+      .addToggle(toggle => toggle.setValue(this.config.autoApprove ?? false)
+        .onChange(value => { this.config.autoApprove = value; }));
+
+    const allowedEl = contentEl.createDiv();
+    const renderAllowedTools = () => {
+      allowedEl.empty();
+      new Setting(allowedEl).setName(t("settings.mcpAllowedTools")).setDesc(t("settings.mcpAllowedTools.desc"));
+      for (const tool of this.config.allowedTools ?? []) {
+        new Setting(allowedEl).setName(tool).addExtraButton(btn => btn
+          .setIcon("trash").setTooltip(t("common.delete"))
+          .onClick(() => {
+            this.config.allowedTools = this.config.allowedTools?.filter(name => name !== tool);
+            renderAllowedTools();
+          }));
+      }
+    };
+    renderAllowedTools();
 
     new Setting(contentEl)
       .setName(t("settings.mcpCommand"))
