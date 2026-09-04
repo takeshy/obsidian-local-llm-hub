@@ -845,9 +845,9 @@ export const ja: Record<string, string> = {
   "settings.mcpServerName": "サーバー名",
   "settings.mcpServerNameDesc": "このサーバーの表示名",
   "settings.mcpCommand": "コマンド",
-  "settings.mcpCommandDesc": "実行するコマンド（例: npx, node, python）",
+  "settings.mcpCommandDesc": "実行するコマンド（例: npx, node, python, またはフルパス）。引数は「引数」欄に入力してください。コマンドと引数を1行で貼り付けた場合は自動で分割されます。",
   "settings.mcpArgs": "引数",
-  "settings.mcpArgsDesc": "スペース区切りのコマンド引数",
+  "settings.mcpArgsDesc": "スペース区切りのコマンド引数。スペースを含むパスはダブルクォートで囲んでください。",
   "settings.mcpFraming": "プロトコル",
   "settings.mcpFramingDesc": "標準はNewline。legacy/customサーバーが必要とする場合のみContent-Lengthを使用",
   "settings.mcpEnv": "環境変数",
@@ -860,6 +860,8 @@ export const ja: Record<string, string> = {
   "settings.mcpStatusConnected": "接続中",
   "settings.mcpStatusDisconnected": "切断",
   "settings.mcpStatusDisabled": "無効",
+  "settings.mcpStatusConnecting": "接続を確認中…",
+  "settings.mcpChecking": "確認中…",
 
   // Workflow commands
   "command.compact": "会話履歴を圧縮",

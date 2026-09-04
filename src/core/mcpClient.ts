@@ -335,7 +335,8 @@ export class McpClient {
       const timeout = window.setTimeout(() => {
         if (this.pending.has(id)) {
           this.pending.delete(id);
-          reject(new Error(`MCP request timed out: ${method}`));
+          const stderrMsg = this.stderrLog.join("\n");
+          reject(new Error(`MCP request timed out: ${method}${stderrMsg ? ": " + stderrMsg : ""}`));
         }
       }, timeoutMs);
 

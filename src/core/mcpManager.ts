@@ -1,4 +1,5 @@
 import type { McpServerConfig, ToolDefinition } from "../types";
+import { normalizeSpawnCommand } from "./commandLine";
 import { McpClient } from "./mcpClient";
 
 export interface McpServerInfo {
@@ -11,6 +12,7 @@ export interface McpServerInfo {
 export class McpManager {
   private clients = new Map<string, McpClient>();
   private serverNames = new Map<string, string>();
+  private connecting = new Set<string>();
 
   async connectAll(servers: McpServerConfig[]): Promise<void> {
     // Stop removed/disabled servers
@@ -30,25 +32,39 @@ export class McpManager {
     }
   }
 
-  async connectServer(config: McpServerConfig): Promise<{ success: boolean; error?: string }> {
-    // Stop existing connection if any
-    const existing = this.clients.get(config.id);
-    if (existing) {
-      await existing.stop();
-      this.clients.delete(config.id);
-      this.serverNames.delete(config.id);
-    }
+  /** True while connectServer() is spawning and handshaking with this server. */
+  isConnecting(id: string): boolean {
+    return this.connecting.has(id);
+  }
 
-    const client = new McpClient(config.command, config.args, config.env, config.framing, config.cwd, config.pluginRoot, config.pluginData);
+  async connectServer(config: McpServerConfig): Promise<{ success: boolean; error?: string }> {
+    // Mark synchronously so callers can re-render a "connecting" state right away.
+    this.connecting.add(config.id);
     try {
-      await client.start();
-      this.clients.set(config.id, client);
-      this.serverNames.set(config.id, config.name);
-      return { success: true };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error(`[MCP] Failed to connect to ${config.name}:`, message);
-      return { success: false, error: message };
+      // Stop existing connection if any
+      const existing = this.clients.get(config.id);
+      if (existing) {
+        await existing.stop();
+        this.clients.delete(config.id);
+        this.serverNames.delete(config.id);
+      }
+
+      const { command, args } = normalizeSpawnCommand(config.command, config.args);
+      const client = new McpClient(command, args, config.env, config.framing, config.cwd, config.pluginRoot, config.pluginData);
+      try {
+        await client.start();
+        this.clients.set(config.id, client);
+        this.serverNames.set(config.id, config.name);
+        return { success: true };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[MCP] Failed to connect to ${config.name}:`, message);
+        // Do not leave a half-started child process behind (e.g. after a handshake timeout).
+        await client.stop();
+        return { success: false, error: message };
+      }
+    } finally {
+      this.connecting.delete(config.id);
     }
   }
 

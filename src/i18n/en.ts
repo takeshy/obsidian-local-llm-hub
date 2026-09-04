@@ -913,9 +913,9 @@ export const en = {
   "settings.mcpServerName": "Server name",
   "settings.mcpServerNameDesc": "Display name for this server",
   "settings.mcpCommand": "Command",
-  "settings.mcpCommandDesc": "Executable to run (e.g. Npx, node, python)",
+  "settings.mcpCommandDesc": "Executable to run (e.g. Npx, node, python, or a full path). Put arguments in the arguments field; a full command line pasted here is split automatically.",
   "settings.mcpArgs": "Arguments",
-  "settings.mcpArgsDesc": "Space-separated command arguments",
+  "settings.mcpArgsDesc": "Space-separated command arguments. Wrap paths containing spaces in double quotes.",
   "settings.mcpFraming": "Protocol",
   "settings.mcpFramingDesc": "Use standard newline framing unless a legacy/custom server requires content-length",
   "settings.mcpEnv": "Environment variables",
@@ -928,6 +928,8 @@ export const en = {
   "settings.mcpStatusConnected": "Connected",
   "settings.mcpStatusDisconnected": "Disconnected",
   "settings.mcpStatusDisabled": "Disabled",
+  "settings.mcpStatusConnecting": "Checking connection…",
+  "settings.mcpChecking": "Checking…",
 
   // Workflow commands
   "command.runWorkflow": "Run workflow",

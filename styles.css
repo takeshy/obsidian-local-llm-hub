@@ -923,6 +923,17 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   color: var(--text-error);
 }
 
+.llm-hub-status--pending {
+  color: var(--text-muted);
+}
+
+.llm-hub-mcp-modal-status {
+  min-height: 1.5em;
+  margin-top: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .llm-hub-modal-buttons {
   display: flex;
   gap: 8px;
