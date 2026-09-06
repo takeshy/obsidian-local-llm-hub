@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import { findWorkflowBlocks, normalizeYamlText, parseWorkflowFromMarkdown, serializeWorkflowBlock } from "./parser";
 
-vi.mock("obsidian", async () => {
+// Obsidian ships YAML; the rest comes from this plugin's own obsidian mock, so
+// the shared modules pulled in alongside the parser still resolve.
+vi.mock("obsidian", async (importOriginal) => {
   const yaml = await import("yaml");
   return {
+    ...(await importOriginal<typeof import("obsidian")>()),
     parseYaml: (source: string) => yaml.parse(source),
     stringifyYaml: (value: unknown) => yaml.stringify(value),
   };
