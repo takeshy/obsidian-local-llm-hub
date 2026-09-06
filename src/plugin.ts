@@ -26,6 +26,7 @@ import { streamWorkflowChat } from "src/core/workflowChat";
 import { WORKFLOW_SPECIFICATION } from "src/workflow/workflowSpec";
 import { SKILLS_FOLDER } from "src/types";
 import { handleCommandNode } from "src/workflow/handlers/command";
+import { configureAgentPluginBase } from "obsidian-llm-hub-common/skills";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -97,6 +98,7 @@ export class LocalLlmHubPlugin extends Plugin {
     initLocale();
     configureClassPrefix("llm-hub");
     configureStoragePrefix("local-llm-hub");
+    configureAgentPluginBase(".local-llm-hub");
     configureWorkflowHost({
       getModelOptions: () => (this.settings.availableModels || []).map(model => ({ value: model, label: model })),
       getRagSettingNames: () => this.getRagSettingNames(),
