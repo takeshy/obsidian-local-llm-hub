@@ -1,7 +1,7 @@
 import { createRoot, Root } from "react-dom/client";
 import { ItemView, WorkspaceLeaf, IconName } from "obsidian";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import WorkflowPanel from "./components/workflow/WorkflowPanel";
+import { WorkflowPanel } from "./components/workflow/WorkflowPanel";
 
 export const VIEW_TYPE_WORKFLOW = "local-llm-workflow-view";
 
@@ -33,7 +33,7 @@ export class WorkflowView extends ItemView {
     container.addClass("llm-hub-workflow-container");
 
     const root = createRoot(container);
-    root.render(<WorkflowPanel plugin={this.plugin} />);
+    root.render(<WorkflowPanel app={this.plugin.app} />);
     this.reactRoot = root;
   }
 

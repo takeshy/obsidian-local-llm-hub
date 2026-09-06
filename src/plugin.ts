@@ -112,6 +112,24 @@ export class LocalLlmHubPlugin extends Plugin {
       getSkillsFolder: () => this.settings.skillsFolder || SKILLS_FOLDER,
       getHistoryEncryption: () => this.settings.encryption,
       getPluginVersion: () => this.manifest.version,
+      getWorkflowHotkeys: () => this.settings.enabledWorkflowHotkeys,
+      setWorkflowHotkeys: (paths) => {
+        this.settings.enabledWorkflowHotkeys = paths;
+        void this.saveSettings();
+      },
+      getWorkflowEventTriggers: () => this.settings.enabledWorkflowEventTriggers,
+      setWorkflowEventTriggers: (triggers) => {
+        this.settings.enabledWorkflowEventTriggers = triggers;
+        void this.saveSettings();
+      },
+      runWorkflowFromHotkey: (path) => {
+        void this.workflowManager.executeFromHotkey(path);
+      },
+      getLastSelectedWorkflow: () => this.settings.lastSelectedWorkflowPath,
+      setLastSelectedWorkflow: (path) => {
+        this.settings.lastSelectedWorkflowPath = path;
+        void this.saveSettings();
+      },
       streamChat: (request) => streamWorkflowChat(this, request),
       runCommandNode: ({ node, context, app, callbacks, traceId, abortSignal }) =>
         handleCommandNode(node, context, app, this, callbacks, traceId, abortSignal),
