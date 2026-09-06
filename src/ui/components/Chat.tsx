@@ -25,6 +25,8 @@ import {
 import { localLlmChatStream } from "src/core/localLlmProvider";
 import {
   resolveMessageVariables as resolveMessageVariablesShared,
+  useChatHistories,
+  type ChatStorageHost,
   type CommandVariableSources,
 } from "obsidian-llm-hub-common/chat";
 import { getVaultTools, readNoteTool, skillWorkflowTool, SKILL_WORKFLOW_TOOL_NAME } from "src/core/tools";
@@ -59,8 +61,6 @@ import { cryptoCache } from "src/core/cryptoCache";
 import { promptForPassword } from "src/ui/passwordPrompt";
 import { buildErrorMessage, limitConversationHistory, type ChatHistory } from "./chat/chatUtils";
 import {
-  messagesToMarkdown,
-  messagesToCompactMarkdown,
   parseMarkdownToMessages,
   formatHistoryDate,
 } from "./chat/chatHistory";
@@ -72,7 +72,6 @@ import { t } from "src/i18n";
 import { formatError } from "obsidian-llm-hub-common/core";
 import { decodeBase64Utf8 } from "src/utils/base64";
 import { runtimeSkillPath } from "src/core/runtimeSkills";
-import { ensureAdapterFolder } from "src/core/vaultAdapter";
 import { extractPdfText, formatExtractedPdfText } from "src/core/pdfText";
 
 export interface ChatRef {
@@ -103,12 +102,28 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingThinking, setStreamingThinking] = useState("");
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  // Where this plugin keeps its chats. Everything that reads or writes them is shared.
+  const chatStorageHost: ChatStorageHost = {
+    app: plugin.app,
+    getChatHistoryFolder: () => `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`,
+    getManualChatSaveFolder: () => plugin.settings.manualChatSaveFolder,
+    isHistoryEnabled: () => plugin.settings.saveChatHistory,
+    getMaxSavedChatHistories: () => plugin.settings.maxSavedChatHistories,
+    // Chat history encryption is configured per plugin; this one stores plaintext.
+    getEncryption: () => undefined,
+  };
+  const {
+    chatHistories,
+    currentChatId,
+    setCurrentChatId,
+    saveNoteState,
+    loadChatHistories,
+    saveCurrentChat,
+    deleteChat: deleteChatFromHistory,
+    saveAsNote,
+  } = useChatHistories(chatStorageHost);
   const [showHistory, setShowHistory] = useState(false);
-  const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
-  const [saveNoteState, setSaveNoteState] = useState<"idle" | "saving" | "saved">("idle");
   const [isSidebarWide, setIsSidebarWide] = useState(false);
-  const savedNotePathsRef = useRef(new Map<string, string>());
 
   const [currentModel, setCurrentModel] = useState(plugin.settings.llmConfig.model);
   const [ragSettingNames, setRagSettingNames] = useState<string[]>(plugin.getRagSettingNames());
@@ -156,7 +171,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const inputAreaRef = useRef<InputAreaHandle>(null);
-  const chatCreatedAt = useRef<number>(Date.now());
   // Set to true once user interacts (newChat, loadChat, sendMessage)
   // so the mount-time restore doesn't overwrite their action.
   const userInteractedRef = useRef(false);
@@ -240,7 +254,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         if (parsed?.messages && parsed.messages.length > 0) {
           setMessages(parsed.messages);
           setCurrentChatId(lastId);
-          chatCreatedAt.current = parsed.createdAt;
         }
       } catch (e) {
         console.warn("Failed to restore last active chat:", e);
@@ -530,112 +543,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     }), [plugin, vaultToolMode, commandVariableSources]);
 
   // Save chat history
-  const saveCurrentChat = useCallback(async (msgs: Message[]) => {
-    if (!plugin.settings.saveChatHistory || msgs.length === 0) return;
-
-    const chatTitle = generateChatTitle(msgs);
-    const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
-
-    await ensureAdapterFolder(plugin.app.vault.adapter, folder);
-
-    const chatId = currentChatId || `chat-${Date.now()}`;
-
-    // Chat history encryption is configured per plugin; this one stores plaintext.
-    const markdown = await messagesToMarkdown(msgs, chatTitle, chatCreatedAt.current, undefined);
-    const filePath = `${folder}/${chatId}.md`;
-
-    await plugin.app.vault.adapter.write(filePath, markdown);
-
-    const limit = Math.max(0, plugin.settings.maxSavedChatHistories);
-    if (limit > 0) {
-      const listed = await plugin.app.vault.adapter.list(folder);
-      const files = (await Promise.all(listed.files.filter(path => path.endsWith(".md")).map(async path => ({
-        path,
-        stat: await plugin.app.vault.adapter.stat(path),
-      })))).filter((file): file is { path: string; stat: NonNullable<typeof file.stat> } => file.stat !== null)
-        .sort((a, b) => b.stat.mtime - a.stat.mtime);
-      await Promise.all(files.slice(limit).map(file => plugin.app.vault.adapter.remove(file.path)));
-    }
-
-    if (!currentChatId) {
-      setCurrentChatId(chatId);
-    }
-  }, [currentChatId, plugin]);
-
-  // Save current chat as a note file
-  const handleSaveAsNote = useCallback(async () => {
-    if (saveNoteState !== "idle" || messages.length === 0) return;
-    setSaveNoteState("saving");
-    try {
-      const chatTitle = generateChatTitle(messages);
-      const markdown = messagesToCompactMarkdown(messages);
-      const now = new Date();
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const dateTime = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-      const safeTitle = chatTitle.replace(/[\\/:*?"<>|#^[\]\r\n]+/g, " ").replace(/\s+/g, " ").replace(/^\.+|\.+$/g, "").trim().slice(0, 80) || "Chat";
-      const folder = plugin.settings.manualChatSaveFolder.trim();
-      if (folder) await ensureAdapterFolder(plugin.app.vault.adapter, folder);
-      const chatKey = currentChatId ?? String(messages[0].timestamp);
-      const newPath = `${folder ? `${folder}/` : ""}${dateTime}_${safeTitle}.md`;
-      const filePath = savedNotePathsRef.current.get(chatKey) ?? newPath;
-      await plugin.app.vault.adapter.write(filePath, markdown);
-      savedNotePathsRef.current.set(chatKey, filePath);
-      new Notice(t("chat.savedAsNote", { path: filePath }));
-      setSaveNoteState("saved");
-      window.setTimeout(() => setSaveNoteState("idle"), 3000);
-    } catch (error) {
-      new Notice(t("common.error") + formatError(error));
-      setSaveNoteState("idle");
-    }
-  }, [saveNoteState, messages, currentChatId, plugin]);
-
-  // Load chat histories
-  const loadChatHistories = useCallback(async () => {
-    const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
-    if (!(await plugin.app.vault.adapter.exists(folder))) {
-      setChatHistories([]);
-      return;
-    }
-
-    const histories: ChatHistory[] = [];
-    const listed = await plugin.app.vault.adapter.list(folder);
-    const files = (await Promise.all(listed.files
-      .filter(path => path.endsWith(".md"))
-      .map(async path => ({ path, stat: await plugin.app.vault.adapter.stat(path) }))))
-      .filter((file): file is { path: string; stat: NonNullable<typeof file.stat> } => file.stat !== null)
-      .sort((a, b) => b.stat.mtime - a.stat.mtime);
-
-    for (const file of files) {
-      try {
-        const content = await plugin.app.vault.adapter.read(file.path);
-        const parsed = parseMarkdownToMessages(content);
-        if (parsed) {
-          const id = file.path.slice(file.path.lastIndexOf("/") + 1, -3);
-          const frontmatterTitle = content.match(/title:\s*"([^"]+)"/);
-          const title = frontmatterTitle ? frontmatterTitle[1] : id;
-
-          histories.push({
-            id,
-            title,
-            messages: parsed.messages,
-            createdAt: parsed.createdAt,
-            updatedAt: file.stat.mtime,
-          });
-        }
-      } catch {
-        // Skip unreadable files
-      }
-    }
-
-    setChatHistories(histories);
-  }, [plugin]);
-
   // Load a chat from history
   const loadChat = useCallback((history: ChatHistory) => {
     userInteractedRef.current = true;
     setMessages(history.messages);
     setCurrentChatId(history.id);
-    chatCreatedAt.current = history.createdAt;
     setShowHistory(false);
   }, []);
 
@@ -646,26 +558,17 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setCurrentChatId(null);
     setStreamingContent("");
     setStreamingThinking("");
-    chatCreatedAt.current = Date.now();
     setShowHistory(false);
     setActiveSkillPaths(DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath));
   }, []);
 
   // Delete a chat
   const deleteChat = useCallback(async (history: ChatHistory) => {
-    const folder = `${plugin.settings.workspaceFolder || WORKSPACE_FOLDER}/chats`;
-    const filePath = `${folder}/${history.id}.md`;
-    const file = plugin.app.vault.getAbstractFileByPath(filePath);
-    if (file instanceof TFile) {
-      await plugin.app.fileManager.trashFile(file);
-    } else if (await plugin.app.vault.adapter.exists(filePath)) {
-      await plugin.app.vault.adapter.remove(filePath);
-    }
+    await deleteChatFromHistory(history.id);
     if (currentChatId === history.id) {
       newChat();
     }
-    await loadChatHistories();
-  }, [currentChatId, plugin, loadChatHistories]);
+  }, [currentChatId, deleteChatFromHistory, newChat]);
 
   // Stop generation
   const handleStop = useCallback(() => {
@@ -726,7 +629,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       const newChatId = `chat-${Date.now()}`;
       setCurrentChatId(newChatId);
       setMessages(newMessages);
-      chatCreatedAt.current = now;
 
       await saveCurrentChat(newMessages);
       new Notice(t("chat.compacted", { before: String(beforeCount), after: "2" }));
@@ -1225,7 +1127,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
             state={saveNoteState}
             disabled={messages.length === 0}
             title={saveNoteState === "saved" ? t("chat.savedAsNote", { path: "" }) : t("chat.saveAsNote")}
-            onClick={() => { void handleSaveAsNote(); }}
+            onClick={() => { void saveAsNote(messages); }}
           />
           <HeaderButton classPrefix="llm-hub" title={t("chat.newChat")} disabled={isLoading} onClick={newChat}>
             <Plus size={16} />
@@ -1343,12 +1245,6 @@ Chat.displayName = "Chat";
 
 export default Chat;
 
-function generateChatTitle(messages: Message[]): string {
-  const firstUserMsg = messages.find(m => m.role === "user");
-  if (!firstUserMsg) return "Chat";
-  const title = firstUserMsg.content.slice(0, 50).replace(/\n/g, " ").trim();
-  return title || "Chat";
-}
 
 /**
  * Execute a skill workflow headlessly and return results.
