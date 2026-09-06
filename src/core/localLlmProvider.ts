@@ -15,6 +15,9 @@ import type { Message, StreamChunk, LocalLlmConfig, ToolDefinition, ToolCall } f
 import {
   buildOpenAiMessages,
   extractInlineToolCalls,
+  fetchChatModels as fetchChatModelsShared,
+  fetchEmbeddingModels as fetchEmbeddingModelsShared,
+  openaiPathPrefix,
   formatStreamIdleTimeoutError,
   getHttpModule,
   getStreamIdleTimeoutMs,
@@ -31,15 +34,6 @@ interface OllamaMessage {
     function: { name: string; arguments: Record<string, unknown> };
   }[];
   tool_name?: string;
-}
-
-interface OpenAiModel {
-  id: string;
-  object?: string;
-}
-
-interface OpenAiModelsResponse {
-  data: OpenAiModel[];
 }
 
 interface OllamaStreamResponse {
@@ -75,19 +69,9 @@ interface OpenAiStreamResponse {
   message?: string;
 }
 
-/** Families that are embedding-only models (not usable for chat) */
-const EMBEDDING_FAMILIES = new Set(["nomic-bert", "bert", "snowflake-arctic-embed"]);
-
-/** OpenAI-compatible API path prefix. AnythingLLM uses /v1/openai, others use /v1. */
-function openaiPathPrefix(config: LocalLlmConfig): string {
-  if (config.framework === "anythingllm") return "/v1/openai";
-  return "/v1";
-}
-
-/** Normalize a server URL before appending an embedding API endpoint. */
-export function normalizeEmbeddingBaseUrl(baseUrl: string): string {
-  return baseUrl.trim().replace(/\/+$/, "");
-}
+/** Ask the server through Obsidian, which is how a local port is reached without CORS. */
+const getModelList = async (url: string, headers: Record<string, string>): Promise<unknown> =>
+  (await requestUrl({ url, method: "GET", ...(Object.keys(headers).length > 0 ? { headers } : {}) })).json;
 
 /**
  * Verify connection to local LLM server and check available models
@@ -98,70 +82,9 @@ export async function verifyLocalLlm(config: LocalLlmConfig): Promise<{
   models?: string[];
 }> {
   try {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (config.apiKey) {
-      headers["Authorization"] = `Bearer ${config.apiKey}`;
-    }
-
-    if (config.framework === "ollama") {
-      // Use Ollama's /api/tags (has model family info for filtering embedding models)
-      try {
-        const ollamaResponse = await requestUrl({
-          url: `${config.baseUrl}/api/tags`,
-          method: "GET",
-        });
-        const ollamaData = ollamaResponse.json as {
-          models?: { name: string; details?: { families?: string[] } }[];
-        };
-        const models = (ollamaData.models || [])
-          .filter(m => !isEmbeddingModel(m.details?.families) && !isEmbeddingModelByName(m.name))
-          .map(m => m.name);
-        return { success: true, models };
-      } catch {
-        return { success: false, error: `Cannot connect to ${config.baseUrl}. Is the server running?` };
-      }
-    }
-
-    // OpenAI-compatible /v1/models (LM Studio, AnythingLLM, vLLM, etc.)
-    try {
-      const response = await requestUrl({
-        url: `${config.baseUrl}${openaiPathPrefix(config)}/models`,
-        method: "GET",
-        headers,
-      });
-      const data = response.json as OpenAiModelsResponse;
-      const models = (data.data || [])
-        .filter((m: OpenAiModel) => !isEmbeddingModelByName(m.id))
-        .map((m: OpenAiModel) => m.id);
-      return { success: true, models };
-    } catch {
-      return { success: false, error: `Cannot connect to ${config.baseUrl}. Is the server running?` };
-    }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { success: false, error: message };
-  }
-}
-
-function isEmbeddingModel(families?: string[]): boolean {
-  if (!families) return false;
-  return families.some(f => EMBEDDING_FAMILIES.has(f));
-}
-
-/** Name patterns that indicate embedding-only models */
-const EMBEDDING_NAME_PATTERN = /embed|bge-|e5-|gte-|arctic-embed/i;
-
-function isEmbeddingModelByName(name: string): boolean {
-  return EMBEDDING_NAME_PATTERN.test(name);
-}
-
-function isOllamaDefaultUrl(baseUrl: string): boolean {
-  try {
-    const url = new URL(baseUrl);
-    const port = url.port || (url.protocol === "https:" ? "443" : "80");
-    return port === "11434" && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+    return { success: true, models: await fetchChatModels(config) };
   } catch {
-    return false;
+    return { success: false, error: `Cannot connect to ${config.baseUrl}. Is the server running?` };
   }
 }
 
@@ -173,43 +96,24 @@ export async function fetchLocalLlmModels(config: LocalLlmConfig): Promise<strin
   return result.models || [];
 }
 
+function fetchChatModels(config: LocalLlmConfig): Promise<string[]> {
+  return fetchChatModelsShared(
+    { baseUrl: config.baseUrl, apiKey: config.apiKey, framework: config.framework },
+    getModelList,
+  );
+}
+
 /**
- * Fetch available embedding models.
- * Ollama: filters by known embedding families or embedding model names.
- * Others: returns all models from /v1/models (user selects the right one).
+ * Fetch available embedding models. A separate embedding server is addressed as
+ * a plain OpenAI-compatible one: the framework describes the chat server.
  */
 export async function fetchEmbeddingModels(config: LocalLlmConfig, embeddingBaseUrl?: string): Promise<string[]> {
   try {
-    const baseUrl = normalizeEmbeddingBaseUrl(embeddingBaseUrl || config.baseUrl);
-
-    if (config.framework === "ollama" || isOllamaDefaultUrl(baseUrl)) {
-      const response = await requestUrl({
-        url: `${baseUrl}/api/tags`,
-        method: "GET",
-      });
-      const data = response.json as {
-        models?: { name: string; details?: { families?: string[] } }[];
-      };
-      return (data.models || [])
-        .filter(m => isEmbeddingModel(m.details?.families) || isEmbeddingModelByName(m.name))
-        .map(m => m.name);
-    }
-
-    // LM Studio, AnythingLLM, vLLM, etc.: return all loaded models
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (config.apiKey) {
-      headers["Authorization"] = `Bearer ${config.apiKey}`;
-    }
-    const prefix = embeddingBaseUrl ? "/v1" : openaiPathPrefix(config);
-    const response = await requestUrl({
-      url: `${baseUrl}${prefix}/models`,
-      method: "GET",
-      headers,
-    });
-    const data = response.json as OpenAiModelsResponse;
-    return (data.data || [])
-      .filter((m: OpenAiModel) => isEmbeddingModelByName(m.id))
-      .map((m: OpenAiModel) => m.id);
+    return await fetchEmbeddingModelsShared({
+      baseUrl: embeddingBaseUrl || config.baseUrl,
+      apiKey: config.apiKey,
+      framework: embeddingBaseUrl ? undefined : config.framework,
+    }, getModelList);
   } catch {
     return [];
   }
@@ -542,7 +446,7 @@ async function* openaiChatStream(
   // UTF-8 byte length just like fetch-based clients do.
   headers["Content-Length"] = String(new TextEncoder().encode(body).byteLength);
 
-  const url = new URL(`${config.baseUrl}${openaiPathPrefix(config)}/chat/completions`);
+  const url = new URL(`${config.baseUrl}${openaiPathPrefix(config.framework)}/chat/completions`);
   const httpModule = getHttpModule(url.protocol);
 
   const chunks: StreamChunk[] = [];
