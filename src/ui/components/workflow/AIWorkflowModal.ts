@@ -57,11 +57,9 @@ export interface AIWorkflowModalOptions {
 }
 
 /** Context from the generation phases, shown in preview/confirm modals */
-export interface GenerationContext {
-  plan?: string;
-  thinking?: string;
-  review?: string;
-}
+import type { GenerationContext } from "obsidian-llm-hub-common/workflow";
+
+export type { GenerationContext };
 
 const LOCALE_DISPLAY_NAMES: Record<string, string> = {
   en: "English",

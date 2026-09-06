@@ -31,6 +31,13 @@ const HOST_OWNED = [
  */
 const STILL_HOST_RENDERED: string[] = [
   "modal-resizable",
+  "workflow-generation-context",
+  "workflow-generation-context-content",
+  "workflow-generation-context-details",
+  "workflow-generation-copy-btn",
+  "workflow-generation-plan-rendered",
+  "workflow-preview-additional",
+  "workflow-preview-additional-input",
 ];
 
 const sourceDir = fileURLToPath(new URL("../..", import.meta.url));
