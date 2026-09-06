@@ -60,7 +60,7 @@ export async function handleNoteNode(
   }
 
   const notePath = sanitizePath(path.endsWith(".md") ? path : `${path}.md`);
-  assertVaultToolPathAllowed(notePath, context.vaultToolAllowedFolders);
+  assertVaultToolPathAllowed(notePath, context.cloudVaultToolAllowedFolders);
 
   const confirm = node.properties["confirm"] !== "false";
 
@@ -153,7 +153,7 @@ export async function handleNoteReadNode(
 
   const path = replaceVariables(pathRaw, context);
   const notePath = path.endsWith(".md") ? path : `${path}.md`;
-  assertVaultToolPathAllowed(notePath, context.vaultToolAllowedFolders);
+  assertVaultToolPathAllowed(notePath, context.cloudVaultToolAllowedFolders);
 
   const file = app.vault.getAbstractFileByPath(notePath);
   if (!file) {
@@ -163,7 +163,7 @@ export async function handleNoteReadNode(
   if (!(file instanceof TFile)) {
     throw new Error(`Path is not a file: ${notePath}`);
   }
-  assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
+  assertVaultToolFileAllowed(file, context.cloudVaultToolAllowedFolders);
 
   let content = await app.vault.read(file);
 
@@ -209,7 +209,7 @@ export async function handleNoteSearchNode(
   }
 
   const files = app.vault.getMarkdownFiles()
-    .filter((file) => isFileAllowedForVaultTools(file, context.vaultToolAllowedFolders));
+    .filter((file) => isFileAllowedForVaultTools(file, context.cloudVaultToolAllowedFolders));
   const results: { name: string; path: string; matchedContent?: string }[] = [];
 
   if (searchContent) {
@@ -345,10 +345,10 @@ export function handleNoteListNode(
     : [];
 
   let files = app.vault.getMarkdownFiles()
-    .filter((file) => isFileAllowedForVaultTools(file, context.vaultToolAllowedFolders));
+    .filter((file) => isFileAllowedForVaultTools(file, context.cloudVaultToolAllowedFolders));
 
   if (folder) {
-    assertVaultToolPathAllowed(folder, context.vaultToolAllowedFolders);
+    assertVaultToolPathAllowed(folder, context.cloudVaultToolAllowedFolders);
     const normalizedFolder = folder.endsWith("/") ? folder : folder + "/";
     files = files.filter((file) => {
       if (recursive) {
@@ -426,7 +426,7 @@ export function handleFolderListNode(
 
   const folders: string[] = [];
   if (parentFolder) {
-    assertVaultToolFolderNavigable(parentFolder, context.vaultToolAllowedFolders);
+    assertVaultToolFolderNavigable(parentFolder, context.cloudVaultToolAllowedFolders);
   }
 
   const allFiles = app.vault.getAllLoadedFiles();
@@ -442,7 +442,7 @@ export function handleFolderListNode(
       }
 
       if (folderPath) {
-        if (!isPathNavigableForVaultTools(folderPath, context.vaultToolAllowedFolders)) {
+        if (!isPathNavigableForVaultTools(folderPath, context.cloudVaultToolAllowedFolders)) {
           continue;
         }
         folders.push(folderPath);

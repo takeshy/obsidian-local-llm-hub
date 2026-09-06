@@ -99,7 +99,7 @@ export class WorkflowExecutor {
     const context: ExecutionContext = {
       variables: new Map(input.variables),
       logs: [],
-      vaultToolAllowedFolders: options?.vaultToolAllowedFolders,
+      cloudVaultToolAllowedFolders: options?.vaultToolAllowedFolders,
     };
 
     if (options?.initialVariables) {
@@ -715,7 +715,7 @@ export class WorkflowExecutor {
                   // Forward the abort signal so cancelling the parent run (e.g. a
                   // dashboard workflow widget) also interrupts the sub-workflow.
                   abortSignal: options?.abortSignal,
-                  vaultToolAllowedFolders: context.vaultToolAllowedFolders,
+                  vaultToolAllowedFolders: context.cloudVaultToolAllowedFolders,
                   workflowDefinitionRoot: options?.workflowDefinitionRoot,
                 },
                 promptCallbacks

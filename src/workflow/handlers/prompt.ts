@@ -86,12 +86,12 @@ export async function handlePromptFileNode(
   }
 
   const notePath = filePath.endsWith(".md") ? filePath : `${filePath}.md`;
-  assertVaultToolPathAllowed(notePath, context.vaultToolAllowedFolders);
+  assertVaultToolPathAllowed(notePath, context.cloudVaultToolAllowedFolders);
   const file = app.vault.getAbstractFileByPath(notePath);
   if (!file || !(file instanceof TFile)) {
     throw new Error(`File not found: ${notePath}`);
   }
-  assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
+  assertVaultToolFileAllowed(file, context.cloudVaultToolAllowedFolders);
   const content = await app.vault.read(file);
 
   context.variables.set(saveTo, content);
@@ -177,10 +177,10 @@ export async function handlePromptSelectionNode(
     const fileInfo = parsePathInfo(eventFile);
     if (fileInfo) {
       try {
-        assertVaultToolPathAllowed(fileInfo.path, context.vaultToolAllowedFolders);
+        assertVaultToolPathAllowed(fileInfo.path, context.cloudVaultToolAllowedFolders);
         const file = app.vault.getAbstractFileByPath(fileInfo.path);
         if (file && file instanceof TFile) {
-          assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
+          assertVaultToolFileAllowed(file, context.cloudVaultToolAllowedFolders);
           const content = await app.vault.read(file);
           context.variables.set(saveTo, content);
 
@@ -212,12 +212,12 @@ export async function handlePromptSelectionNode(
     throw new Error("Selection cancelled by user");
   }
 
-  assertVaultToolPathAllowed(result.path, context.vaultToolAllowedFolders);
+  assertVaultToolPathAllowed(result.path, context.cloudVaultToolAllowedFolders);
   const file = app.vault.getAbstractFileByPath(result.path);
   if (!file || !(file instanceof TFile)) {
     throw new Error(`File not found: ${result.path}`);
   }
-  assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
+  assertVaultToolFileAllowed(file, context.cloudVaultToolAllowedFolders);
   const fileContent = await app.vault.read(file);
 
   const lines = fileContent.split("\n");

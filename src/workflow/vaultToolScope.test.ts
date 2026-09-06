@@ -43,7 +43,7 @@ function makeApp(files: TFile[]): App {
 }
 
 function makeContext(allowedFolders?: string[]): ExecutionContext {
-  return { variables: new Map(), logs: [], vaultToolAllowedFolders: allowedFolders };
+  return { variables: new Map(), logs: [], cloudVaultToolAllowedFolders: allowedFolders };
 }
 
 function makeNode(type: WorkflowNode["type"], properties: Record<string, string>): WorkflowNode {

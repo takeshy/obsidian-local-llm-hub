@@ -186,18 +186,18 @@ export async function handleObsidianCommandNode(
   // With an active LLM workflow scope, a pathless command could operate on
   // the current editor or let another plugin touch arbitrary vault files.
   // Require an explicit, scope-checked target instead.
-  if (!path && hasVaultToolFolderRestrictions(context.vaultToolAllowedFolders)) {
+  if (!path && hasVaultToolFolderRestrictions(context.cloudVaultToolAllowedFolders)) {
     throw new Error(VAULT_TOOL_SCOPE_DENIED_MSG);
   }
 
   if (path) {
     const filePath = path.endsWith(".md") ? path : `${path}.md`;
-    assertVaultToolPathAllowed(filePath, context.vaultToolAllowedFolders);
+    assertVaultToolPathAllowed(filePath, context.cloudVaultToolAllowedFolders);
     const file = app.vault.getAbstractFileByPath(filePath);
     if (!file || !(file instanceof TFile)) {
       throw new Error(`File not found: ${filePath}`);
     }
-    assertVaultToolFileAllowed(file, context.vaultToolAllowedFolders);
+    assertVaultToolFileAllowed(file, context.cloudVaultToolAllowedFolders);
 
     let existingLeaf: WorkspaceLeaf | null = null;
     app.workspace.iterateAllLeaves((leaf) => {
