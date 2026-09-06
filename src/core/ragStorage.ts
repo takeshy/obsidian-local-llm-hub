@@ -7,6 +7,7 @@
 import type { App } from "obsidian";
 import { WORKSPACE_FOLDER } from "../types";
 import type { ChunkStrategy } from "../types";
+import { sanitizeRagSettingName } from "obsidian-llm-hub-common/core";
 
 export interface ChunkMeta {
   filePath: string;
@@ -40,9 +41,9 @@ interface ExternalRagIndex {
 const META_FILE = "rag-index.json";
 const VECTORS_FILE = "rag-vectors.bin";
 
-export function sanitizeSettingName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, "_");
-}
+// The directory-safe form of a setting name is shared: the collision check that
+// depends on it lives in the library, and the two must agree.
+export { sanitizeRagSettingName as sanitizeSettingName };
 
 function getNodeRequire(): ((id: string) => unknown) | null {
   const runtimeWindow = activeWindow as unknown as {
@@ -60,7 +61,7 @@ function getRagDir(workspaceFolder = WORKSPACE_FOLDER): string {
 }
 
 function getSettingDir(settingName: string, workspaceFolder = WORKSPACE_FOLDER): string {
-  return `${getRagDir(workspaceFolder)}/${sanitizeSettingName(settingName)}`;
+  return `${getRagDir(workspaceFolder)}/${sanitizeRagSettingName(settingName)}`;
 }
 
 function getIndexPath(settingName: string, workspaceFolder = WORKSPACE_FOLDER): string {

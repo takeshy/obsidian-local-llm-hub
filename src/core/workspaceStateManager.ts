@@ -8,7 +8,13 @@ import {
   DEFAULT_RAG_SETTING,
   WORKSPACE_FOLDER,
 } from "../types";
-import { migrateOldRagIndex, renameRagIndex, sanitizeSettingName } from "./ragStorage";
+import { migrateOldRagIndex, renameRagIndex } from "./ragStorage";
+import {
+  assertNoRagSettingCollision,
+  deleteRagSettingFromState,
+  pruneRagSettingSources,
+  renameRagSettingInState,
+} from "obsidian-llm-hub-common/core";
 import { getRagStore } from "./ragStore";
 
 const WORKSPACE_STATE_FILENAME = "workspace-state.json";
@@ -133,21 +139,11 @@ export class WorkspaceStateManager {
     this.settingsEmitter.emit("rag-setting-changed", name);
   }
 
-  private checkSanitizedCollision(newName: string, excludeName?: string): void {
-    const newSanitized = sanitizeSettingName(newName);
-    for (const existing of Object.keys(this.workspaceState.ragSettings)) {
-      if (existing === excludeName) continue;
-      if (sanitizeSettingName(existing) === newSanitized) {
-        throw new Error(`RAG setting "${newName}" conflicts with existing setting "${existing}" (same directory name)`);
-      }
-    }
-  }
-
   async createRagSetting(name: string, setting?: Partial<RagSetting>): Promise<void> {
     if (this.workspaceState.ragSettings[name]) {
       throw new Error(`RAG setting "${name}" already exists`);
     }
-    this.checkSanitizedCollision(name);
+    assertNoRagSettingCollision(this.workspaceState, name);
     this.workspaceState.ragSettings[name] = { ...DEFAULT_RAG_SETTING, ...setting };
     await this.saveWorkspaceState();
     this.settingsEmitter.emit("workspace-state-loaded", this.workspaceState);
@@ -158,25 +154,17 @@ export class WorkspaceStateManager {
     if (!existing) {
       throw new Error(`RAG setting "${name}" not found`);
     }
-    const next = { ...existing, ...updates };
-    if (next.sourceRagSettings.length > 0) {
-      next.sourceRagSettings = next.sourceRagSettings.filter(sourceName =>
-        sourceName !== name && !!this.workspaceState.ragSettings[sourceName]
-      );
-    }
-    this.workspaceState.ragSettings[name] = next;
+    this.workspaceState.ragSettings[name] = pruneRagSettingSources(
+      this.workspaceState,
+      name,
+      { ...existing, ...updates },
+    );
     await this.saveWorkspaceState();
   }
 
   async deleteRagSetting(name: string): Promise<void> {
     if (!this.workspaceState.ragSettings[name]) return;
-    delete this.workspaceState.ragSettings[name];
-    for (const setting of Object.values(this.workspaceState.ragSettings)) {
-      setting.sourceRagSettings = setting.sourceRagSettings.filter(sourceName => sourceName !== name);
-    }
-    if (this.workspaceState.selectedRagSetting === name) {
-      this.workspaceState.selectedRagSetting = null;
-    }
+    deleteRagSettingFromState(this.workspaceState, name);
     await this.saveWorkspaceState();
     this.settingsEmitter.emit("workspace-state-loaded", this.workspaceState);
   }
@@ -188,7 +176,7 @@ export class WorkspaceStateManager {
     if (this.workspaceState.ragSettings[newName]) {
       throw new Error(`RAG setting "${newName}" already exists`);
     }
-    this.checkSanitizedCollision(newName, oldName);
+    assertNoRagSettingCollision(this.workspaceState, newName, oldName);
 
     // Move on-disk index directory
     await renameRagIndex(this.app, oldName, newName, this.workspaceFolder());
@@ -197,16 +185,7 @@ export class WorkspaceStateManager {
     const store = getRagStore();
     store.invalidateEntry(oldName);
 
-    this.workspaceState.ragSettings[newName] = this.workspaceState.ragSettings[oldName];
-    delete this.workspaceState.ragSettings[oldName];
-    for (const setting of Object.values(this.workspaceState.ragSettings)) {
-      setting.sourceRagSettings = setting.sourceRagSettings.map(sourceName =>
-        sourceName === oldName ? newName : sourceName
-      );
-    }
-    if (this.workspaceState.selectedRagSetting === oldName) {
-      this.workspaceState.selectedRagSetting = newName;
-    }
+    renameRagSettingInState(this.workspaceState, oldName, newName);
     await this.saveWorkspaceState();
     this.settingsEmitter.emit("workspace-state-loaded", this.workspaceState);
   }
