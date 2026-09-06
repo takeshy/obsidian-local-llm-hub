@@ -1,3 +1,6 @@
+import type { WorkflowEventTrigger } from "obsidian-llm-hub-common/workflow";
+
+export type { ObsidianEventType, WorkflowEventTrigger } from "obsidian-llm-hub-common/workflow";
 // Supported LLM frameworks
 export type LlmFramework = "ollama" | "lm-studio" | "anythingllm" | "vllm";
 
@@ -235,15 +238,6 @@ export interface SlashCommand {
   vaultToolMode?: VaultToolMode | null; // null = use current setting
 }
 
-// Obsidian event types for workflow triggers
-export type ObsidianEventType = "startup" | "create" | "modify" | "delete" | "rename" | "file-open";
-
-// Workflow event trigger
-export interface WorkflowEventTrigger {
-  workflowId: string; // Vault path to the workflow file (e.g., "folder/file.md"). Each file holds exactly one workflow.
-  events: ObsidianEventType[];
-  filePattern?: string;
-}
 
 // MCP server configuration (stdio transport)
 // MCP stdio framing protocol

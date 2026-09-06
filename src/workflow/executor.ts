@@ -204,6 +204,7 @@ export class WorkflowExecutor {
           truncateLargeData(output),
           status,
           error,
+          undefined,  // mcpAppInfo: this plugin has no MCP apps
           currentVarsSnapshot,
           usage,
           elapsedMs

@@ -1175,10 +1175,10 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
       plugin.app,
       workflowFile.path,
       encryptionConfig,
-      plugin.settings.workspaceFolder,
       (retryPath, retryName, errorNodeId, variablesSnapshot) => {
         void retryFromError(retryPath, retryName, errorNodeId, variablesSnapshot);
-      }
+      },
+      plugin.settings.workspaceFolder
     );
     modal.open();
   };
