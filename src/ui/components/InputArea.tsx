@@ -593,8 +593,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                 settings: ragSettingNames,
                 selected: selectedRagSetting,
                 disabled: false,
-                onSelect: onRagSettingChange,
               }}
+              onChange={(selection) => onRagSettingChange(selection.ragSetting)}
             />
           )}
         </ModelRow>

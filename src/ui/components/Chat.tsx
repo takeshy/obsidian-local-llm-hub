@@ -27,6 +27,7 @@ import { localLlmChatStream } from "src/core/localLlmProvider";
 import {
   accumulateStreamChunk,
   createStreamAccumulation,
+  generateChatId,
   resolveMessageVariables as resolveMessageVariablesShared,
   useChatHistories,
   useChatStreamSessions,
@@ -640,7 +641,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         { role: "assistant", content: `[${t("chat.compactedContext")}]\n\n${summary}`, timestamp: now + 1 },
       ];
 
-      const newChatId = `chat-${Date.now()}`;
+      const newChatId = generateChatId();
       setCurrentChatId(newChatId);
       setMessages(newMessages);
 
