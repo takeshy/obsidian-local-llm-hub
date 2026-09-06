@@ -1,7 +1,5 @@
 // Japanese translations
 export const ja: Record<string, string> = {
-  "input.vaultTool_readOnly": "Vault: 読み取り専用",
-  "input.vaultTool_readOnlyDesc": "検索・読み取りのみ許可し、ファイルの作成・編集・削除・名前変更を禁止",
   "nodeEditor.vaultTools.desc": "組み込みVaultツールのアクセス範囲です。外部MCPやスキルの権限は別途設定します。",
   // Common
   "common.error": "エラー: ",
@@ -204,12 +202,6 @@ export const ja: Record<string, string> = {
   "skills.skill": "スキル",
 
   "input.attach": "ファイル添付（画像、PDF、テキスト）",
-  "input.vaultTool_all": "Vault: all",
-  "input.vaultTool_noSearch": "Vault: no discovery",
-  "input.vaultTool_none": "Vault: off",
-  "input.vaultTool_allDesc": "モデルによるノートの検索・読み取り・変更を許可",
-  "input.vaultTool_noSearchDesc": "Vault検索とノート一覧取得を無効化。RAGと明示的に参照したノートは利用可能",
-  "input.vaultTool_noneDesc": "組み込みVaultツールをすべて無効化",
   "input.model": "モデル",
   "input.mcpServersLabel": "MCPサーバー",
   "input.ragTargetFolders": "RAGインデックス対象フォルダ",

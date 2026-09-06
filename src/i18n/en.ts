@@ -4,8 +4,6 @@ import type { SharedTranslationKey } from "obsidian-llm-hub-common/i18n";
 export const en = {
   "nodeEditor.mcpConfirm": "Confirm mcp tool calls",
   "nodeEditor.mcpConfirm.desc": "Set false to skip mcp approval for this node, including automatic execution.",
-  "input.vaultTool_readOnly": "Vault: read only",
-  "input.vaultTool_readOnlyDesc": "Search and read without creating, editing, deleting, or renaming files",
   "nodeEditor.vaultTools.desc": "Built-in vault tool access. External mcp and skill tools have separate permissions.",
   // Common
   "common.error": "Error: ",
@@ -208,12 +206,6 @@ export const en = {
   "skills.skill": "Skill",
 
   "input.attach": "Attach file (images, PDF, text)",
-  "input.vaultTool_all": "Vault: all",
-  "input.vaultTool_noSearch": "Vault: no discovery",
-  "input.vaultTool_none": "Vault: off",
-  "input.vaultTool_allDesc": "Allow the model to find, read, and modify notes",
-  "input.vaultTool_noSearchDesc": "Disable vault search and note listing; rag and explicitly referenced notes remain available",
-  "input.vaultTool_noneDesc": "Disable all built-in vault tools",
   "input.model": "Model",
   "input.mcpServersLabel": "Mcp servers",
   "input.ragTargetFolders": "Folders indexed by RAG",

@@ -6,7 +6,7 @@ import {
   type AttachmentKind,
 } from "obsidian-llm-hub-common/chat";
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-common";
-import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, VaultToolSection, InputButtons, SearchSelector, ModelRow, HistoryLimit } from "obsidian-llm-hub-common";
+import { Composer, Autocomplete, Attachments, VaultToolControl, EnabledMcpServers, InputButtons, SearchSelector, ModelRow } from "obsidian-llm-hub-common";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
@@ -79,6 +79,14 @@ interface MentionItem {
 
 // Local models take no audio or video, so those kinds are not offered here.
 const ATTACHMENT_KINDS: readonly AttachmentKind[] = ["image", "pdf", "text"];
+
+/** Least restricted first: the Vault tool button reads as inactive only on the first. */
+const VAULT_TOOL_MODES = [
+  { id: "all" as VaultToolMode, label: t("input.vaultToolAll"), description: t("input.vaultToolAllDesc") },
+  { id: "noSearch" as VaultToolMode, label: t("input.vaultToolNoSearch"), description: t("input.vaultToolNoSearchDesc") },
+  { id: "readOnly" as VaultToolMode, label: t("input.vaultToolReadOnly"), description: t("input.vaultToolReadOnlyDesc") },
+  { id: "none" as VaultToolMode, label: t("input.vaultToolNone"), description: t("input.vaultToolNoneDesc") },
+];
 
 const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea({
   onSend,
@@ -514,50 +522,35 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
             },
           }}
         >
-          <VaultToolButton
+          <VaultToolControl<VaultToolMode>
             classPrefix="llm-hub"
             containerRef={vaultToolMenuRef}
             title={t("input.vaultToolTitle")}
-            active={vaultToolMode !== "all"}
+            open={showVaultToolMenu}
+            onToggle={setShowVaultToolMenu}
             disabled={isLoading}
-            onClick={() => setShowVaultToolMenu(!showVaultToolMenu)}
-          >
-            {showVaultToolMenu && (
-              <VaultToolMenu<VaultToolMode>
-                classPrefix="llm-hub"
-                options={(["all", "noSearch", "readOnly", "none"] as const).map((mode) => ({
-                  id: mode,
-                  label: t(`input.vaultTool_${mode}` as Parameters<typeof t>[0]),
-                  description: t(`input.vaultTool_${mode}Desc` as Parameters<typeof t>[0]),
-                  selected: vaultToolMode === mode,
-                }))}
-                onSelect={(mode) => {
-                  onVaultToolModeChange(mode);
-                  setShowVaultToolMenu(false);
-                }}
-              >
-                {mcpServerInfos.length > 0 && (
-                  <VaultToolSection classPrefix="llm-hub" label={t("input.mcpServersLabel")}>
-                    <McpServerToggles
-                      classPrefix="llm-hub"
-                      onToggle={onMcpServerToggle}
-                      servers={mcpServerInfos.map((server) => ({
-                        id: server.id,
-                        name: server.name,
-                        enabled: enabledMcpServerIds.has(server.id),
-                        hint: server.toolCount > 0
-                          ? t("input.mcpToolHint", { count: String(server.toolCount), tools: server.toolNames.slice(0, 3).join(", ") + (server.toolCount > 3 ? ", ..." : "") })
-                          : "",
-                        toolsTitle: server.toolNames.join(", "),
-                      }))}
-                    />
-                  </VaultToolSection>
-                )}
-                <HistoryLimit classPrefix="llm-hub" label={t("input.historyLimit")}
-                  value={maxPreviousMessages} onChange={onMaxPreviousMessagesChange} />
-              </VaultToolMenu>
-            )}
-          </VaultToolButton>
+            modes={VAULT_TOOL_MODES}
+            mode={vaultToolMode}
+            onModeChange={onVaultToolModeChange}
+            mcp={{
+              label: t("input.mcpServersLabel"),
+              onToggle: onMcpServerToggle,
+              servers: mcpServerInfos.map((server) => ({
+                id: server.id,
+                name: server.name,
+                enabled: enabledMcpServerIds.has(server.id),
+                hint: server.toolCount > 0
+                  ? t("input.mcpToolHint", { count: String(server.toolCount), tools: server.toolNames.slice(0, 3).join(", ") + (server.toolCount > 3 ? ", ..." : "") })
+                  : "",
+                toolsTitle: server.toolNames.join(", "),
+              })),
+            }}
+            historyLimit={{
+              label: t("input.historyLimit"),
+              value: maxPreviousMessages,
+              onChange: onMaxPreviousMessagesChange,
+            }}
+          />
         </InputButtons>
 
         </>}
