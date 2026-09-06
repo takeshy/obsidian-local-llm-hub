@@ -13,6 +13,7 @@
 import { requestUrl } from "obsidian";
 import type { Message, StreamChunk, LocalLlmConfig, ToolDefinition, ToolCall } from "../types";
 import {
+  buildOpenAiMessages,
   extractInlineToolCalls,
   formatStreamIdleTimeoutError,
   getHttpModule,
@@ -20,114 +21,6 @@ import {
   parseThinkTags,
   StreamSignal,
 } from "obsidian-llm-hub-common/core";
-
-// OpenAI-compatible API types
-interface OpenAiMessage {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string | null | Array<{
-    type: "file";
-    file: { filename: string; file_data: string };
-  }>;
-  reasoning_content?: string;
-  tool_calls?: {
-    id: string;
-    type: "function";
-    function: { name: string; arguments: string };
-  }[];
-  tool_call_id?: string;
-}
-
-/** Convert canonical chat history to the OpenAI-compatible wire format. */
-export function buildOpenAiMessages(messages: Message[], systemPrompt: string): OpenAiMessage[] {
-  const openaiMessages: OpenAiMessage[] = [
-    { role: "system", content: systemPrompt },
-  ];
-  let pendingPdfAttachments: NonNullable<Message["attachments"]> = [];
-  const queuePdfAttachments = (attachments: Message["attachments"]) => {
-    for (const attachment of attachments ?? []) {
-      if (attachment.type !== "pdf") continue;
-      // The same PDF can be read more than once in a turn; sending its base64
-      // payload twice only wastes context.
-      const key = attachment.sourcePath ?? attachment.name;
-      if (pendingPdfAttachments.some(queued => (queued.sourcePath ?? queued.name) === key)) continue;
-      pendingPdfAttachments.push(attachment);
-    }
-  };
-  const flushPdfAttachments = () => {
-    if (pendingPdfAttachments.length === 0) return;
-    openaiMessages.push({
-      role: "user",
-      content: pendingPdfAttachments.map(attachment => ({
-        type: "file" as const,
-        file: {
-          filename: attachment.name,
-          file_data: `data:${attachment.mimeType};base64,${attachment.data}`,
-        },
-      })),
-    });
-    pendingPdfAttachments = [];
-  };
-
-  for (const msg of messages) {
-    if (msg.role === "tool") {
-      openaiMessages.push({
-        role: "tool",
-        content: msg.content,
-        tool_call_id: msg.toolCallId,
-      });
-      queuePdfAttachments(msg.attachments);
-    } else if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
-      flushPdfAttachments();
-      const hasBundledToolResults = msg.toolResults && msg.toolResults.length > 0;
-      openaiMessages.push({
-        role: "assistant",
-        // OpenAI-compatible servers expect a tool-only assistant turn to use
-        // null rather than an empty text response. This is especially relevant
-        // when llama.cpp renders the message through a model-specific template.
-        content: hasBundledToolResults ? null : msg.content || null,
-        reasoning_content: msg.thinking,
-        tool_calls: msg.toolCalls.map(tc => ({
-          id: tc.id,
-          type: "function" as const,
-          function: { name: tc.name, arguments: JSON.stringify(tc.args) },
-        })),
-      });
-      // Display/persisted history bundles an entire tool chain into one
-      // assistant message. Rehydrate its tool results for the next user turn
-      // so the replay does not contain orphaned assistant tool calls.
-      if (hasBundledToolResults) {
-        const resultsByCallId = new Map(msg.toolResults!.map(result => [result.toolCallId, result]));
-        for (const toolCall of msg.toolCalls) {
-          const bundled = resultsByCallId.get(toolCall.id);
-          if (!bundled) continue;
-          const result = bundled.result;
-          openaiMessages.push({
-            role: "tool",
-            content: typeof result === "string" ? result : JSON.stringify(result),
-            tool_call_id: toolCall.id,
-          });
-          // Re-attach PDFs read in an earlier turn, otherwise the replayed tool
-          // result claims a PDF is available that the model can no longer see.
-          queuePdfAttachments(bundled.attachments);
-        }
-        if (msg.content) {
-          flushPdfAttachments();
-          openaiMessages.push({ role: "assistant", content: msg.content });
-        }
-      }
-    } else {
-      flushPdfAttachments();
-      openaiMessages.push({
-        role: msg.role === "user" ? "user" : "assistant",
-        content: msg.llmContent ?? msg.content,
-        ...(msg.role === "assistant" && msg.thinking ? { reasoning_content: msg.thinking } : {}),
-      });
-    }
-  }
-  flushPdfAttachments();
-
-  return openaiMessages;
-}
 
 // Ollama message format
 interface OllamaMessage {
