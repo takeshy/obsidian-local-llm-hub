@@ -22,6 +22,9 @@ import { REGISTER_RUNTIME_SKILL_EVENT, REQUEST_RUNTIME_SKILLS_EVENT, UNREGISTER_
 import { registerDiscussionHubIntegration } from "src/integrations/discussionHubCapabilities";
 import { configureWorkflowHost } from "obsidian-llm-hub-common/workflow";
 import { configureStoragePrefix } from "obsidian-llm-hub-common/modals";
+import { streamWorkflowChat } from "src/core/workflowChat";
+import { WORKFLOW_SPECIFICATION } from "src/workflow/workflowSpec";
+import { SKILLS_FOLDER } from "src/types";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -97,6 +100,18 @@ export class LocalLlmHubPlugin extends Plugin {
       getModelOptions: () => (this.settings.availableModels || []).map(model => ({ value: model, label: model })),
       getRagSettingNames: () => this.getRagSettingNames(),
       getMcpServerNames: () => (this.settings.mcpServers || []).map(server => server.name),
+      getCurrentModel: () => this.settings.llmConfig.model || "",
+      getLastWorkflowModel: () => this.settings.lastAIWorkflowModel,
+      setLastWorkflowModel: (model) => {
+        this.settings.lastAIWorkflowModel = model;
+        void this.saveSettings();
+      },
+      getWorkflowSpecification: () => WORKFLOW_SPECIFICATION,
+      getWorkspaceFolder: () => this.settings.workspaceFolder,
+      getSkillsFolder: () => this.settings.skillsFolder || SKILLS_FOLDER,
+      getHistoryEncryption: () => this.settings.encryption,
+      getPluginVersion: () => this.manifest.version,
+      streamChat: (request) => streamWorkflowChat(this, request),
     });
 
     let approvalModal: McpApprovalModal | undefined;

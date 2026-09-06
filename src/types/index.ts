@@ -283,6 +283,7 @@ export interface KnowledgeSource {
 
 // Plugin settings
 export interface LocalLlmHubSettings {
+  lastAIWorkflowModel?: string;  // Model last used for AI workflow generation
   llmConfig: LocalLlmConfig;
   llmVerified: boolean;
   availableModels: string[];
