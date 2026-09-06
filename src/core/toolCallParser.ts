@@ -170,7 +170,7 @@ function normalizeToolCall(raw: unknown, toolNames: Set<string>): ToolCall | nul
   return {
     id: `call_inline_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     name: nameCandidate,
-    arguments: args,
+    args,
   };
 }
 

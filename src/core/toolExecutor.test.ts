@@ -126,7 +126,7 @@ function createApp(vault: MockVault): App {
 }
 
 function call(name: string, args: Record<string, unknown>): ToolCall {
-  return { id: "test", name, arguments: args };
+  return { id: "test", name, args };
 }
 
 describe("executeToolCall vault files", () => {

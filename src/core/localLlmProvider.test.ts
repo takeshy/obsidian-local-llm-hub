@@ -104,7 +104,7 @@ describe("buildOpenAiMessages", () => {
         role: "assistant",
         content: "It is a quarterly report.",
         timestamp: 2,
-        toolCalls: [{ id: "call_pdf", name: "read_note", arguments: { path: "report.pdf" } }],
+        toolCalls: [{ id: "call_pdf", name: "read_note", args: { path: "report.pdf" } }],
         toolResults: [{
           toolCallId: "call_pdf",
           result: "PDF attached: report.pdf",
@@ -146,7 +146,7 @@ describe("buildOpenAiMessages", () => {
         content: "",
         thinking: "I need to read the note first.",
         timestamp: 2,
-        toolCalls: [{ id: "call_1", name: "get_active_note", arguments: {} }],
+        toolCalls: [{ id: "call_1", name: "get_active_note", args: {} }],
       },
       {
         role: "tool",
@@ -187,7 +187,7 @@ describe("buildOpenAiMessages", () => {
         content: "I will inspect the note.",
         thinking: "The active note is required.",
         timestamp: 1,
-        toolCalls: [{ id: "call_2", name: "get_active_note", arguments: {} }],
+        toolCalls: [{ id: "call_2", name: "get_active_note", args: {} }],
       },
     ];
 
@@ -205,8 +205,8 @@ describe("buildOpenAiMessages", () => {
         content: "The note was updated.",
         timestamp: 1,
         toolCalls: [
-          { id: "call_read", name: "get_active_note", arguments: {} },
-          { id: "call_write", name: "update_note", arguments: { path: "note.md", content: "hello" } },
+          { id: "call_read", name: "get_active_note", args: {} },
+          { id: "call_write", name: "update_note", args: { path: "note.md", content: "hello" } },
         ],
         toolResults: [
           { toolCallId: "call_read", result: "Path: note.md\n\nこんにちは" },

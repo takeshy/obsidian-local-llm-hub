@@ -81,7 +81,7 @@ export async function executeToolCall(
   options: ToolExecutorOptions,
 ): Promise<ToolExecutionResult> {
   const { app } = options;
-  const args = toolCall.arguments;
+  const args = toolCall.args;
   const allowedFolders = options.vaultToolAllowedFolders;
 
   try {
@@ -439,15 +439,15 @@ export async function executeToolCall(
         const calls: ToolCall[] = [];
         if (toolCall.name === "bulk_propose_edit") {
           for (const edit of (args.edits as Array<Record<string, unknown>> | undefined) ?? []) {
-            calls.push({ id: toolCall.id, name: "propose_edit", arguments: edit });
+            calls.push({ id: toolCall.id, name: "propose_edit", args: edit });
           }
         } else if (toolCall.name === "bulk_delete_notes") {
           for (const path of (args.paths as string[] | undefined) ?? []) {
-            calls.push({ id: toolCall.id, name: "delete_note", arguments: { path } });
+            calls.push({ id: toolCall.id, name: "delete_note", args: { path } });
           }
         } else {
           for (const rename of (args.renames as Array<Record<string, unknown>> | undefined) ?? []) {
-            calls.push({ id: toolCall.id, name: "rename_note", arguments: rename });
+            calls.push({ id: toolCall.id, name: "rename_note", args: rename });
           }
         }
 

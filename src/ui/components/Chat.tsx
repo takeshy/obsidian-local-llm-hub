@@ -605,7 +605,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 
     const chatId = currentChatId || `chat-${Date.now()}`;
 
-    const markdown = messagesToMarkdown(msgs, chatTitle, chatCreatedAt.current);
+    // Chat history encryption is configured per plugin; this one stores plaintext.
+    const markdown = await messagesToMarkdown(msgs, chatTitle, chatCreatedAt.current, undefined);
     const filePath = `${folder}/${chatId}.md`;
 
     await plugin.app.vault.adapter.write(filePath, markdown);
@@ -1033,7 +1034,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
             case "tool_call":
               if (chunk.toolCall) {
                 pendingToolCalls.push(chunk.toolCall);
-                setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.arguments).join(", ")})...`);
+                setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.args).join(", ")})...`);
               }
               break;
             case "incomplete_tool_call":
@@ -1102,7 +1103,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
                   result: `RAG search limit reached (${MAX_RAG_SEARCHES_PER_TURN} searches per turn).`,
                 };
               }
-              const query = typeof tc.arguments.query === "string" ? tc.arguments.query.trim() : "";
+              const query = typeof tc.args.query === "string" ? tc.args.query.trim() : "";
               if (!query) return { success: false, result: "A non-empty query is required." };
 
               let results: RagSearchResult[];
@@ -1140,7 +1141,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
               };
             })()
             : tc.name === GET_WORKFLOW_SPEC_TOOL_NAME
-            ? { success: true, result: handleGetWorkflowSpec(tc.arguments, plugin) }
+            ? { success: true, result: handleGetWorkflowSpec(tc.args, plugin) }
             : tc.name === READ_OKF_DOCUMENT_TOOL_NAME
               ? {
                 success: true,
@@ -1148,8 +1149,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
                   plugin.app,
                   getOkfRoot(),
                   activeOkfBundleIds,
-                  typeof tc.arguments.bundleId === "string" ? tc.arguments.bundleId : "",
-                  typeof tc.arguments.path === "string" ? tc.arguments.path : "",
+                  typeof tc.args.bundleId === "string" ? tc.args.bundleId : "",
+                  typeof tc.args.path === "string" ? tc.args.path : "",
                 )),
               }
               : await executeToolCall(tc, {

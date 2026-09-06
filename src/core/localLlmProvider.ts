@@ -83,7 +83,7 @@ export function buildOpenAiMessages(messages: Message[], systemPrompt: string): 
         tool_calls: msg.toolCalls.map(tc => ({
           id: tc.id,
           type: "function" as const,
-          function: { name: tc.name, arguments: JSON.stringify(tc.arguments) },
+          function: { name: tc.name, arguments: JSON.stringify(tc.args) },
         })),
       });
       // Display/persisted history bundles an entire tool chain into one
@@ -404,7 +404,7 @@ async function* ollamaChatStream(
         content: msg.content,
         tool_calls: msg.toolCalls.map(tc => ({
           type: "function" as const,
-          function: { name: tc.name, arguments: tc.arguments },
+          function: { name: tc.name, arguments: tc.args },
         })),
       });
     } else {
@@ -496,7 +496,7 @@ async function* ollamaChatStream(
                 const toolCall: ToolCall = {
                   id: `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                   name: tc.function.name,
-                  arguments: tc.function.arguments,
+                  args: tc.function.arguments,
                 };
                 chunks.push({ type: "tool_call", toolCall });
               }
@@ -694,9 +694,9 @@ async function* openaiChatStream(
             for (const [, tc] of pendingToolCalls) {
               try {
                 const args = JSON.parse(tc.args) as unknown as Record<string, unknown>;
-                chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: args } });
+                chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, args: args } });
               } catch {
-                chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });
+                chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, args: {} } });
               }
             }
             pendingToolCalls.clear();
@@ -769,9 +769,9 @@ async function* openaiChatStream(
               for (const [, tc] of pendingToolCalls) {
                 try {
                   const args = JSON.parse(tc.args) as unknown as Record<string, unknown>;
-                  chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: args } });
+                  chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, args: args } });
                 } catch {
-                  chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });
+                  chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, args: {} } });
                 }
                 emittedToolCall = true;
               }
@@ -804,9 +804,9 @@ async function* openaiChatStream(
           for (const [, tc] of pendingToolCalls) {
             try {
               const args = JSON.parse(tc.args) as unknown as Record<string, unknown>;
-              chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: args } });
+              chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, args: args } });
             } catch {
-              chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, arguments: {} } });
+              chunks.push({ type: "tool_call", toolCall: { id: tc.id, name: tc.name, args: {} } });
             }
           }
           pendingToolCalls.clear();

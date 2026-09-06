@@ -39,7 +39,7 @@ This is telling the function to get only one message.`;
     const result = extractInlineToolCalls(text, [tool("mcp__ms365_get_shared_mailbox_message")]);
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls[0].name).toBe("mcp__ms365_get_shared_mailbox_message");
-    expect(result.toolCalls[0].arguments).toEqual({
+    expect(result.toolCalls[0].args).toEqual({
       userId: "me@example.com",
       $limit: 1,
       $orderby: "receivedDateTime DESC",
@@ -55,7 +55,7 @@ This is telling the function to get only one message.`;
     const result = extractInlineToolCalls(text, [tool("read_note")]);
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls[0].name).toBe("read_note");
-    expect(result.toolCalls[0].arguments).toEqual({ path: "notes/foo.md" });
+    expect(result.toolCalls[0].args).toEqual({ path: "notes/foo.md" });
     expect(result.cleanedText).not.toContain("<tool_call>");
   });
 
@@ -64,7 +64,7 @@ This is telling the function to get only one message.`;
     const result = extractInlineToolCalls(text, [tool("search_notes")]);
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls[0].name).toBe("search_notes");
-    expect(result.toolCalls[0].arguments).toEqual({ query: "foo" });
+    expect(result.toolCalls[0].args).toEqual({ query: "foo" });
   });
 
   it("detects <|python_tag|> wrapped JSON (Llama 3.1 native format)", () => {
@@ -83,7 +83,7 @@ Let's see.`;
     const result = extractInlineToolCalls(text, [tool("list_notes")]);
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls[0].name).toBe("list_notes");
-    expect(result.toolCalls[0].arguments).toEqual({ folder: "notes" });
+    expect(result.toolCalls[0].args).toEqual({ folder: "notes" });
   });
 
   it("ignores JSON objects that don't reference a known tool", () => {
@@ -97,7 +97,7 @@ Let's see.`;
     const text = `{"name":"read_note","arguments":"{\\"path\\":\\"foo.md\\"}"}`;
     const result = extractInlineToolCalls(text, [tool("read_note")]);
     expect(result.toolCalls).toHaveLength(1);
-    expect(result.toolCalls[0].arguments).toEqual({ path: "foo.md" });
+    expect(result.toolCalls[0].args).toEqual({ path: "foo.md" });
   });
 
   it("handles nested OpenAI-style { function: { name, arguments } }", () => {
@@ -105,7 +105,7 @@ Let's see.`;
     const result = extractInlineToolCalls(text, [tool("read_note")]);
     expect(result.toolCalls).toHaveLength(1);
     expect(result.toolCalls[0].name).toBe("read_note");
-    expect(result.toolCalls[0].arguments).toEqual({ path: "x.md" });
+    expect(result.toolCalls[0].args).toEqual({ path: "x.md" });
   });
 
   it("extracts multiple bare tool calls from one message", () => {
@@ -113,7 +113,7 @@ Let's see.`;
 Then: {"name":"read_note","arguments":{"path":"b.md"}}`;
     const result = extractInlineToolCalls(text, [tool("read_note")]);
     expect(result.toolCalls).toHaveLength(2);
-    expect(result.toolCalls.map((t) => t.arguments)).toEqual([
+    expect(result.toolCalls.map((t) => t.args)).toEqual([
       { path: "a.md" },
       { path: "b.md" },
     ]);
@@ -123,6 +123,6 @@ Then: {"name":"read_note","arguments":{"path":"b.md"}}`;
     const text = `Reading: {"name":"read_note","arguments":{"path":"a {b} c.md"}}`;
     const result = extractInlineToolCalls(text, [tool("read_note")]);
     expect(result.toolCalls).toHaveLength(1);
-    expect(result.toolCalls[0].arguments).toEqual({ path: "a {b} c.md" });
+    expect(result.toolCalls[0].args).toEqual({ path: "a {b} c.md" });
   });
 });

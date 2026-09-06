@@ -213,7 +213,7 @@ export class McpClient {
   ): Promise<string> {
     const result = (await this.sendRequest("tools/call", {
       name,
-      arguments: args,
+      args: args,
     })) as McpCallResult;
 
     const textParts = result.content

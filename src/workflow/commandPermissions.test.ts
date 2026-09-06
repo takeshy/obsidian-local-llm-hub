@@ -12,7 +12,7 @@ describe("command node permissions", () => {
   it.each([undefined, "false"])("uses node confirmation setting %s without changing the manager", async confirm => {
     let round = 0;
     stream.mockImplementation(async function* () {
-      if (round++ === 0) yield { type: "tool_call", toolCall: { id: "1", name: "mcp__anki__addCard", arguments: {} } };
+      if (round++ === 0) yield { type: "tool_call", toolCall: { id: "1", name: "mcp__anki__addCard", args: {} } };
       yield { type: "done" };
     });
     const callTool = vi.fn(async () => "OK");

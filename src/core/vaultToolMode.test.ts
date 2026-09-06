@@ -17,7 +17,7 @@ describe("Vault tool modes", () => {
     expect(isVaultToolAllowed("run_skill_workflow", "readOnly")).toBe(true);
   });
   it("rejects a hallucinated mutation before touching the vault", async () => {
-    const result = await executeToolCall({ id: "1", name: "delete_note", arguments: { path: "test.md" } }, {
+    const result = await executeToolCall({ id: "1", name: "delete_note", args: { path: "test.md" } }, {
       app: {} as App, vaultToolMode: "readOnly",
     });
     expect(result.success).toBe(false);

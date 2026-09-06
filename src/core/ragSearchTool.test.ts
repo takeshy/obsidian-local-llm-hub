@@ -109,8 +109,8 @@ describe("RAG search tool", () => {
         content: "",
         timestamp: 0,
         toolCalls: [
-          { id: "rag", name: RAG_SEARCH_TOOL_NAME, arguments: { query: "q" } },
-          { id: "note", name: "read_note", arguments: { path: "a.md" } },
+          { id: "rag", name: RAG_SEARCH_TOOL_NAME, args: { query: "q" } },
+          { id: "note", name: "read_note", args: { path: "a.md" } },
         ],
         toolResults: [
           { toolCallId: "rag", result: formatRagSearchToolResult("q", [{ filePath: "a.md", text: "chunk body", score: 0.5, startOffset: 0 }], 1) },
@@ -121,7 +121,7 @@ describe("RAG search tool", () => {
         role: "assistant",
         content: "",
         timestamp: 0,
-        toolCalls: [{ id: "rag2", name: RAG_SEARCH_TOOL_NAME, arguments: { query: "q2" } }],
+        toolCalls: [{ id: "rag2", name: RAG_SEARCH_TOOL_NAME, args: { query: "q2" } }],
         toolResults: [{ toolCallId: "rag2", result: formatRagSearchToolResult("q2", [], 0) }],
       },
     ];

@@ -1,3 +1,6 @@
+import type { ToolCall } from "obsidian-llm-hub-common/chat";
+
+export type { Message, ToolCall, ToolResult, Attachment, RagCitation } from "obsidian-llm-hub-common/chat";
 import type { WorkflowEventTrigger } from "obsidian-llm-hub-common/workflow";
 
 export type { ObsidianEventType, WorkflowEventTrigger } from "obsidian-llm-hub-common/workflow";
@@ -41,13 +44,6 @@ export type ChunkStrategy = "fixed" | "sentence" | "block";
 // here, because ragCitations are serialized into saved chat history. Only the
 // location fields needed for navigation are kept; tooltip previews are derived
 // at runtime from the chunk text.
-export interface RagCitation {
-  filePath: string;
-  heading?: string;      // nearest Markdown heading ("" when none)
-  startOffset: number;   // chunk start offset in the source document
-  snippet?: string;      // optional preview; NOT populated for persisted citations
-  pageLabel?: string;    // PDF page range, e.g. "pages 2-5 of 24"
-}
 
 // Named RAG setting (one per index)
 export interface RagSetting {
@@ -131,49 +127,12 @@ export interface ToolParameter {
 }
 
 // Tool call from LLM response
-export interface ToolCall {
-  id: string;
-  name: string;
-  arguments: Record<string, unknown>;
-}
 
 // Tool execution result associated with a tool call.
 // `result` may be a parsed object (e.g. JSON response) or raw string.
-export interface ToolResult {
-  toolCallId: string;
-  result: unknown;
-  attachments?: Attachment[];  // in-memory only (not persisted to chat history)
-}
 
 // Chat message types
-export interface Attachment {
-  name: string;
-  type: "image" | "pdf" | "text" | "audio" | "video";
-  mimeType: string;
-  data: string;  // Base64 encoded
-  sourcePath?: string;  // RAG検索結果のソースファイルパス
-  pageLabel?: string;  // PDFページ範囲（例: "pages 1-6 of 24"）
-}
 
-export interface Message {
-  role: "user" | "assistant" | "tool";
-  content: string;
-  llmContent?: string;          // full content sent to the LLM (hidden from UI)
-  timestamp: number;
-  model?: string;               // model name (assistant only)
-  attachments?: Attachment[];
-  thinking?: string;            // thinking content (thinking models)
-  ragUsed?: boolean;            // whether RAG was used
-  ragSources?: string[];        // source files from RAG
-  ragCitations?: RagCitation[];   // per-chunk citation locations (new chats)
-  skillsUsed?: string[];        // names of skills used
-  toolCalls?: ToolCall[];       // tool calls made by assistant
-  toolResults?: ToolResult[];   // results of tool calls (keyed by toolCallId)
-  toolCallId?: string;          // tool call ID (for tool role messages, LM Studio)
-  toolName?: string;            // tool name (for tool role messages, Ollama)
-  usage?: StreamChunkUsage;
-  elapsedMs?: number;
-}
 
 // Usage info for streaming chunks and messages
 export interface StreamChunkUsage {

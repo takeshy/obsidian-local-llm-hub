@@ -3,7 +3,7 @@ import type { Message } from "src/types";
 import { messagesToMarkdown, parseMarkdownToMessages } from "./chatHistory";
 
 describe("chat history tool metadata", () => {
-  it("preserves read_note path and PDF page range", () => {
+  it("preserves read_note path and PDF page range", async () => {
     const message: Message = {
       role: "assistant",
       content: "Answer",
@@ -11,17 +11,18 @@ describe("chat history tool metadata", () => {
       toolCalls: [{
         id: "call-1",
         name: "read_note",
-        arguments: { path: "resource/Introduction to Agents.pdf", startPage: 42, endPage: 43 },
+        args: { path: "resource/Introduction to Agents.pdf", startPage: 42, endPage: 43 },
       }],
     };
 
-    const markdown = messagesToMarkdown([message], "Test", message.timestamp);
+    const markdown = await messagesToMarkdown([message], "Test", message.timestamp, undefined);
     const parsed = parseMarkdownToMessages(markdown);
 
+    // The shared history keeps the original call id, so results still match their calls.
     expect(parsed?.messages[0].toolCalls?.[0]).toEqual({
-      id: "history-0",
+      id: "call-1",
       name: "read_note",
-      arguments: { path: "resource/Introduction to Agents.pdf", startPage: 42, endPage: 43 },
+      args: { path: "resource/Introduction to Agents.pdf", startPage: 42, endPage: 43 },
     });
   });
 
@@ -47,7 +48,7 @@ Answer
     expect(parsed?.messages[0].toolCalls?.[0]).toEqual({
       id: "",
       name: "read_note",
-      arguments: {},
+      args: {},
     });
   });
 });

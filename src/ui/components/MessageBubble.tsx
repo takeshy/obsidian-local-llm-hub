@@ -391,7 +391,7 @@ function getToolNoteTarget(
     }
   }
 
-  const args = toolCall.arguments;
+  const args = toolCall.args;
   switch (toolCall.name) {
     case "read_note":
     case "create_note":
@@ -415,7 +415,7 @@ function getToolNoteTarget(
 }
 
 function getToolDetail(toolCall: ToolCall): string {
-  const args = toolCall.arguments;
+  const args = toolCall.args;
   const { label } = getToolDisplayInfo(toolCall.name);
   const parts: string[] = [`${label} (${toolCall.name})`];
 
