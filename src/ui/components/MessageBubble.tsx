@@ -1,5 +1,5 @@
 import { ToolIndicator } from "obsidian-llm-hub-chat-ui";
-import { MessageBubble as SharedMessageBubble, MessageContent, Attachments, UsageInfo } from "obsidian-llm-hub-chat-ui";
+import { MessageBubble as SharedMessageBubble, MessageContent, Attachments, UsageInfo, SourceBadges, ToolsUsed, SkillsUsed } from "obsidian-llm-hub-chat-ui";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { type App, MarkdownRenderer, Component, Notice, MarkdownView } from "obsidian";
 
@@ -175,62 +175,32 @@ export default function MessageBubble({
 
       {/* RAG indicator */}
       {message.ragUsed && (
-        <div className="llm-hub-rag-used">
-          <span className="llm-hub-rag-indicator">
-            {t("message.ragUsed")}
-          </span>
-          {(() => {
-            // Prefer per-chunk citations; fall back to ragSources for old saved chats.
-            if (message.ragCitations && message.ragCitations.length > 0) {
-              return (
-                <div className="llm-hub-rag-sources">
-                  {message.ragCitations.map((citation, index) => (
-                    <span
-                      key={index}
-                      className="llm-hub-rag-source"
-                      title={t("message.ragCitationOpen")}
-                      onClick={() => {
-                        const isPdf = citation.filePath.toLowerCase().endsWith(".pdf");
-                        if (isPdf) {
-                          // PDF viewer does not reliably expose scroll-to-page; just open.
-                          void app.workspace.openLinkText(citation.filePath, "", false);
-                        } else {
-                          void scrollEditorToOffset(
-                            app,
-                            citation.filePath,
-                            citation.heading,
-                            citation.startOffset,
-                          );
-                        }
-                      }}
-                    >
-                      {citationLabel(citation)}
-                    </span>
-                  ))}
-                </div>
-              );
-            }
-            if (message.ragSources && message.ragSources.length > 0) {
-              return (
-                <div className="llm-hub-rag-sources">
-                  {message.ragSources.map((source, index) => (
-                    <span
-                      key={index}
-                      className="llm-hub-rag-source"
-                      title={t("message.ragCitationOpen")}
-                      onClick={() => {
-                        void app.workspace.openLinkText(source, "", false);
-                      }}
-                    >
-                      {source.split("/").pop() || source}
-                    </span>
-                  ))}
-                </div>
-              );
-            }
-            return null;
-          })()}
-        </div>
+        <SourceBadges
+          classPrefix="llm-hub"
+          icon="📚"
+          label={t("message.ragUsed")}
+          // Prefer per-chunk citations; fall back to ragSources for old saved chats.
+          sources={message.ragCitations && message.ragCitations.length > 0
+            ? message.ragCitations.map((citation) => ({
+              label: citationLabel(citation),
+              title: t("message.ragCitationOpen"),
+              onOpen: () => {
+                // The PDF viewer does not reliably expose scroll-to-page; just open it.
+                if (citation.filePath.toLowerCase().endsWith(".pdf")) {
+                  void app.workspace.openLinkText(citation.filePath, "", false);
+                } else {
+                  void scrollEditorToOffset(app, citation.filePath, citation.heading, citation.startOffset);
+                }
+              },
+            }))
+            : (message.ragSources ?? []).map((source) => ({
+              label: source.split("/").pop() || source,
+              title: t("message.ragCitationOpen"),
+              onOpen: () => {
+                void app.workspace.openLinkText(source, "", false);
+              },
+            }))}
+        />
       )}
 
       {message.skillsUsed && message.skillsUsed.length > 0 && (
@@ -242,8 +212,10 @@ export default function MessageBubble({
 
       {/* Tool calls indicator */}
       {message.toolCalls && message.toolCalls.length > 0 && (
-        <>
-          <div className="llm-hub-tools-used">
+        <ToolsUsed
+          classPrefix="llm-hub"
+          errorHint={failedWorkflowPaths.size > 0 ? t("message.workflowErrorHint") : undefined}
+        >
             {message.toolCalls.map((toolCall, index) => {
               const { icon, label } = getToolDisplayInfo(toolCall.name);
               const failedWorkflowPath = failedWorkflowPaths.get(toolCall.id);
@@ -265,13 +237,7 @@ export default function MessageBubble({
                 />
               );
             })}
-          </div>
-          {failedWorkflowPaths.size > 0 && (
-            <div className="llm-hub-workflow-error-hint">
-              {t("message.workflowErrorHint")}
-            </div>
-          )}
-        </>
+        </ToolsUsed>
       )}
 
       {/* Thinking content (collapsible) */}
@@ -303,28 +269,19 @@ function SkillsUsedIndicator({ skillNames, app, skillsFolder }: { skillNames: st
   }, [app, skillNames, skillsFolder]);
 
   return (
-    <div className="llm-hub-skills-used">
-      <span className="llm-hub-skills-used-label">
-        {t("message.skillsUsed")}:
-      </span>
-      {skillNames.map((skillName, index) => {
+    <SkillsUsed
+      classPrefix="llm-hub"
+      label={t("message.skillsUsed")}
+      skills={skillNames.map((skillName) => {
         const info = skillMap.get(skillName);
-        const isBuiltin = info?.builtin ?? false;
-        const isClickable = !!info && !isBuiltin;
-        return (
-          <span
-            key={index}
-            className={`llm-hub-skill-name${isClickable ? " llm-hub-tool-clickable" : " is-static"}`}
-            onClick={isClickable ? () => {
-              void app.workspace.openLinkText(info.path, "", false);
-            } : undefined}
-            title={isClickable ? t("message.clickToOpen", { source: skillName }) : skillName}
-          >
-            {skillName}
-          </span>
-        );
+        const clickable = info && !info.builtin ? info : undefined;
+        return {
+          name: skillName,
+          title: clickable ? t("message.clickToOpen", { source: skillName }) : skillName,
+          open: clickable ? { onOpen: () => { void app.workspace.openLinkText(clickable.path, "", false); } } : undefined,
+        };
       })}
-    </div>
+    />
   );
 }
 

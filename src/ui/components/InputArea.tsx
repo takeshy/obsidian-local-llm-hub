@@ -1,5 +1,5 @@
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-chat-ui";
-import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, InputButtons, SearchSelector, ModelRow, HistoryLimit } from "obsidian-llm-hub-chat-ui";
+import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, VaultToolSection, InputButtons, SearchSelector, ModelRow, HistoryLimit } from "obsidian-llm-hub-chat-ui";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
@@ -578,11 +578,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                 }}
               >
                 {mcpServerInfos.length > 0 && (
-                  <>
-                    <div className="llm-hub-vault-tool-divider" />
-                    <div className="llm-hub-vault-tool-section-label">
-                      {t("input.mcpServersLabel")}
-                    </div>
+                  <VaultToolSection classPrefix="llm-hub" label={t("input.mcpServersLabel")}>
                     <McpServerToggles
                       classPrefix="llm-hub"
                       onToggle={onMcpServerToggle}
@@ -596,7 +592,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                         toolsTitle: server.toolNames.join(", "),
                       }))}
                     />
-                  </>
+                  </VaultToolSection>
                 )}
                 <HistoryLimit classPrefix="llm-hub" label={t("input.historyLimit")}
                   value={maxPreviousMessages} onChange={onMaxPreviousMessagesChange} />
