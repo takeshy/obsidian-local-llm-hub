@@ -1120,64 +1120,6 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   font-size: 11px;
 }
 
-/* Node Editor Modal */
-.llm-hub-workflow-node-editor-modal {
-  padding: 20px;
-  min-width: 400px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.llm-hub-workflow-node-editor-modal h2 {
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-
-.llm-hub-workflow-node-editor-scroll {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  padding-right: 8px;
-}
-
-.llm-hub-workflow-node-editor-textarea {
-  width: 100%;
-  max-height: 200px;
-  resize: vertical;
-}
-
-/* MCP checkboxes in node editor */
-
-/* Path suggestion dropdown for workflow node editor */
-.llm-hub-workflow-path-suggestions {
-  position: absolute;
-  z-index: 100;
-  margin-top: 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.llm-hub-workflow-path-suggestion-item {
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 13px;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.llm-hub-workflow-path-suggestion-item:last-child {
-  border-bottom: none;
-}
-
-.llm-hub-workflow-path-suggestion-item:hover,
-.llm-hub-workflow-path-suggestion-item.is-selected {
-  background: var(--background-modifier-hover);
-}
-
 .llm-hub-workflow-status-completed {
   background-color: var(--color-green);
 }
@@ -6825,4 +6767,171 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 
 .llm-hub-workflow-detail-step.llm-hub-workflow-step-skipped {
   border-left-color: var(--color-yellow);
+}
+
+/* Workflow node editor modal */
+
+/* Node Editor Modal */
+.llm-hub-workflow-node-editor-modal {
+  padding: 20px;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-node-editor-modal h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.llm-hub-workflow-node-editor-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 8px;
+}
+
+.llm-hub-workflow-node-editor-textarea {
+  width: 100%;
+  max-height: 200px;
+  resize: vertical;
+}
+
+/* MCP checkboxes in node editor */
+.llm-hub-workflow-mcp-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.llm-hub-workflow-mcp-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.llm-hub-workflow-mcp-checkbox-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.llm-hub-workflow-mcp-checkbox-label input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Path suggestion dropdown for workflow node editor */
+.llm-hub-workflow-path-suggestions {
+  position: absolute;
+  z-index: 100;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.llm-hub-workflow-path-suggestion-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-workflow-path-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.llm-hub-workflow-path-suggestion-item:hover,
+.llm-hub-workflow-path-suggestion-item.is-selected {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-workflow-path-suggestion-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text-normal);
+  border-bottom: 1px solid var(--background-modifier-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+}
+
+.llm-hub-workflow-path-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.llm-hub-workflow-path-suggestion-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-workflow-path-suggestion-item.is-selected {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+/* Mobile: Node Editor Modal */
+.is-mobile .llm-hub-workflow-node-editor-modal {
+  min-width: unset;
+  width: 95vw;
+  max-width: 95vw;
+  padding: 12px;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .modal-drag-handle h2 {
+  font-size: 16px;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .llm-hub-workflow-node-editor-textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .llm-hub-workflow-modal-buttons {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .llm-hub-workflow-modal-buttons button {
+  width: 100%;
+  padding: 12px;
+}
+
+/* Workflow node editor modal (mobile and suggestions) */
+
+/* Ensure Setting items have relative positioning for suggestions */
+.llm-hub-workflow-node-editor-modal .setting-item {
+  position: relative;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .setting-item {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .setting-item-info {
+  padding-bottom: 4px;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .setting-item-control {
+  justify-content: stretch;
+}
+
+.is-mobile .llm-hub-workflow-node-editor-modal .setting-item-control input[type="text"],
+.is-mobile .llm-hub-workflow-node-editor-modal .setting-item-control textarea,
+.is-mobile .llm-hub-workflow-node-editor-modal .setting-item-control select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }

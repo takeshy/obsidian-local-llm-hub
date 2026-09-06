@@ -20,6 +20,7 @@ import { registerWorkflowCodeBlockProcessor } from "src/ui/workflowCodeBlock";
 import { generateDashboardBase, generateDashboardWorkflow, listDashboardModels, rewriteDashboardText, runDashboardWorkflow } from "src/integrations/dashboardHubCapabilities";
 import { REGISTER_RUNTIME_SKILL_EVENT, REQUEST_RUNTIME_SKILLS_EVENT, UNREGISTER_RUNTIME_SKILL_EVENT, registerRuntimeSkill, unregisterRuntimeSkill } from "src/core/runtimeSkills";
 import { registerDiscussionHubIntegration } from "src/integrations/discussionHubCapabilities";
+import { configureWorkflowHost } from "obsidian-llm-hub-common/workflow";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -90,6 +91,11 @@ export class LocalLlmHubPlugin extends Plugin {
   onload(): void {
     initLocale();
     configureClassPrefix("llm-hub");
+    configureWorkflowHost({
+      getModelOptions: () => (this.settings.availableModels || []).map(model => ({ value: model, label: model })),
+      getRagSettingNames: () => this.getRagSettingNames(),
+      getMcpServerNames: () => (this.settings.mcpServers || []).map(server => server.name),
+    });
 
     let approvalModal: McpApprovalModal | undefined;
     setMcpApprovalHandler({

@@ -1120,64 +1120,6 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   font-size: 11px;
 }
 
-/* Node Editor Modal */
-.llm-hub-workflow-node-editor-modal {
-  padding: 20px;
-  min-width: 400px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.llm-hub-workflow-node-editor-modal h2 {
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-
-.llm-hub-workflow-node-editor-scroll {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  padding-right: 8px;
-}
-
-.llm-hub-workflow-node-editor-textarea {
-  width: 100%;
-  max-height: 200px;
-  resize: vertical;
-}
-
-/* MCP checkboxes in node editor */
-
-/* Path suggestion dropdown for workflow node editor */
-.llm-hub-workflow-path-suggestions {
-  position: absolute;
-  z-index: 100;
-  margin-top: 4px;
-  max-height: 200px;
-  overflow-y: auto;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.llm-hub-workflow-path-suggestion-item {
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 13px;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.llm-hub-workflow-path-suggestion-item:last-child {
-  border-bottom: none;
-}
-
-.llm-hub-workflow-path-suggestion-item:hover,
-.llm-hub-workflow-path-suggestion-item.is-selected {
-  background: var(--background-modifier-hover);
-}
-
 .llm-hub-workflow-status-completed {
   background-color: var(--color-green);
 }

@@ -31,7 +31,6 @@ const HOST_OWNED = [
  */
 const STILL_HOST_RENDERED: string[] = [
   "modal-resizable",
-  "workflow-modal-buttons",
 ];
 
 const sourceDir = fileURLToPath(new URL("../..", import.meta.url));
