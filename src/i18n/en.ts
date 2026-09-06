@@ -308,6 +308,7 @@ export const en = {
   "input.ragToggle": "RAG",
   "input.ragToggleTooltip": "Toggle RAG context globally (applies to all chats until changed)",
   "input.mcpServersLabel": "Mcp servers",
+  "input.mcpToolHint": "({{count}} tools: {{tools}})",
   "input.selectionVariable": "Selected text in editor",
   "input.contentVariable": "Active note content",
   "input.openFile": "Open file (Ctrl+Shift+O)",

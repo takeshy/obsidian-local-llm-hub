@@ -1,7 +1,6 @@
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-chat-ui";
-import { Composer, Autocomplete } from "obsidian-llm-hub-chat-ui";
+import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, InputButtons } from "obsidian-llm-hub-chat-ui";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
-import { Paperclip, Database, Wrench, X } from "lucide-react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
 import type { McpServerInfo } from "src/core/mcpManager";
@@ -490,66 +489,42 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     <SharedInputArea classPrefix="llm-hub" className="llm-hub-input-container"
       beforeInput={<>
       {/* MCP servers enabled for this chat */}
-      {enabledMcpServers.length > 0 && (
-        <div className="llm-hub-enabled-mcp-servers">
-          {enabledMcpServers
-            .map((server) => (
-              <span
-                key={server.id}
-                className="llm-hub-enabled-mcp-server"
-                title={t("input.mcpServerEnabled", { name: server.name })}
-              >
-                <Wrench size={12} aria-hidden="true" />
-                <span className="llm-hub-enabled-mcp-server-name">{server.name}</span>
-                <button
-                  type="button"
-                  className="llm-hub-enabled-mcp-server-remove"
-                  onClick={() => onMcpServerToggle(server.id, false)}
-                  disabled={isLoading || !ragSearchAvailable}
-                  title={t("input.mcpServerDisable", { name: server.name })}
-                  aria-label={t("input.mcpServerDisable", { name: server.name })}
-                >
-                  <X size={10} aria-hidden="true" />
-                </button>
-              </span>
-            ))}
-        </div>
-      )}
+      <EnabledMcpServers
+        classPrefix="llm-hub"
+        disabled={isLoading}
+        onDisable={(id) => onMcpServerToggle(id, false)}
+        servers={enabledMcpServers.map((server) => ({
+          id: server.id,
+          name: server.name,
+          title: t("input.mcpServerEnabled", { name: server.name }),
+          removeTitle: t("input.mcpServerDisable", { name: server.name }),
+        }))}
+      />
 
       {/* Pending attachments display */}
-      {pendingAttachments.length > 0 && (
-        <div className="llm-hub-pending-attachments">
-          {pendingAttachments.map((attachment, index) => (
-            <span
-              key={index}
-              className={`llm-hub-pending-attachment${attachment.sourcePath ? " llm-hub-clickable" : ""}`}
-              onClick={() => {
-                if (!attachment.sourcePath) return;
-                new RagSourceModal(app, attachment, (result) => {
-                  setPendingAttachments(prev => {
-                    const next = [...prev];
-                    next[index] = result.attachment;
-                    return next;
-                  });
-                }).open();
-              }}
-              title={attachment.sourcePath ? t("ragSource.clickToView") : undefined}
-            >
-              {attachment.type === "image" && "🖼️"}
-              {attachment.type === "pdf" && "📄"}
-              {attachment.type === "text" && "📃"}
-              {" "}{attachment.name}
-              <button
-                className="llm-hub-pending-attachment-remove"
-                onClick={(e) => { e.stopPropagation(); removeAttachment(index); }}
-                title={t("input.removeAttachment")}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+      <Attachments
+        classPrefix="llm-hub"
+        pending
+        attachments={pendingAttachments.map((attachment, index) => ({
+          type: attachment.type,
+          name: attachment.name,
+          // RAG sources keep their origin note, so the chip opens it for review.
+          open: attachment.sourcePath ? {
+            title: t("ragSource.clickToView"),
+            onOpen: () => {
+              new RagSourceModal(app, attachment, (result) => {
+                setPendingAttachments(prev => {
+                  const next = [...prev];
+                  next[index] = result.attachment;
+                  return next;
+                });
+              }).open();
+            },
+          } : undefined,
+        }))}
+        onRemove={removeAttachment}
+        removeLabel={t("input.removeAttachment")}
+      />
 
       </>}
       accessories={<>
@@ -567,88 +542,66 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
             activeIndex={mentionIndex} onSelect={index => selectMention(filteredMentions[index])} onHover={setMentionIndex} />
         )}
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={getAllAcceptedTypes()}
-          onChange={(event) => {
-            void handleFileSelect(event);
+        <InputButtons
+          classPrefix="llm-hub"
+          attach={{
+            title: t("input.attach"),
+            accept: getAllAcceptedTypes(),
+            inputRef: fileInputRef,
+            disabled: isLoading,
+            onOpenPicker: () => fileInputRef.current?.click(),
+            onSelect: (event) => {
+              void handleFileSelect(event);
+            },
           }}
-          className="llm-hub-hidden-input"
-        />
-
-        {/* Left button column */}
-        <div className="llm-hub-input-buttons">
-          <button
-            className="llm-hub-attachment-btn"
-            onClick={() => fileInputRef.current?.click()}
+        >
+          <VaultToolButton
+            classPrefix="llm-hub"
+            containerRef={vaultToolMenuRef}
+            title={t("input.vaultToolTitle")}
+            active={vaultToolMode !== "all"}
             disabled={isLoading}
-            title={t("input.attach")}
+            onClick={() => setShowVaultToolMenu(!showVaultToolMenu)}
           >
-            <Paperclip size={18} />
-          </button>
-          <div className="llm-hub-vault-tool-container" ref={vaultToolMenuRef}>
-            <button
-              className={`llm-hub-vault-tool-btn ${vaultToolMode !== "all" ? "active" : ""}`}
-              onClick={() => setShowVaultToolMenu(!showVaultToolMenu)}
-              disabled={isLoading}
-              title={t("input.vaultToolTitle")}
-            >
-              <Database size={18} />
-            </button>
             {showVaultToolMenu && (
-              <div className="llm-hub-vault-tool-menu">
-                {(["all", "noSearch", "readOnly", "none"] as const).map((mode) => (
-                  <div
-                    key={mode}
-                    className={`llm-hub-vault-tool-item ${vaultToolMode === mode ? "selected" : ""}`}
-                    onClick={() => {
-                      onVaultToolModeChange(mode);
-                      setShowVaultToolMenu(false);
-                    }}
-                  >
-                    <div>{t(`input.vaultTool_${mode}` as Parameters<typeof t>[0])}</div>
-                    <div className="llm-hub-vault-tool-item-desc">
-                      {t(`input.vaultTool_${mode}Desc` as Parameters<typeof t>[0])}
-                    </div>
-                  </div>
-                ))}
+              <VaultToolMenu<VaultToolMode>
+                classPrefix="llm-hub"
+                options={(["all", "noSearch", "readOnly", "none"] as const).map((mode) => ({
+                  id: mode,
+                  label: t(`input.vaultTool_${mode}` as Parameters<typeof t>[0]),
+                  description: t(`input.vaultTool_${mode}Desc` as Parameters<typeof t>[0]),
+                  selected: vaultToolMode === mode,
+                }))}
+                onSelect={(mode) => {
+                  onVaultToolModeChange(mode);
+                  setShowVaultToolMenu(false);
+                }}
+              >
                 {mcpServerInfos.length > 0 && (
                   <>
                     <div className="llm-hub-vault-tool-divider" />
                     <div className="llm-hub-vault-tool-section-label">
                       {t("input.mcpServersLabel")}
                     </div>
-                    {mcpServerInfos.map((server) => {
-                      const toolHint = server.toolCount > 0
-                        ? `${server.toolCount} ${server.toolCount === 1 ? "tool" : "tools"}`
-                        : "";
-                      return (
-                        <label
-                          key={server.id}
-                          className="llm-hub-mcp-server-item"
-                          title={server.toolNames.join(", ")}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={enabledMcpServerIds.has(server.id)}
-                            onChange={(e) => onMcpServerToggle(server.id, e.target.checked)}
-                          />
-                          <span className="llm-hub-mcp-server-name">{server.name}</span>
-                          {toolHint && (
-                            <span className="llm-hub-mcp-tool-hint">{toolHint}</span>
-                          )}
-                        </label>
-                      );
-                    })}
+                    <McpServerToggles
+                      classPrefix="llm-hub"
+                      onToggle={onMcpServerToggle}
+                      servers={mcpServerInfos.map((server) => ({
+                        id: server.id,
+                        name: server.name,
+                        enabled: enabledMcpServerIds.has(server.id),
+                        hint: server.toolCount > 0
+                          ? t("input.mcpToolHint", { count: String(server.toolCount), tools: server.toolNames.slice(0, 3).join(", ") + (server.toolCount > 3 ? ", ..." : "") })
+                          : "",
+                        toolsTitle: server.toolNames.join(", "),
+                      }))}
+                    />
                   </>
                 )}
-              </div>
+              </VaultToolMenu>
             )}
-          </div>
-        </div>
+          </VaultToolButton>
+        </InputButtons>
 
         </>}
       composer={<Composer classPrefix="llm-hub" textareaRef={textareaRef}

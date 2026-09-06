@@ -308,6 +308,7 @@ export const ja: Record<string, string> = {
   "input.ragToggle": "RAG",
   "input.ragToggleTooltip": "RAGコンテキストを全体に切り替え（変更するまで全チャットに適用）",
   "input.mcpServersLabel": "MCPサーバー",
+  "input.mcpToolHint": "({{count}}個のツール: {{tools}})",
   "input.selectionVariable": "エディタの選択テキスト",
   "input.contentVariable": "アクティブノートの内容",
   "input.openFile": "ファイルを開く（Ctrl+Shift+O）",
