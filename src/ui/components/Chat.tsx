@@ -1,5 +1,5 @@
-import { ChatHeader } from "obsidian-llm-hub-chat-ui";
-import { ChatLayout, HistoryList, HeaderButton, SidebarWidthButton, SaveNoteButton } from "obsidian-llm-hub-chat-ui";
+import { ChatHeader } from "obsidian-llm-hub-common";
+import { ChatLayout, HistoryList, HeaderButton, SidebarWidthButton, SaveNoteButton } from "obsidian-llm-hub-common";
 import {
   useState,
   useEffect,

@@ -1,5 +1,5 @@
-import { InputArea as SharedInputArea } from "obsidian-llm-hub-chat-ui";
-import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, VaultToolSection, InputButtons, SearchSelector, ModelRow, HistoryLimit } from "obsidian-llm-hub-chat-ui";
+import { InputArea as SharedInputArea } from "obsidian-llm-hub-common";
+import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, VaultToolSection, InputButtons, SearchSelector, ModelRow, HistoryLimit } from "obsidian-llm-hub-common";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
