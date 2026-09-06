@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { TFile, TFolder, type App } from "obsidian";
 import type { ToolCall } from "../types";
 import { executeToolCall } from "./toolExecutor";
-import { extractPdfText } from "./pdfText";
+import { extractPdfTextWithOffsets } from "obsidian-llm-hub-common/vault";
 
-vi.mock("./pdfText", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("./pdfText")>()),
-  extractPdfText: vi.fn(async () => ({ text: "Extracted PDF text", numPages: 1, pageOffsets: [0] })),
+vi.mock("obsidian-llm-hub-common/vault", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("obsidian-llm-hub-common/vault")>()),
+  extractPdfTextWithOffsets: vi.fn(async () => ({ text: "Extracted PDF text", numPages: 1, pageOffsets: [0] })),
 }));
 
 class MockVault {
@@ -389,7 +389,7 @@ describe("executeToolCall vault files", () => {
   });
 
   it("passes the selected page range to PDF text extraction", async () => {
-    vi.mocked(extractPdfText).mockResolvedValueOnce({
+    vi.mocked(extractPdfTextWithOffsets).mockResolvedValueOnce({
       text: "Selected PDF text",
       numPages: 10,
       pageOffsets: [0, 10, 20, 30, 40],
@@ -401,7 +401,7 @@ describe("executeToolCall vault files", () => {
       app: createApp(vault),
     });
 
-    expect(extractPdfText).toHaveBeenLastCalledWith(expect.anything(), file, 3, 7);
+    expect(extractPdfTextWithOffsets).toHaveBeenLastCalledWith(expect.anything(), file.path, 3, 7);
     expect(result.result).toContain("PDF pages 3-7");
   });
 
@@ -448,7 +448,7 @@ describe("executeToolCall vault files", () => {
 
   it("truncates a very long PDF text layer", async () => {
     const longText = "x".repeat(80_000);
-    vi.mocked(extractPdfText).mockResolvedValueOnce({ text: longText, numPages: 400, pageOffsets: [0, 40_000, 70_000] });
+    vi.mocked(extractPdfTextWithOffsets).mockResolvedValueOnce({ text: longText, numPages: 400, pageOffsets: [0, 40_000, 70_000] });
     const vault = new MockVault();
     vault.addFile("Docs/long.pdf", "%PDF");
     const result = await executeToolCall(call("read_note", { path: "Docs/long.pdf" }), {
@@ -486,7 +486,7 @@ describe("executeToolCall vault files", () => {
   });
 
   it("explains when a scanned PDF has no extractable text", async () => {
-    vi.mocked(extractPdfText).mockResolvedValueOnce(null);
+    vi.mocked(extractPdfTextWithOffsets).mockResolvedValueOnce(null);
     const vault = new MockVault();
     vault.addFile("Docs/scanned.pdf", "%PDF");
     const result = await executeToolCall(call("read_note", { path: "Docs/scanned.pdf" }), {

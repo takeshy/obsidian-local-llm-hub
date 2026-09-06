@@ -8,7 +8,7 @@ import { type App, TFile } from "obsidian";
 import type { LocalLlmConfig, RagSetting } from "../types";
 import { WORKSPACE_FOLDER } from "../types";
 import { generateEmbeddings, generateEmbedding } from "./embeddingProvider";
-import { extractPdfText, type PdfExtractResult } from "./pdfText";
+import { extractPdfTextWithOffsets, type PdfExtractResult } from "obsidian-llm-hub-common/vault";
 import {
   saveRagIndex,
   loadRagIndex,
@@ -331,7 +331,7 @@ class RagStore {
 
       let result: PdfExtractResult | null;
       try {
-        result = await extractPdfText(app, file);
+        result = await extractPdfTextWithOffsets(app, file.path);
       } catch (err) {
         // Extraction failed — keep the checksum so the same unreadable PDF does not block later syncs.
         console.warn(`Local LLM Hub: PDF extraction failed for ${filePath}:`, err);
@@ -544,7 +544,7 @@ class RagStore {
       if (isPdf) {
         let result: PdfExtractResult | null;
         try {
-          result = await extractPdfText(app, file);
+          result = await extractPdfTextWithOffsets(app, file.path);
         } catch (err) {
           // Extraction failed — preserve existing chunks, don't modify the index
           console.warn(`Local LLM Hub: PDF extraction failed for ${filePath}:`, err);

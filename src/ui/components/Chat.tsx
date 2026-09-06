@@ -73,7 +73,7 @@ import { t } from "src/i18n";
 import { formatError } from "obsidian-llm-hub-common/core";
 import { decodeBase64Utf8 } from "src/utils/base64";
 import { runtimeSkillPath } from "src/core/runtimeSkills";
-import { extractPdfText, formatExtractedPdfText } from "src/core/pdfText";
+import { extractPdfTextWithOffsets, formatExtractedPdfText } from "obsidian-llm-hub-common/vault";
 
 export interface ChatRef {
   addAttachments: (attachments: Attachment[]) => void;
@@ -548,7 +548,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         if (file.extension.toLowerCase() !== "pdf") return plugin.app.vault.cachedRead(file);
         // Inlined PDFs get the same cap as read_note: a long text layer would
         // otherwise fill the whole context in the modes that inline mentions.
-        const extracted = await extractPdfText(plugin.app, file);
+        const extracted = await extractPdfTextWithOffsets(plugin.app, file.path);
         return extracted ? formatExtractedPdfText(extracted) : null;
       },
     }), [plugin, vaultToolMode, commandVariableSources]);
