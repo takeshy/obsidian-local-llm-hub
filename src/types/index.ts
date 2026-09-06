@@ -81,6 +81,7 @@ export const DEFAULT_RAG_SETTING: RagSetting = {
 export interface WorkspaceState {
   selectedRagSetting: string | null;
   ragSettings: Record<string, RagSetting>;
+  maxPreviousMessages?: number;      // Older chat messages sent with the current one (0-99)
   sentPromptHistory?: string[];
 }
 

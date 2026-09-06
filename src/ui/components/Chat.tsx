@@ -53,7 +53,7 @@ import { promptForSelection } from "./workflow/SelectionPromptModal";
 import { promptForDialog } from "./workflow/DialogPromptModal";
 import { cryptoCache } from "src/core/cryptoCache";
 import { promptForPassword } from "src/ui/passwordPrompt";
-import { buildErrorMessage, type ChatHistory } from "./chat/chatUtils";
+import { buildErrorMessage, limitConversationHistory, type ChatHistory } from "./chat/chatUtils";
 import {
   messagesToMarkdown,
   messagesToCompactMarkdown,
@@ -87,6 +87,10 @@ const CONTEXT_SKILL_PATHS = new Set([DASHBOARD_SKILL_PATH]);
 
 const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [maxPreviousMessages, setMaxPreviousMessages] = useState(() => {
+    const saved = plugin.wsManager.workspaceState.maxPreviousMessages;
+    return typeof saved === "number" ? Math.max(0, Math.min(99, Math.trunc(saved))) : 99;
+  });
   const [sentPromptHistory, setSentPromptHistory] = useState<string[]>(() => {
     const saved = plugin.wsManager.workspaceState.sentPromptHistory;
     return Array.isArray(saved)
@@ -106,7 +110,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   const [currentModel, setCurrentModel] = useState(plugin.settings.llmConfig.model);
   const [ragSettingNames, setRagSettingNames] = useState<string[]>(plugin.getRagSettingNames());
   const [selectedRagSetting, setSelectedRagSetting] = useState<string | null>(plugin.getSelectedRagSettingName());
-  const [ragEnabled, setRagEnabled] = useState(true);
   const [vaultToolMode, setVaultToolMode] = useState<VaultToolMode>(plugin.settings.vaultToolMode ?? "all");
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
@@ -889,7 +892,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       let ragCitations: RagCitation[] | undefined;
       const hasRagContext = false;
       let ragSearchCount = 0;
-      const activeRagSetting = selectedRagSetting && ragEnabled
+      const activeRagSetting = selectedRagSetting
         ? plugin.getRagSearchSetting(selectedRagSetting)
         : undefined;
 
@@ -909,7 +912,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 
       if (vaultToolMode === "noSearch") {
         systemPrompt += buildNoDiscoverySystemPrompt({
-          ragRequested: Boolean(selectedRagSetting && ragEnabled),
+          ragRequested: Boolean(selectedRagSetting),
           hasRagContext,
         });
       }
@@ -982,7 +985,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       }
 
       // Conversation messages for the API (includes tool call/result messages)
-      const conversationMessages: Message[] = [...trimRagSearchHistory(messages), userMessage];
+      const conversationMessages: Message[] = limitConversationHistory([...trimRagSearchHistory(messages), userMessage], maxPreviousMessages);
       let fullContent = "";
       let thinkingContent = "";
       let currentRoundThinking = "";
@@ -1269,7 +1272,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       setIsLoading(false);
       abortControllerRef.current = null;
     }
-  }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, getEffectiveSkillPathsForSend, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
+  }, [messages, plugin, llmConfig, selectedRagSetting, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, getEffectiveSkillPathsForSend, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
   return (
     <ChatLayout className="llm-hub-chat">
@@ -1356,9 +1359,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         onModelChange={handleModelChange}
         ragSettingNames={ragSettingNames}
         selectedRagSetting={selectedRagSetting}
-        ragEnabled={ragEnabled}
         ragSearchAvailable={llmConfig.framework !== "anythingllm"}
-        onRagToggle={setRagEnabled}
         onRagSettingChange={(setting) => {
           setSelectedRagSetting(setting);
           void plugin.selectRagSetting(setting);
@@ -1391,6 +1392,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
             skillPath: skill.folderPath,
           })),
         ]}
+        maxPreviousMessages={maxPreviousMessages}
+        onMaxPreviousMessagesChange={(count) => {
+          setMaxPreviousMessages(count);
+          plugin.wsManager.workspaceState.maxPreviousMessages = count;
+          void plugin.wsManager.saveWorkspaceState();
+        }}
         inputHistory={sentPromptHistory}
         onInputHistoryAdd={(prompt) => {
           setSentPromptHistory(previous => {

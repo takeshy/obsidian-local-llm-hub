@@ -1,5 +1,5 @@
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-chat-ui";
-import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, InputButtons } from "obsidian-llm-hub-chat-ui";
+import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, InputButtons, SearchSelector, ModelRow, HistoryLimit } from "obsidian-llm-hub-chat-ui";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
@@ -34,9 +34,7 @@ interface InputAreaProps {
   ragSettingNames: string[];
   selectedRagSetting: string | null;
   onRagSettingChange: (setting: string | null) => void;
-  ragEnabled: boolean;
   ragSearchAvailable: boolean;
-  onRagToggle: (enabled: boolean) => void;
   vaultToolMode: VaultToolMode;
   onVaultToolModeChange: (mode: VaultToolMode) => void;
   mcpServerInfos: McpServerInfo[];
@@ -52,6 +50,8 @@ interface InputAreaProps {
   okfBundles?: OkfBundle[];
   activeOkfBundleIds?: string[];
   onToggleOkfBundle?: (bundleId: string) => void;
+  maxPreviousMessages: number;
+  onMaxPreviousMessagesChange: (count: number) => void;
   inputHistory: string[];
   onInputHistoryAdd: (prompt: string) => void;
 }
@@ -89,9 +89,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   onModelChange,
   ragSettingNames,
   selectedRagSetting,
-  ragEnabled,
   ragSearchAvailable,
-  onRagToggle,
   onRagSettingChange,
   vaultToolMode,
   onVaultToolModeChange,
@@ -108,6 +106,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   okfBundles = [],
   activeOkfBundleIds = [],
   onToggleOkfBundle,
+  maxPreviousMessages,
+  onMaxPreviousMessagesChange,
   inputHistory,
   onInputHistoryAdd,
 }, ref) {
@@ -598,6 +598,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
                     />
                   </>
                 )}
+                <HistoryLimit classPrefix="llm-hub" label={t("input.historyLimit")}
+                  value={maxPreviousMessages} onChange={onMaxPreviousMessagesChange} />
               </VaultToolMenu>
             )}
           </VaultToolButton>
@@ -619,46 +621,35 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
 
       {/* Model & RAG selector */}
       {(availableModels.length > 1 || ragSettingNames.length > 0) && (
-        <div className="llm-hub-model-selector">
+        <ModelRow classPrefix="llm-hub" label={availableModels.length > 1 ? t("input.model") : undefined}>
           {availableModels.length > 1 && (
-            <>
-              <label className="llm-hub-model-label">{t("input.model")}</label>
-              <ModelSelector
-                models={availableModels}
-                value={currentModel}
-                onChange={onModelChange}
-                disabled={isLoading || !ragSearchAvailable}
-              />
-            </>
+            <ModelSelector
+              models={availableModels}
+              value={currentModel}
+              onChange={onModelChange}
+              disabled={isLoading || !ragSearchAvailable}
+            />
           )}
           {ragSettingNames.length > 0 && (
-            <>
-              <label
-                className="llm-hub-rag-toggle"
-                title={t("input.ragToggleTooltip")}
-              >
-                <input
-                  type="checkbox"
-                  checked={ragEnabled}
-                  onChange={(e) => onRagToggle(e.target.checked)}
-                  disabled={isLoading}
-                />
-                {t("input.ragToggle")}
-              </label>
-              <select
-                className="llm-hub-model-dropdown"
-                value={selectedRagSetting || ""}
-                onChange={(e) => onRagSettingChange(e.target.value || null)}
-                disabled={isLoading}
-              >
-                <option value="">{t("settings.ragNone")}</option>
-                {ragSettingNames.map((name) => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-              </select>
-            </>
+            <SearchSelector
+              classPrefix="llm-hub"
+              ownerDocument={activeDocument}
+              disabled={isLoading}
+              labels={{
+                rag: (name) => t("input.rag", { name }),
+                ragNone: t("input.rag", { name: t("common.none") }),
+                none: t("input.searchNone"),
+                webSearch: "",
+              }}
+              rag={{
+                settings: ragSettingNames,
+                selected: selectedRagSetting,
+                disabled: false,
+                onSelect: onRagSettingChange,
+              }}
+            />
           )}
-        </div>
+        </ModelRow>
       )}
 
       {/* Skills selector */}
