@@ -1,3 +1,6 @@
+import type { McpServerConfig } from "obsidian-llm-hub-common/core";
+import type { McpFraming } from "obsidian-llm-hub-common/core";
+export type { McpServerConfig, McpTransport, McpFraming } from "obsidian-llm-hub-common/core";
 import type { ToolCall } from "obsidian-llm-hub-common/chat";
 
 export type { Message, ToolCall, ToolResult, Attachment, RagCitation } from "obsidian-llm-hub-common/chat";
@@ -200,7 +203,6 @@ export interface SlashCommand {
 
 // MCP server configuration (stdio transport)
 // MCP stdio framing protocol
-export type McpFraming = "content-length" | "newline";
 
 export interface AgentPluginInstall {
   name: string;
@@ -214,22 +216,6 @@ export interface AgentPluginInstall {
   executables?: string[];
 }
 
-export interface McpServerConfig {
-  id: string;
-  name: string;
-  command: string;
-  args: string[];
-  env?: Record<string, string>;
-  framing: McpFraming;
-  enabled: boolean;
-  autoApprove?: boolean;
-  allowedTools?: string[];
-  toolHints?: string[];
-  cwd?: string;
-  pluginRoot?: string;
-  pluginData?: string;
-  agentPlugin?: { pluginName: string; serverName: string };
-}
 
 export interface KnowledgeSource {
   id: string;
@@ -321,3 +307,25 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   agentPlugins: [],
   vaultToolMode: "all",
 };
+
+/**
+ * A server as this plugin stores it. The shared record covers every plugin, so the fields
+ * this one always writes are optional there; this narrows them back for local code.
+ */
+export type LocalMcpServerConfig = McpServerConfig & {
+  id: string;
+  command: string;
+  args: string[];
+  framing: McpFraming;
+};
+
+/** Reads a stored server as this plugin's shape, filling in what older settings omit. */
+export function asLocalMcpServer(config: McpServerConfig): LocalMcpServerConfig {
+  return {
+    ...config,
+    id: config.id ?? config.name,
+    command: config.command ?? "",
+    args: config.args ?? [],
+    framing: config.framing ?? "newline",
+  };
+}

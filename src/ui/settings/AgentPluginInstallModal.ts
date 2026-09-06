@@ -1,7 +1,7 @@
 import { Modal, Notice, Setting } from "obsidian";
 import { McpClient } from "src/core/mcpClient";
 import type { AgentPluginPreview } from "src/core/agentPlugins";
-import type { McpServerConfig } from "src/types";
+import { asLocalMcpServer, type McpServerConfig } from "src/types";
 import { formatError } from "obsidian-llm-hub-common/core";
 
 export class AgentPluginInstallModal extends Modal {
@@ -24,7 +24,8 @@ export class AgentPluginInstallModal extends Modal {
         const tested: McpServerConfig[] = [];
         for (const server of this.servers) {
           const row = status.createDiv({ cls: "setting-item-description", text: `Testing ${server.name}...` });
-          const client = new McpClient(server.command, server.args, server.env, server.framing, server.cwd, server.pluginRoot, server.pluginData);
+          const local = asLocalMcpServer(server);
+          const client = new McpClient(local.command, local.args, local.env, local.framing, local.cwd, local.pluginRoot, local.pluginData);
           try { await client.start(); const names = client.getToolNames(); row.setText(`${server.name}: connected · ${names.length} tool(s)`); tested.push({ ...server, enabled: false, toolHints: names }); }
           catch (error) { row.setText(`${server.name}: connection failed · ${formatError(error)}`); tested.push({ ...server, enabled: false, toolHints: undefined }); }
           finally { await client.stop().catch(() => {}); }

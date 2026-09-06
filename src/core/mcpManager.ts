@@ -1,5 +1,5 @@
 import { requireMcpApproval } from "./mcpApproval";
-import type { McpServerConfig, ToolDefinition } from "../types";
+import { asLocalMcpServer, type McpServerConfig, type ToolDefinition } from "../types";
 import { normalizeSpawnCommand } from "./commandLine";
 import { McpClient } from "./mcpClient";
 
@@ -29,7 +29,8 @@ export class McpManager {
     }
 
     // Start new/enabled servers
-    for (const config of servers) {
+    for (const stored of servers) {
+      const config = asLocalMcpServer(stored);
       if (!config.enabled || this.clients.has(config.id)) continue;
       await this.connectServer(config);
     }
@@ -40,7 +41,8 @@ export class McpManager {
     return this.connecting.has(id);
   }
 
-  async connectServer(config: McpServerConfig): Promise<{ success: boolean; error?: string }> {
+  async connectServer(stored: McpServerConfig): Promise<{ success: boolean; error?: string }> {
+    const config = asLocalMcpServer(stored);
     // Mark synchronously so callers can re-render a "connecting" state right away.
     this.connecting.add(config.id);
     try {
@@ -139,7 +141,7 @@ export class McpManager {
     const resolved = this.resolveNamespacedTool(name);
     if (!resolved) throw new Error(`MCP tool not found: ${name}`);
     if (!skipApproval) await requireMcpApproval(resolved.config, resolved.originalName, args);
-    if (this.clients.get(resolved.config.id) !== resolved.client || !resolved.client.ready) {
+    if (this.clients.get(asLocalMcpServer(resolved.config).id) !== resolved.client || !resolved.client.ready) {
       throw new Error("MCP server connection changed during approval");
     }
     return resolved.client.callTool(resolved.originalName, args);

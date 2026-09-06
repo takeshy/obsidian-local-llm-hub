@@ -1,3 +1,4 @@
+import { asLocalMcpServer } from "src/types";
 import { ChatHeader } from "obsidian-llm-hub-common";
 import { ChatLayout, HistoryList, HeaderButton, SidebarWidthButton, SaveNoteButton } from "obsidian-llm-hub-common";
 import {
@@ -776,7 +777,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         const persisted = plugin.settings.mcpServers.find(item => item.id === server.id);
         if (!server.enabled || !server.agentPlugin || persisted?.enabled) continue;
         const result = await plugin.mcpManager.connectServer(server);
-        if (result.success) temporaryAgentPluginServerIds.push(server.id);
+        if (result.success) temporaryAgentPluginServerIds.push(asLocalMcpServer(server).id);
       }
 
       // Get vault tools based on mode + MCP tools (MCP always available if servers enabled)

@@ -1,7 +1,7 @@
 import { Setting, Notice, Modal, App } from "obsidian";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import type { McpFraming, McpServerConfig } from "src/types";
+import { asLocalMcpServer, type LocalMcpServerConfig, type McpFraming, type McpServerConfig } from "src/types";
 import { joinCommandLine, normalizeSpawnCommand, splitCommandLine } from "src/core/commandLine";
 
 export interface ConnectResult {
@@ -42,7 +42,8 @@ export function displayMcpSettings(containerEl: HTMLElement, ctx: SettingsContex
    * Connects (or disconnects) a server according to its enabled flag and
    * re-renders the list before and after so the "connecting" state is visible.
    */
-  const applyConnection = async (config: McpServerConfig): Promise<ConnectResult> => {
+  const applyConnection = async (stored: McpServerConfig): Promise<ConnectResult> => {
+    const config = asLocalMcpServer(stored);
     if (!config.enabled) {
       await plugin.mcpManager.disconnectServer(config.id);
       plugin.settingsEmitter.emit("settings-updated", plugin.settings);
@@ -65,7 +66,8 @@ export function displayMcpSettings(containerEl: HTMLElement, ctx: SettingsContex
   };
 
   // List configured servers
-  for (const server of plugin.settings.mcpServers) {
+  for (const stored of plugin.settings.mcpServers) {
+    const server = asLocalMcpServer(stored);
     const isConnected = plugin.mcpManager.getConnectedServerIds().includes(server.id);
 
     const setting = new Setting(containerEl)
@@ -138,7 +140,9 @@ export function displayMcpSettings(containerEl: HTMLElement, ctx: SettingsContex
 }
 
 class McpServerModal extends Modal {
-  private config: McpServerConfig;
+  // The editor always writes this plugin's full shape, even when it opened a
+  // server stored before a field existed.
+  private config: LocalMcpServerConfig;
   private onSave: (config: McpServerConfig) => Promise<ConnectResult>;
   private isNew: boolean;
 
@@ -150,7 +154,10 @@ class McpServerModal extends Modal {
     super(app);
     this.isNew = !existing;
     this.config = existing
-      ? { ...existing, allowedTools: [...(existing.allowedTools ?? [])], args: [...existing.args], env: existing.env ? { ...existing.env } : undefined }
+      ? (() => {
+          const local = asLocalMcpServer(existing);
+          return { ...local, allowedTools: [...(local.allowedTools ?? [])], args: [...local.args], env: local.env ? { ...local.env } : undefined };
+        })()
       : {
           id: crypto.randomUUID(),
           name: "",
