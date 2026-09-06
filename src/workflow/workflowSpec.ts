@@ -7,6 +7,7 @@ import {
   GET_WORKFLOW_SPEC_TOOL as SHARED_GET_WORKFLOW_SPEC_TOOL,
   type WorkflowSpecContext,
 } from "obsidian-llm-hub-common/workflow";
+import { toOpenAiTool } from "obsidian-llm-hub-common/core";
 import type { ToolDefinition } from "src/types";
 
 export {
@@ -19,14 +20,7 @@ export {
 
 // Local models are told about tools in the OpenAI wire shape, so the shared definition
 // is wrapped rather than duplicated.
-export const GET_WORKFLOW_SPEC_TOOL: ToolDefinition = {
-  type: "function",
-  function: {
-    name: SHARED_GET_WORKFLOW_SPEC_TOOL.name,
-    description: SHARED_GET_WORKFLOW_SPEC_TOOL.description,
-    parameters: SHARED_GET_WORKFLOW_SPEC_TOOL.parameters,
-  },
-};
+export const GET_WORKFLOW_SPEC_TOOL: ToolDefinition = toOpenAiTool(SHARED_GET_WORKFLOW_SPEC_TOOL);
 
 /** Build the spec context from the plugin's current settings & workspace state. */
 export function buildWorkflowSpecContext(plugin: LocalLlmHubPlugin): WorkflowSpecContext {

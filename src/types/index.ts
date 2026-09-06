@@ -10,8 +10,9 @@ export type { ObsidianEventType, WorkflowEventTrigger } from "obsidian-llm-hub-c
 // Supported LLM frameworks
 export type LlmFramework = "ollama" | "lm-studio" | "anythingllm" | "vllm";
 
-// Vault tool mode for RAG
-export type VaultToolMode = "all" | "noSearch" | "readOnly" | "none";
+// Vault tool mode for RAG (shared: the built-in Vault tool policy lives in the library)
+import type { VaultToolMode } from "obsidian-llm-hub-common/core";
+export type { VaultToolMode };
 // "auto" is a legacy value kept for stored configs; it behaves like "extract-text".
 export type PdfInputMode = "auto" | "native" | "extract-text";
 

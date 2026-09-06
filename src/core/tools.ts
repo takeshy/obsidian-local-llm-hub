@@ -1,3 +1,5 @@
+import { toOpenAiTool } from "obsidian-llm-hub-common/core";
+import { createSkillWorkflowTool } from "obsidian-llm-hub-common/skills";
 import type { ToolDefinition, VaultToolMode } from "../types";
 
 const readTimeline: ToolDefinition = {
@@ -250,30 +252,12 @@ const bulkRenameNotes: ToolDefinition = {
   },
 };
 
-export const SKILL_WORKFLOW_TOOL_NAME = "run_skill_workflow";
+export { SKILL_WORKFLOW_TOOL_NAME } from "obsidian-llm-hub-common/skills";
 
-export const skillWorkflowTool: ToolDefinition = {
-  type: "function",
-  function: {
-    name: SKILL_WORKFLOW_TOOL_NAME,
-    description:
-      "Run a workflow provided by an active agent skill. Workflows can execute commands, HTTP requests, file operations, and more. For vault skills the workflow ID and its input variables are defined inside SKILL.md — you must read SKILL.md (via `read_note`) before you can construct a correct call. If the workflow fails, do NOT retry automatically — report the error to the user instead.",
-    parameters: {
-      type: "object",
-      properties: {
-        workflowId: {
-          type: "string",
-          description: "The workflow ID to run (format: skillName/workflowName, discovered from the skill's SKILL.md)",
-        },
-        variables: {
-          type: "string",
-          description: 'JSON object of input variables to pass to the workflow (e.g. {"filePath": "notes/todo.md"})',
-        },
-      },
-      required: ["workflowId"],
-    },
-  },
-};
+// The schema lives in the shared library; this host has no `[READ_SKILL: ...]`
+// marker handler, so the model is pointed at read_note alone. Local models are
+// told about tools in the OpenAI wire shape, hence the wrap.
+export const skillWorkflowTool: ToolDefinition = toOpenAiTool(createSkillWorkflowTool({ readSkillMarker: false }));
 
 // Search tools (excluded in "noSearch" mode)
 const searchToolNames = new Set(["search_notes", "list_notes"]);
