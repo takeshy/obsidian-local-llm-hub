@@ -1176,7 +1176,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
                   return { accepted: true, openFile: response.openFile };
                 }
                 if (response.action === "edit") {
-                  return { accepted: false, feedback: response.content };
+                  return { accepted: false, feedback: response.additionalRequest };
                 }
                 return { accepted: false, cancelled: true };
               },

@@ -72,7 +72,7 @@ export async function handleNoteNode(
     );
     if (confirmResult.action !== "save") {
       // Check if user requested regeneration
-      if (confirmResult.content && context.lastCommandInfo) {
+      if (confirmResult.additionalRequest && context.lastCommandInfo) {
         const previousOutput = context.variables.get(context.lastCommandInfo.saveTo);
         const previousOutputStr = typeof previousOutput === "string" ? previousOutput : String(previousOutput ?? "");
 
@@ -80,7 +80,7 @@ export async function handleNoteNode(
           commandNodeId: context.lastCommandInfo.nodeId,
           originalPrompt: context.lastCommandInfo.originalPrompt,
           previousOutput: previousOutputStr,
-          additionalRequest: confirmResult.content,
+          additionalRequest: confirmResult.additionalRequest,
         };
         throw new RegenerateRequestError("Regeneration requested by user");
       }

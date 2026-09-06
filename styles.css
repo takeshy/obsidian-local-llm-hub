@@ -518,13 +518,6 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   color: var(--text-muted);
 }
 
-/* ── Diff Modal ───────────────────────────────────── */
-.llm-hub-diff-modal {
-  display: flex;
-  flex-direction: column;
-  max-height: 70vh;
-}
-
 .llm-hub-diff-stats {
   padding: 8px 0;
   font-size: 13px;
@@ -538,12 +531,6 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 .llm-hub-diff-deletions {
   color: var(--text-error);
   font-weight: 500;
-}
-
-.llm-hub-diff-modal .llm-hub-diff-content {
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 12px;
 }
 
 .llm-hub-diff-legend {
@@ -570,10 +557,6 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   background: var(--background-secondary);
   border-radius: 4px;
   overflow-x: auto;
-}
-
-.llm-hub-diff-modal .llm-hub-diff-line {
-  white-space: pre;
 }
 
 .llm-hub-diff-hunk {
@@ -3717,333 +3700,6 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   word-break: break-word;
   user-select: text;
 }
-.llm-hub-diff-view {
-  font-family: var(--font-monospace);
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-x: auto;
-  background: var(--background-primary);
-  border-radius: 4px;
-}
-
-.llm-hub-diff-line {
-  display: flex;
-  white-space: pre;
-  min-height: 1.5em;
-}
-
-.llm-hub-diff-gutter {
-  flex-shrink: 0;
-  width: 24px;
-  text-align: center;
-  user-select: none;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.llm-hub-diff-content {
-  flex: 1;
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
-/* Unchanged lines */
-.llm-hub-diff-unchanged {
-  background: transparent;
-}
-
-.llm-hub-diff-unchanged .llm-hub-diff-gutter {
-  color: var(--text-faint);
-}
-
-/* Added lines */
-.llm-hub-diff-added {
-  background: rgba(0, 200, 83, 0.15);
-}
-
-.llm-hub-diff-added .llm-hub-diff-gutter {
-  color: var(--color-green);
-  background: rgba(0, 200, 83, 0.25);
-}
-
-.llm-hub-diff-added .llm-hub-diff-content {
-  color: var(--text-normal);
-}
-
-/* Removed lines */
-.llm-hub-diff-removed {
-  background: rgba(255, 100, 100, 0.15);
-}
-
-.llm-hub-diff-removed .llm-hub-diff-gutter {
-  color: var(--color-red);
-  background: rgba(255, 100, 100, 0.25);
-}
-
-.llm-hub-diff-removed .llm-hub-diff-content {
-  color: var(--text-normal);
-}
-
-/* Dark theme adjustments */
-.theme-dark .llm-hub-diff-added {
-  background: rgba(0, 200, 83, 0.12);
-}
-
-.theme-dark .llm-hub-diff-added .llm-hub-diff-gutter {
-  background: rgba(0, 200, 83, 0.2);
-}
-
-.theme-dark .llm-hub-diff-removed {
-  background: rgba(255, 100, 100, 0.12);
-}
-
-.theme-dark .llm-hub-diff-removed .llm-hub-diff-gutter {
-  background: rgba(255, 100, 100, 0.2);
-}
-
-/* ===============================================
-   Line Numbers
-   =============================================== */
-
-.llm-hub-diff-linenum {
-  flex-shrink: 0;
-  width: 40px;
-  text-align: right;
-  padding-right: 4px;
-  color: var(--text-faint);
-  user-select: none;
-  font-size: 11px;
-}
-
-/* ===============================================
-   View Toggle (Unified / Split)
-   =============================================== */
-
-.llm-hub-diff-view-toggle {
-  display: inline-flex;
-  gap: 0;
-  margin-left: auto;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.llm-hub-diff-view-toggle-btn {
-  padding: 2px 10px;
-  font-size: 11px;
-  cursor: pointer;
-  background: var(--background-primary);
-  color: var(--text-muted);
-  border: none;
-  border-right: 1px solid var(--background-modifier-border);
-  line-height: 1.4;
-}
-
-.llm-hub-diff-view-toggle-btn:last-child {
-  border-right: none;
-}
-
-.llm-hub-diff-view-toggle-btn.is-active {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-}
-
-.llm-hub-diff-view-toggle-btn:hover:not(.is-active) {
-  background: var(--background-modifier-hover);
-}
-
-/* ===============================================
-   Split (Side-by-Side) View
-   =============================================== */
-
-.llm-hub-diff-split .llm-hub-diff-split-row {
-  display: flex;
-  border-bottom: 1px solid var(--background-modifier-border-focus);
-}
-
-.llm-hub-diff-split-cell {
-  width: 50%;
-  min-width: 0;
-  display: flex;
-  white-space: pre;
-  overflow-x: auto;
-  overflow-y: hidden;
-  min-height: 1.5em;
-  font-family: var(--font-monospace);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.llm-hub-diff-split-cell .llm-hub-diff-content {
-  flex: 0 0 auto;
-  min-width: calc(100% - 72px);
-}
-
-.llm-hub-diff-split-left {
-  border-right: 1px solid var(--background-modifier-border);
-}
-
-.llm-hub-diff-split-filler {
-  background: var(--background-secondary-alt, var(--background-secondary));
-}
-
-/* ===============================================
-   Word-Level Diff Highlighting
-   =============================================== */
-
-.llm-hub-diff-word-added {
-  background: rgba(0, 200, 83, 0.35);
-  border-radius: 2px;
-}
-
-.llm-hub-diff-word-removed {
-  background: rgba(255, 100, 100, 0.35);
-  border-radius: 2px;
-}
-
-.theme-dark .llm-hub-diff-word-added {
-  background: rgba(0, 200, 83, 0.25);
-}
-
-.theme-dark .llm-hub-diff-word-removed {
-  background: rgba(255, 100, 100, 0.25);
-}
-
-/* ===============================================
-   Click-to-Comment on Diff Lines
-   =============================================== */
-
-.llm-hub-diff-commentable {
-  cursor: pointer;
-}
-
-.llm-hub-diff-commentable:hover {
-  filter: brightness(0.95);
-}
-
-.theme-dark .llm-hub-diff-commentable:hover {
-  filter: brightness(1.15);
-}
-
-.llm-hub-diff-has-comment .llm-hub-diff-gutter::after {
-  content: "\25CF";
-  font-size: 8px;
-  color: var(--interactive-accent);
-  margin-left: 2px;
-}
-
-.llm-hub-diff-comment-preview {
-  padding: 4px 12px 4px 108px;
-  background: var(--background-secondary);
-  border-bottom: 1px solid var(--background-modifier-border);
-  font-family: var(--font-interface);
-  font-size: 12px;
-  color: var(--text-muted);
-  font-style: italic;
-  white-space: normal;
-  word-break: break-word;
-}
-
-.llm-hub-diff-split .llm-hub-diff-comment-preview {
-  padding-left: 12px;
-}
-
-.llm-hub-diff-comment-editor {
-  padding: 8px 12px 8px 108px;
-  background: var(--background-secondary);
-  border-top: 1px solid var(--background-modifier-border);
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.llm-hub-diff-split .llm-hub-diff-comment-editor {
-  padding-left: 12px;
-}
-
-.llm-hub-diff-comment-input {
-  width: 100%;
-  min-height: 40px;
-  padding: 6px 8px;
-  font-size: 12px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  background: var(--background-primary);
-  color: var(--text-normal);
-  font-family: var(--font-interface);
-  resize: vertical;
-  box-sizing: border-box;
-}
-
-.llm-hub-diff-comment-input:focus {
-  border-color: var(--interactive-accent);
-  outline: none;
-}
-
-.llm-hub-diff-comment-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-  justify-content: flex-end;
-}
-
-.llm-hub-diff-comment-actions button {
-  padding: 4px 10px;
-  font-size: 11px;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-/* ===============================================
-   Apply with Comments Confirmation Dialog
-   =============================================== */
-
-.llm-hub-diff-confirm-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-  border-radius: inherit;
-}
-
-.llm-hub-diff-confirm-dialog {
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 400px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.llm-hub-diff-confirm-dialog p {
-  margin: 0 0 16px;
-  font-size: 14px;
-  color: var(--text-normal);
-  line-height: 1.5;
-}
-
-.llm-hub-diff-confirm-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.llm-hub-diff-confirm-dialog-actions button {
-  padding: 6px 14px;
-  font-size: 13px;
-  border-radius: 4px;
-}
-
-/* Label used above the diff in the workflow confirm modal */
-.llm-hub-edit-confirm-preview-label {
-  display: flex;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
 
 .llm-hub-workflow-confirm-modal .llm-hub-edit-confirm-preview-label {
   flex-shrink: 0;
@@ -6945,4 +6601,870 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 .is-mobile .llm-hub-workflow-preview-buttons button {
   width: 100%;
   padding: 12px;
+}
+
+/* Edit confirmation, bulk confirmations and diff rendering */
+
+.llm-hub-edit-additional-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-normal);
+  box-sizing: border-box;
+}
+
+.llm-hub-edit-additional-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.llm-hub-edit-additional-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Resizable Modal */
+.llm-hub-resizable-modal {
+  position: relative;
+}
+
+/* Drag Handle */
+.llm-hub-drag-handle {
+  cursor: move;
+  user-select: none;
+}
+
+.llm-hub-drag-handle button {
+  cursor: pointer;
+}
+
+/* Resize Handles */
+.llm-hub-resize-handle {
+  position: absolute;
+  z-index: 100;
+}
+
+.llm-hub-resize-n {
+  top: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: n-resize;
+}
+
+.llm-hub-resize-s {
+  bottom: -4px;
+  left: 10px;
+  right: 10px;
+  height: 8px;
+  cursor: s-resize;
+}
+
+.llm-hub-resize-e {
+  top: 10px;
+  right: -4px;
+  bottom: 10px;
+  width: 8px;
+  cursor: e-resize;
+}
+
+.llm-hub-resize-w {
+  top: 10px;
+  left: -4px;
+  bottom: 10px;
+  width: 8px;
+  cursor: w-resize;
+}
+
+.llm-hub-resize-ne {
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: ne-resize;
+}
+
+.llm-hub-resize-nw {
+  top: -4px;
+  left: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: nw-resize;
+}
+
+.llm-hub-resize-se {
+  bottom: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: se-resize;
+}
+
+.llm-hub-resize-sw {
+  bottom: -4px;
+  left: -4px;
+  width: 14px;
+  height: 14px;
+  cursor: sw-resize;
+}
+
+/* ===============================================
+   Edit Confirmation Modal Styles
+   =============================================== */
+
+.llm-hub-edit-confirm-modal {
+  width: min(1100px, calc(100vw - 32px));
+  height: min(700px, calc(100vh - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+}
+
+.llm-hub-edit-confirm-modal .modal-content {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.llm-hub-edit-confirm-header {
+  flex-shrink: 0;
+  padding: 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  cursor: move;
+}
+
+.llm-hub-edit-confirm-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.llm-hub-edit-confirm-title-row h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.llm-hub-edit-confirm-mode {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.llm-hub-edit-confirm-title-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.llm-hub-edit-confirm-fullscreen-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.llm-hub-edit-confirm-fullscreen-btn:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-edit-confirm-fullscreen-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.llm-hub-edit-confirm-modal.is-fullscreen {
+  position: fixed !important;
+  top: 8px !important;
+  left: 8px !important;
+  width: calc(100vw - 16px) !important;
+  height: calc(100vh - 16px) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.llm-hub-edit-confirm-modal.is-fullscreen .llm-hub-resize-handle {
+  display: none;
+}
+
+.llm-hub-edit-confirm-path {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.llm-hub-edit-confirm-path strong {
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+}
+
+.llm-hub-edit-confirm-preview {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px;
+}
+
+.llm-hub-edit-confirm-preview-label {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.llm-hub-edit-confirm-preview-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.llm-hub-edit-confirm-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-edit-confirm-actions button {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.llm-hub-edit-confirm-open-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.llm-hub-edit-confirm-open-file input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.llm-hub-edit-confirm-open-file label {
+  cursor: pointer;
+}
+
+/* Edit Confirmation Additional Request */
+.llm-hub-edit-additional-container {
+  flex-shrink: 0;
+  padding: 0 16px 12px;
+}
+
+.llm-hub-edit-additional-label {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.llm-hub-edit-additional-container[open] .llm-hub-edit-additional-label {
+  margin-bottom: 8px;
+}
+
+.llm-hub-edit-additional-hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-warning, var(--text-accent));
+}
+
+.llm-hub-edit-confirm-modal .llm-hub-edit-additional-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-normal);
+  box-sizing: border-box;
+  min-height: 64px;
+  max-height: 18vh;
+}
+
+.llm-hub-edit-confirm-modal .llm-hub-edit-additional-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.llm-hub-edit-confirm-modal .llm-hub-edit-additional-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ===============================================
+   Bulk Edit/Delete Confirmation Modal Styles
+   =============================================== */
+
+.llm-hub-bulk-confirm-modal {
+  width: 700px;
+  height: 600px;
+  max-width: 90vw;
+  max-height: 85vh;
+}
+
+.llm-hub-bulk-confirm-modal .modal-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.llm-hub-bulk-delete-modal .llm-hub-edit-confirm-title-row h3 {
+  color: var(--text-error);
+}
+
+/* Selection controls */
+.llm-hub-bulk-selection-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.llm-hub-bulk-selection-controls button {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.llm-hub-bulk-selection-controls button:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* File list container */
+.llm-hub-bulk-list-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Individual file row */
+.llm-hub-bulk-file-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  transition: border-color 0.15s ease;
+}
+
+.llm-hub-bulk-file-row:hover {
+  border-color: var(--interactive-accent);
+}
+
+.llm-hub-bulk-file-row input[type="checkbox"] {
+  margin-top: 4px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* File info */
+.llm-hub-bulk-file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.llm-hub-bulk-file-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.llm-hub-bulk-file-path > span:first-child {
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  color: var(--text-normal);
+  word-break: break-all;
+}
+
+.llm-hub-bulk-file-mode {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  flex-shrink: 0;
+}
+
+/* Expand/collapse button */
+.llm-hub-bulk-expand-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--background-modifier-border);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.llm-hub-bulk-expand-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* Content preview */
+.llm-hub-bulk-preview {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.llm-hub-bulk-preview .llm-hub-edit-confirm-preview-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 8px;
+  background: var(--background-primary);
+}
+
+.llm-hub-bulk-preview .llm-hub-edit-confirm-preview-content {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* Action buttons - ensure proper spacing */
+.llm-hub-bulk-confirm-modal .llm-hub-edit-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+.llm-hub-bulk-confirm-modal .llm-hub-edit-confirm-actions button {
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 100px;
+}
+
+.llm-hub-bulk-confirm-modal .llm-hub-edit-confirm-actions button:not(.mod-cta):not(.mod-warning) {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.llm-hub-bulk-confirm-modal .llm-hub-edit-confirm-actions button:not(.mod-cta):not(.mod-warning):hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-bulk-confirm-modal .llm-hub-edit-confirm-actions button.mod-cta {
+  background: var(--interactive-accent);
+  border: none;
+  color: var(--text-on-accent);
+}
+
+.llm-hub-bulk-confirm-modal .llm-hub-edit-confirm-actions button.mod-warning {
+  background: var(--text-error);
+  border: none;
+  color: white;
+}
+
+/* ===============================================
+   Diff View Styles
+   =============================================== */
+
+.llm-hub-diff-view {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  background: var(--background-primary);
+  border-radius: 4px;
+}
+
+.llm-hub-diff-line {
+  display: flex;
+  white-space: pre;
+  min-height: 1.5em;
+}
+
+.llm-hub-diff-gutter {
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+  user-select: none;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.llm-hub-diff-content {
+  flex: 1;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Unchanged lines */
+.llm-hub-diff-unchanged {
+  background: transparent;
+}
+
+.llm-hub-diff-unchanged .llm-hub-diff-gutter {
+  color: var(--text-faint);
+}
+
+/* Added lines */
+.llm-hub-diff-added {
+  background: rgba(0, 200, 83, 0.15);
+}
+
+.llm-hub-diff-added .llm-hub-diff-gutter {
+  color: var(--color-green);
+  background: rgba(0, 200, 83, 0.25);
+}
+
+.llm-hub-diff-added .llm-hub-diff-content {
+  color: var(--text-normal);
+}
+
+/* Removed lines */
+.llm-hub-diff-removed {
+  background: rgba(255, 100, 100, 0.15);
+}
+
+.llm-hub-diff-removed .llm-hub-diff-gutter {
+  color: var(--color-red);
+  background: rgba(255, 100, 100, 0.25);
+}
+
+.llm-hub-diff-removed .llm-hub-diff-content {
+  color: var(--text-normal);
+}
+
+/* ===============================================
+   Line Numbers
+   =============================================== */
+
+.llm-hub-diff-linenum {
+  flex-shrink: 0;
+  width: 40px;
+  text-align: right;
+  padding-right: 4px;
+  color: var(--text-faint);
+  user-select: none;
+  font-size: 11px;
+}
+
+/* ===============================================
+   View Toggle (Unified / Split)
+   =============================================== */
+
+.llm-hub-diff-view-toggle {
+  display: inline-flex;
+  gap: 0;
+  margin-left: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.llm-hub-diff-view-toggle-btn {
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  background: var(--background-primary);
+  color: var(--text-muted);
+  border: none;
+  border-right: 1px solid var(--background-modifier-border);
+  line-height: 1.4;
+}
+
+.llm-hub-diff-view-toggle-btn:last-child {
+  border-right: none;
+}
+
+.llm-hub-diff-view-toggle-btn.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.llm-hub-diff-view-toggle-btn:hover:not(.is-active) {
+  background: var(--background-modifier-hover);
+}
+
+/* ===============================================
+   Split (Side-by-Side) View
+   =============================================== */
+
+.llm-hub-diff-split .llm-hub-diff-split-row {
+  display: flex;
+  border-bottom: 1px solid var(--background-modifier-border-focus);
+}
+
+.llm-hub-diff-split-cell {
+  width: 50%;
+  min-width: 0;
+  display: flex;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 1.5em;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.llm-hub-diff-split-cell .llm-hub-diff-content {
+  flex: 0 0 auto;
+  min-width: calc(100% - 72px);
+}
+
+.llm-hub-diff-split-left {
+  border-right: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-diff-split-filler {
+  background: var(--background-secondary-alt, var(--background-secondary));
+}
+
+/* ===============================================
+   Word-Level Diff Highlighting
+   =============================================== */
+
+.llm-hub-diff-word-added {
+  background: rgba(0, 200, 83, 0.35);
+  border-radius: 2px;
+}
+
+.llm-hub-diff-word-removed {
+  background: rgba(255, 100, 100, 0.35);
+  border-radius: 2px;
+}
+
+/* ===============================================
+   Click-to-Comment on Diff Lines
+   =============================================== */
+
+.llm-hub-diff-commentable {
+  cursor: pointer;
+}
+
+.llm-hub-diff-commentable:hover {
+  filter: brightness(0.95);
+}
+
+.llm-hub-diff-has-comment .llm-hub-diff-gutter::after {
+  content: "\25CF";
+  font-size: 8px;
+  color: var(--interactive-accent);
+  margin-left: 2px;
+}
+
+.llm-hub-diff-comment-preview {
+  padding: 4px 12px 4px 108px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.llm-hub-diff-split .llm-hub-diff-comment-preview {
+  padding-left: 12px;
+}
+
+.llm-hub-diff-comment-editor {
+  padding: 8px 12px 8px 108px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--background-modifier-border);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.llm-hub-diff-split .llm-hub-diff-comment-editor {
+  padding-left: 12px;
+}
+
+.llm-hub-diff-comment-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-interface);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.llm-hub-diff-comment-input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.llm-hub-diff-comment-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  justify-content: flex-end;
+}
+
+.llm-hub-diff-comment-actions button {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+/* ===============================================
+   Apply with Comments Confirmation Dialog
+   =============================================== */
+
+.llm-hub-diff-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+.llm-hub-diff-confirm-dialog {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.llm-hub-diff-confirm-dialog p {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--text-normal);
+  line-height: 1.5;
+}
+
+.llm-hub-diff-confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.llm-hub-diff-confirm-dialog-actions button {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.llm-hub-diff-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.llm-hub-diff-line {
+  white-space: pre;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Diff rendering (dark theme) */
+
+/* Dark theme adjustments */
+.theme-dark .llm-hub-diff-added {
+  background: rgba(0, 200, 83, 0.12);
+}
+
+.theme-dark .llm-hub-diff-added .llm-hub-diff-gutter {
+  background: rgba(0, 200, 83, 0.2);
+}
+
+.theme-dark .llm-hub-diff-removed {
+  background: rgba(255, 100, 100, 0.12);
+}
+
+.theme-dark .llm-hub-diff-removed .llm-hub-diff-gutter {
+  background: rgba(255, 100, 100, 0.2);
+}
+
+.theme-dark .llm-hub-diff-word-added {
+  background: rgba(0, 200, 83, 0.25);
+}
+
+.theme-dark .llm-hub-diff-word-removed {
+  background: rgba(255, 100, 100, 0.25);
+}
+
+.theme-dark .llm-hub-diff-commentable:hover {
+  filter: brightness(1.15);
+}
+
+/* Diff Modal Styles */
+.llm-hub-diff-modal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.llm-hub-diff-modal h2 {
+  margin: 0;
 }

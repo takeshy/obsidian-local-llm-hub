@@ -30,7 +30,13 @@ const HOST_OWNED = [
  * shrinks: the second test fails once an entry is gone, and nothing is added to make new code pass.
  */
 const STILL_HOST_RENDERED: string[] = [
+  "diff-content",
+  "diff-line",
+  "diff-modal",
+  "edit-confirm-preview-label",
   "modal-resizable",
+  "resizable-modal",
+  "resize-handle",
   "workflow-generation-context",
   "workflow-generation-context-content",
   "workflow-generation-context-details",

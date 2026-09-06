@@ -21,6 +21,7 @@ import { generateDashboardBase, generateDashboardWorkflow, listDashboardModels, 
 import { REGISTER_RUNTIME_SKILL_EVENT, REQUEST_RUNTIME_SKILLS_EVENT, UNREGISTER_RUNTIME_SKILL_EVENT, registerRuntimeSkill, unregisterRuntimeSkill } from "src/core/runtimeSkills";
 import { registerDiscussionHubIntegration } from "src/integrations/discussionHubCapabilities";
 import { configureWorkflowHost } from "obsidian-llm-hub-common/workflow";
+import { configureStoragePrefix } from "obsidian-llm-hub-common/modals";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -91,6 +92,7 @@ export class LocalLlmHubPlugin extends Plugin {
   onload(): void {
     initLocale();
     configureClassPrefix("llm-hub");
+    configureStoragePrefix("local-llm-hub");
     configureWorkflowHost({
       getModelOptions: () => (this.settings.availableModels || []).map(model => ({ value: model, label: model })),
       getRagSettingNames: () => this.getRagSettingNames(),
