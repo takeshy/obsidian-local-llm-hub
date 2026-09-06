@@ -23,6 +23,10 @@ import {
   WORKSPACE_FOLDER,
 } from "src/types";
 import { localLlmChatStream } from "src/core/localLlmProvider";
+import {
+  resolveMessageVariables as resolveMessageVariablesShared,
+  type CommandVariableSources,
+} from "obsidian-llm-hub-common/chat";
 import { getVaultTools, readNoteTool, skillWorkflowTool, SKILL_WORKFLOW_TOOL_NAME } from "src/core/tools";
 import { EXECUTE_JAVASCRIPT_TOOL } from "src/core/sandboxExecutor";
 import { executeToolCall, type ToolExecutionResult } from "src/core/toolExecutor";
@@ -67,7 +71,6 @@ import InputArea, { type InputAreaHandle } from "./InputArea";
 import { t } from "src/i18n";
 import { formatError } from "obsidian-llm-hub-common/core";
 import { decodeBase64Utf8 } from "src/utils/base64";
-import { findFileMentionOccurrences } from "obsidian-llm-hub-common/core";
 import { runtimeSkillPath } from "src/core/runtimeSkills";
 import { ensureAdapterFolder } from "src/core/vaultAdapter";
 import { extractPdfText, formatExtractedPdfText } from "src/core/pdfText";
@@ -499,100 +502,32 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setVaultFiles(files);
   }, [plugin]);
 
-  // Resolve variables in message content
-  const resolveMessageVariables = useCallback(async (content: string): Promise<string> => {
-    let resolved = content;
+  // Both resolvers live in the shared library; the host only supplies its selection
+  // sources and PDF extraction. This plugin has no vault-tool folder scope and no
+  // per-note character cap, so mentions it inlines are capped only by the PDF reader.
+  const commandVariableSources = useCallback((): CommandVariableSources => ({
+    takeExternalSelection: () => null,
+    getLastSelection: () => plugin.getSelection() ?? "",
+    getSelectionLocation: () => plugin.getSelectionLocation(),
+  }), [plugin]);
 
-    // Resolve {selection} with location info
-    if (resolved.includes("{selection}")) {
-      let selectionText: string;
-      const selection = plugin.getSelection();
-      const locationInfo = plugin.getSelectionLocation();
-
-      if (selection && locationInfo) {
-        const lineInfo = locationInfo.startLine === locationInfo.endLine
-          ? `Line ${locationInfo.startLine}`
-          : `Lines ${locationInfo.startLine}-${locationInfo.endLine}`;
-        const quotedSelection = selection.split("\n").map(line => `> ${line}`).join("\n");
-        selectionText = `From "${locationInfo.filePath}" (${lineInfo}):\n${quotedSelection}`;
-      } else if (selection) {
-        selectionText = selection;
-      } else {
-        selectionText = "(no selection)";
-      }
-      resolved = resolved.replace(/\{selection\}/g, selectionText);
-    }
-
-    // Resolve {content}
-    if (resolved.includes("{content}")) {
-      const noteContent = plugin.getActiveNoteContent();
-      resolved = resolved.replace(/\{content\}/g, noteContent || "(no active note)");
-    }
-
-    // Tool-capable local models receive the complete vault-relative path and
-    // can call read_note themselves (including choosing PDF pages). Inline
-    // file text only when Vault tools are disabled or unavailable.
-    const shouldInlineFileMentions = vaultToolMode === "none"
-      || plugin.settings.llmConfig.framework === "anythingllm";
-    if (!shouldInlineFileMentions) return resolved;
-
-    // Resolve file references (bare file paths from @ mentions). Walk actual
-    // vault files (longest path first) so paths with spaces/unicode/regex
-    // special chars match. The `requireWhitespaceBoundary` mode enforces that
-    // matched paths stand alone as a token — this fixes a class of false
-    // positives where a bare `.includes(file.path)` check would splice file
-    // content into the middle of unrelated tokens like `seefoo.md` or
-    // `foo.md/child` when only `foo.md` exists in the vault.
-    const mentionableFiles = plugin.app.vault.getFiles()
-      .filter(file => file.extension === "md" || file.extension === "pdf");
-    const fileByPath = new Map<string, TFile>(mentionableFiles.map(f => [f.path, f]));
-    const occurrences = findFileMentionOccurrences(
-      resolved,
-      mentionableFiles.map(f => f.path),
-      { requireWhitespaceBoundary: true }
-    );
-    if (occurrences.length === 0) return resolved;
-
-    interface Splice { start: number; end: number; replacement: string; }
-    const splices: Splice[] = [];
-    const hitsByPath = new Map<string, typeof occurrences>();
-    for (const occ of occurrences) {
-      const list = hitsByPath.get(occ.key) ?? [];
-      list.push(occ);
-      hitsByPath.set(occ.key, list);
-    }
-    for (const [path, hits] of hitsByPath) {
-      const file = fileByPath.get(path);
-      if (!file) continue;
-      try {
+  const resolveMessageVariables = useCallback((content: string): Promise<string> =>
+    resolveMessageVariablesShared(plugin.app, content, {
+      ...commandVariableSources(),
+      // Tool-capable local models receive the complete vault-relative path and can call
+      // read_note themselves (including choosing PDF pages). Inline file text only when
+      // Vault tools are disabled or unavailable.
+      inlineFileMentions: vaultToolMode === "none"
+        || plugin.settings.llmConfig.framework === "anythingllm",
+      maxNoteChars: 0,
+      readMentionText: async (file) => {
+        if (file.extension.toLowerCase() !== "pdf") return plugin.app.vault.cachedRead(file);
         // Inlined PDFs get the same cap as read_note: a long text layer would
         // otherwise fill the whole context in the modes that inline mentions.
-        let content: string;
-        if (file.extension === "pdf") {
-          const extracted = await extractPdfText(plugin.app, file);
-          content = extracted
-            ? formatExtractedPdfText(extracted)
-            : "(this PDF has no extractable text — it is likely scanned or image-only)";
-        } else {
-          content = await plugin.app.vault.cachedRead(file);
-        }
-        const replacement = `From "${path}":\n${content}`;
-        for (const h of hits) {
-          splices.push({ start: h.start, end: h.end, replacement });
-        }
-      } catch {
-        // File read failed, leave as-is.
-      }
-    }
-
-    // Splice in reverse order so earlier offsets stay valid.
-    splices.sort((a, b) => b.start - a.start);
-    for (const s of splices) {
-      resolved = resolved.slice(0, s.start) + s.replacement + resolved.slice(s.end);
-    }
-
-    return resolved;
-  }, [plugin, vaultToolMode]);
+        const extracted = await extractPdfText(plugin.app, file);
+        return extracted ? formatExtractedPdfText(extracted) : null;
+      },
+    }), [plugin, vaultToolMode, commandVariableSources]);
 
   // Save chat history
   const saveCurrentChat = useCallback(async (msgs: Message[]) => {
