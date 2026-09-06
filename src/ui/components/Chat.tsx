@@ -25,6 +25,8 @@ import {
 } from "src/types";
 import { localLlmChatStream } from "src/core/localLlmProvider";
 import {
+  accumulateStreamChunk,
+  createStreamAccumulation,
   resolveMessageVariables as resolveMessageVariablesShared,
   useChatHistories,
   useChatStreamSessions,
@@ -852,8 +854,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         incompleteToolCall: boolean;
         emptyText: boolean;
       }> => {
-        const pendingToolCalls: ToolCall[] = [];
-        let incompleteToolCall = false;
+        // Thinking is shown for the whole turn, so each round appends to what
+        // the earlier rounds already said; the text starts over each round.
+        const priorThinking = thinkingContent;
+        const round = createStreamAccumulation();
         fullContent = "";
         currentRoundThinking = "";
 
@@ -869,38 +873,27 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
             break;
           }
 
-          switch (chunk.type) {
-            case "text":
-              fullContent += chunk.content || "";
-              if (session.isActive()) setStreamingContent(fullContent);
-              break;
-            case "replace_text":
-              fullContent = chunk.content || "";
-              if (session.isActive()) setStreamingContent(fullContent);
-              break;
-            case "thinking":
-              currentRoundThinking += chunk.content || "";
-              thinkingContent += chunk.content || "";
-              if (session.isActive()) setStreamingThinking(thinkingContent);
-              break;
-            case "tool_call":
-              if (chunk.toolCall) {
-                pendingToolCalls.push(chunk.toolCall);
-                if (session.isActive()) setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.args).join(", ")})...`);
-              }
-              break;
-            case "incomplete_tool_call":
-              incompleteToolCall = true;
-              break;
-            case "error":
-              throw new Error(chunk.error || "Unknown error");
-            case "done":
-              if (chunk.usage) usage = chunk.usage;
-              break;
+          accumulateStreamChunk(round, chunk);
+          fullContent = round.text;
+          currentRoundThinking = round.thinking;
+          thinkingContent = priorThinking + round.thinking;
+
+          if (session.isActive()) {
+            if (chunk.type === "text" || chunk.type === "replace_text") setStreamingContent(fullContent);
+            else if (chunk.type === "thinking") setStreamingThinking(thinkingContent);
+            else if (chunk.type === "tool_call" && chunk.toolCall) {
+              setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.args).join(", ")})...`);
+            }
           }
         }
+        // Only the final chunk carries the totals; a retried round replaces them.
+        if (round.usage) usage = round.usage;
 
-        return { toolCalls: pendingToolCalls, incompleteToolCall, emptyText: fullContent.trim().length === 0 };
+        return {
+          toolCalls: round.toolCalls,
+          incompleteToolCall: round.incompleteToolCall,
+          emptyText: fullContent.trim().length === 0,
+        };
       };
 
       const streamOneRoundWithRetry = async (useTools: boolean, retryEmptyText = false): Promise<ToolCall[]> => {

@@ -1,7 +1,6 @@
 import type { McpServerConfig } from "obsidian-llm-hub-common/core";
 import type { McpFraming } from "obsidian-llm-hub-common/core";
 export type { McpServerConfig, McpTransport, McpFraming } from "obsidian-llm-hub-common/core";
-import type { ToolCall } from "obsidian-llm-hub-common/chat";
 
 export type { Message, ToolCall, ToolResult, Attachment, RagCitation } from "obsidian-llm-hub-common/chat";
 import type { WorkflowEventTrigger } from "obsidian-llm-hub-common/workflow";
@@ -138,25 +137,9 @@ export interface ToolParameter {
 // Chat message types
 
 
-// Usage info for streaming chunks and messages
-export interface StreamChunkUsage {
-  inputTokens?: number;
-  outputTokens?: number;
-  thinkingTokens?: number;
-  totalTokens?: number;
-}
-
-// Streaming chunk types
-export interface StreamChunk {
-  // `replace_text` instructs the consumer to overwrite the accumulated text
-  // buffer with `content`. Used to strip inline tool-call JSON out of the
-  // visible response after it has already been streamed.
-  type: "text" | "thinking" | "tool_call" | "incomplete_tool_call" | "error" | "done" | "replace_text";
-  content?: string;
-  toolCall?: ToolCall;
-  error?: string;
-  usage?: StreamChunkUsage;
-}
+// The stream shape lives in the shared library so every plugin reports the same
+// chunk kinds; a plugin whose provider never emits one simply never sets it.
+export type { StreamChunk, StreamChunkUsage } from "obsidian-llm-hub-common/core";
 
 // Encryption settings
 export interface EncryptionSettings {
