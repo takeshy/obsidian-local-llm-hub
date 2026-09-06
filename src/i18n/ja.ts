@@ -204,7 +204,6 @@ export const ja: Record<string, string> = {
   "message.ragUsed": "RAGコンテキスト使用",
   "message.skillsUsed": "使用スキル",
   "message.toolsUsed": "使用ツール",
-  "message.ragCitationOpen": "クリックして該当位置を開く",
 
   // Tool display labels
 

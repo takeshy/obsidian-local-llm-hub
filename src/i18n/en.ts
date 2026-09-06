@@ -208,7 +208,6 @@ export const en = {
   "message.ragUsed": "Rag context used",
   "message.skillsUsed": "Skills used",
   "message.toolsUsed": "Tools used",
-  "message.ragCitationOpen": "Click to open at location",
 
   // Tool display labels
 
