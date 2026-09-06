@@ -26,6 +26,7 @@ import { localLlmChatStream } from "src/core/localLlmProvider";
 import {
   resolveMessageVariables as resolveMessageVariablesShared,
   useChatHistories,
+  useChatStreamSessions,
   type ChatStorageHost,
   type CommandVariableSources,
 } from "obsidian-llm-hub-common/chat";
@@ -99,9 +100,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       ? saved.filter(prompt => typeof prompt === "string" && prompt.trim()).slice(-100)
       : [];
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamingContent, setStreamingContent] = useState("");
-  const [streamingThinking, setStreamingThinking] = useState("");
   // Where this plugin keeps its chats. Everything that reads or writes them is shared.
   const chatStorageHost: ChatStorageHost = {
     app: plugin.app,
@@ -118,6 +116,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setCurrentChatId,
     saveNoteState,
     loadChatHistories,
+    saveChatToDisk,
     saveCurrentChat,
     deleteChat: deleteChatFromHistory,
     saveAsNote,
@@ -169,10 +168,22 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const {
+    isLoading,
+    setIsLoading,
+    streamingContent,
+    setStreamingContent,
+    streamingThinking,
+    setStreamingThinking,
+    abortControllerRef,
+    createStreamSession,
+    abortActiveStream,
+    leaveCurrentChat,
+  } = useChatStreamSessions({ setMessages, saveChatToDisk, currentChatId });
   const inputAreaRef = useRef<InputAreaHandle>(null);
   // Set to true once user interacts (newChat, loadChat, sendMessage)
   // so the mount-time restore doesn't overwrite their action.
+  // The mount-time restore must not overwrite a chat the user has already acted on.
   const userInteractedRef = useRef(false);
 
   const baseLlmConfig = plugin.settings.llmConfig;
@@ -546,21 +557,23 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   // Load a chat from history
   const loadChat = useCallback((history: ChatHistory) => {
     userInteractedRef.current = true;
+    leaveCurrentChat();
     setMessages(history.messages);
     setCurrentChatId(history.id);
     setShowHistory(false);
-  }, []);
+  }, [leaveCurrentChat]);
 
   // New chat
   const newChat = useCallback(() => {
     userInteractedRef.current = true;
+    leaveCurrentChat();
     setMessages([]);
     setCurrentChatId(null);
     setStreamingContent("");
     setStreamingThinking("");
     setShowHistory(false);
     setActiveSkillPaths(DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath));
-  }, []);
+  }, [leaveCurrentChat]);
 
   // Delete a chat
   const deleteChat = useCallback(async (history: ChatHistory) => {
@@ -571,9 +584,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   }, [currentChatId, deleteChatFromHistory, newChat]);
 
   // Stop generation
-  const handleStop = useCallback(() => {
-    abortControllerRef.current?.abort();
-  }, []);
+  const handleStop = abortActiveStream;
 
   // Compact conversation
   const [isCompacting, setIsCompacting] = useState(false);
@@ -700,6 +711,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     };
 
     setMessages(prev => [...prev, userMessage]);
+    // Owns this stream from here on: if the user switches chats it keeps running in the
+    // background and saves into the chat it started in.
+    const session = createStreamSession();
     setIsLoading(true);
     setStreamingContent("");
     setStreamingThinking("");
@@ -857,21 +871,21 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           switch (chunk.type) {
             case "text":
               fullContent += chunk.content || "";
-              setStreamingContent(fullContent);
+              if (session.isActive()) setStreamingContent(fullContent);
               break;
             case "replace_text":
               fullContent = chunk.content || "";
-              setStreamingContent(fullContent);
+              if (session.isActive()) setStreamingContent(fullContent);
               break;
             case "thinking":
               currentRoundThinking += chunk.content || "";
               thinkingContent += chunk.content || "";
-              setStreamingThinking(thinkingContent);
+              if (session.isActive()) setStreamingThinking(thinkingContent);
               break;
             case "tool_call":
               if (chunk.toolCall) {
                 pendingToolCalls.push(chunk.toolCall);
-                setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.args).join(", ")})...`);
+                if (session.isActive()) setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.args).join(", ")})...`);
               }
               break;
             case "incomplete_tool_call":
@@ -927,7 +941,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         conversationMessages.push(assistantMsg);
 
         for (const tc of pendingToolCalls) {
-          setStreamingContent(fullContent + `\n\n🔧 ${tc.name}...`);
+          if (session.isActive()) setStreamingContent(fullContent + `\n\n🔧 ${tc.name}...`);
 
           const result: ToolExecutionResult = tc.name === RAG_SEARCH_TOOL_NAME
             ? await (async () => {
@@ -1050,7 +1064,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           }
         }
 
-        setStreamingContent("");
+        if (session.isActive()) setStreamingContent("");
 
         if (stopped) break;
         // A continuation with neither text nor another tool call is not a
@@ -1087,11 +1101,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       // Display messages: original history + user message + final assistant message
       // (tool call/result messages are internal, not shown in UI)
       const displayMessages = [...messages, userMessage, assistantMessage];
-      setMessages(displayMessages);
-      setStreamingContent("");
-      setStreamingThinking("");
-
-      await saveCurrentChat(displayMessages);
+      await session.saveResult(displayMessages);
     } catch (error) {
       const errorMessage = buildErrorMessage(error);
 
@@ -1102,13 +1112,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         model: llmConfig.model || "local-llm",
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
-      setStreamingContent("");
-      setStreamingThinking("");
+      if (session.isActive()) {
+        setMessages(prev => [...prev, assistantMessage]);
+      }
     } finally {
       for (const id of temporaryAgentPluginServerIds) await plugin.mcpManager.disconnectServer(id);
-      setIsLoading(false);
-      abortControllerRef.current = null;
+      session.cleanup(abortController);
     }
   }, [messages, plugin, llmConfig, selectedRagSetting, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, getEffectiveSkillPathsForSend, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
