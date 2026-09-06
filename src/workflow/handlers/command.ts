@@ -1,3 +1,4 @@
+import type { CommandNodeResult } from "obsidian-llm-hub-common/workflow";
 import { App } from "obsidian";
 import type { LocalLlmHubPlugin } from "../../plugin";
 import type { StreamChunkUsage, Message, ToolCall, ToolDefinition, VaultToolMode } from "../../types";
@@ -20,11 +21,6 @@ function isFileExplorerData(value: unknown): value is FileExplorerData {
 }
 
 // Result type for command node execution
-export interface CommandNodeResult {
-  usedModel: string;
-  usage?: StreamChunkUsage;
-  elapsedMs?: number;
-}
 
 // Handle command node - execute LLM with prompt using local LLM provider
 export async function handleCommandNode(
@@ -33,6 +29,8 @@ export async function handleCommandNode(
   app: App,
   plugin: LocalLlmHubPlugin,
   promptCallbacks?: PromptCallbacks,
+  traceId?: string | null,
+  abortSignal?: AbortSignal,
 ): Promise<CommandNodeResult> {
   const promptTemplate = node.properties["prompt"];
   if (!promptTemplate) {
@@ -133,7 +131,7 @@ Please revise the output based on the user's feedback above.`;
       llmConfig,
       conversationMessages,
       systemPrompt,
-      undefined,
+      abortSignal,
       useToolsThisRound ? tools : undefined,
     )) {
       if (chunk.type === "text") {

@@ -35,7 +35,7 @@ export async function runDashboardWorkflow(plugin: LocalLlmHubPlugin, request: W
   if (!(file instanceof TFile)) throw new Error(`Workflow not found: ${request.workflowPath}`);
   const workflow = parseWorkflowFromMarkdown(await plugin.app.vault.read(file));
   const input: WorkflowInput = { variables: new Map() };
-  const execution = await new WorkflowExecutor(plugin.app, plugin).execute(workflow, input, undefined, {
+  const execution = await new WorkflowExecutor(plugin.app).execute(workflow, input, undefined, {
     workflowPath: file.path, workflowName: file.basename, recordHistory: false,
     abortSignal: request.abortSignal ?? new AbortController().signal,
   }, headlessCallbacks());

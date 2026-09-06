@@ -25,6 +25,7 @@ import { configureStoragePrefix } from "obsidian-llm-hub-common/modals";
 import { streamWorkflowChat } from "src/core/workflowChat";
 import { WORKFLOW_SPECIFICATION } from "src/workflow/workflowSpec";
 import { SKILLS_FOLDER } from "src/types";
+import { handleCommandNode } from "src/workflow/handlers/command";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
 
@@ -112,6 +113,8 @@ export class LocalLlmHubPlugin extends Plugin {
       getHistoryEncryption: () => this.settings.encryption,
       getPluginVersion: () => this.manifest.version,
       streamChat: (request) => streamWorkflowChat(this, request),
+      runCommandNode: ({ node, context, app, callbacks, traceId, abortSignal }) =>
+        handleCommandNode(node, context, app, this, callbacks, traceId, abortSignal),
     });
 
     let approvalModal: McpApprovalModal | undefined;

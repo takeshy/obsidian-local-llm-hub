@@ -491,7 +491,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
     const modal = new WorkflowExecutionModal(plugin.app, workflow, name, abortController, () => {});
     modal.open();
     try {
-      const executor = new WorkflowExecutor(plugin.app, plugin);
+      const executor = new WorkflowExecutor(plugin.app);
       await executor.execute(workflow, { variables: new Map() }, (log) => modal.updateFromLog(log), {
         workflowPath: filePath, workflowName: name, recordHistory: true, abortSignal: abortController.signal,
       }, buildPromptCallbacks());
@@ -1011,7 +1011,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
       const content = await plugin.app.vault.read(workflowFile);
       const workflow = parseWorkflowFromMarkdown(content);
 
-      const executor = new WorkflowExecutor(plugin.app, plugin);
+      const executor = new WorkflowExecutor(plugin.app);
 
       const input: WorkflowInput = {
         variables: new Map(),
@@ -1098,7 +1098,7 @@ export default function WorkflowPanel({ plugin }: WorkflowPanelProps) {
       const content = await plugin.app.vault.read(file);
       const workflow = parseWorkflowFromMarkdown(content);
 
-      const executor = new WorkflowExecutor(plugin.app, plugin);
+      const executor = new WorkflowExecutor(plugin.app);
 
       const input: WorkflowInput = {
         variables: new Map(),
