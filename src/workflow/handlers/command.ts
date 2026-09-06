@@ -1,4 +1,5 @@
 import type { CommandNodeResult } from "obsidian-llm-hub-common/workflow";
+import { attachmentsFromVariables, buildRegenerationPrompt } from "obsidian-llm-hub-common/workflow";
 import { App } from "obsidian";
 import type { LocalLlmHubPlugin } from "../../plugin";
 import type { StreamChunkUsage, Message, ToolCall, ToolDefinition, VaultToolMode } from "../../types";
@@ -6,19 +7,10 @@ import { localLlmChatStream } from "../../core/localLlmProvider";
 import { getVaultTools } from "../../core/tools";
 import { EXECUTE_JAVASCRIPT_TOOL } from "../../core/sandboxExecutor";
 import { executeToolCall } from "../../core/toolExecutor";
-import { WorkflowNode, ExecutionContext, FileExplorerData, PromptCallbacks } from "../types";
+import { WorkflowNode, ExecutionContext, PromptCallbacks } from "../types";
 import { replaceVariables } from "./utils";
 
 const MAX_TOOL_ROUNDS = 20;
-
-function isFileExplorerData(value: unknown): value is FileExplorerData {
-  return typeof value === "object"
-    && value !== null
-    && typeof (value as Partial<FileExplorerData>).basename === "string"
-    && typeof (value as Partial<FileExplorerData>).mimeType === "string"
-    && typeof (value as Partial<FileExplorerData>).contentType === "string"
-    && typeof (value as Partial<FileExplorerData>).data === "string";
-}
 
 // Result type for command node execution
 
@@ -44,55 +36,14 @@ export async function handleCommandNode(
   // Check if this is a regeneration request for this node
   if (context.regenerateInfo?.commandNodeId === node.id) {
     const info = context.regenerateInfo;
-    prompt = `${info.originalPrompt}
-
-[Previous output]
-${info.previousOutput}
-
-[User feedback]
-${info.additionalRequest}
-
-Please revise the output based on the user's feedback above.`;
+    prompt = buildRegenerationPrompt(info);
     context.regenerateInfo = undefined;
   }
 
   const llmConfig = plugin.settings.llmConfig;
 
-  // Parse attachments property (comma-separated variable names containing FileExplorerData)
-  const attachmentsStr = node.properties["attachments"] || "";
-  const attachments: Message["attachments"] = [];
-
-  if (attachmentsStr) {
-    const varNames = attachmentsStr.split(",").map((s) => s.trim()).filter((s) => s);
-    for (const varName of varNames) {
-      const varValue = context.variables.get(varName);
-      if (varValue && typeof varValue === "string") {
-        try {
-          const fileData = JSON.parse(varValue) as unknown;
-          if (isFileExplorerData(fileData) && fileData.contentType === "binary") {
-            let attachmentType: "image" | "pdf" | "text" | "audio" | "video" = "text";
-            if (fileData.mimeType.startsWith("image/")) {
-              attachmentType = "image";
-            } else if (fileData.mimeType === "application/pdf") {
-              attachmentType = "pdf";
-            } else if (fileData.mimeType.startsWith("audio/")) {
-              attachmentType = "audio";
-            } else if (fileData.mimeType.startsWith("video/")) {
-              attachmentType = "video";
-            }
-            attachments.push({
-              name: fileData.basename,
-              type: attachmentType,
-              mimeType: fileData.mimeType,
-              data: fileData.data,
-            });
-          }
-        } catch {
-          // Not valid FileExplorerData JSON, skip
-        }
-      }
-    }
-  }
+  // Attachments named by the node's property; text files are already in the prompt.
+  const attachments = attachmentsFromVariables(node.properties["attachments"], context.variables);
 
   // Build tools: vault tools + MCP tools
   const useTools = node.properties["enableTools"] !== "false";
