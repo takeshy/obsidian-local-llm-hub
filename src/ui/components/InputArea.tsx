@@ -1,5 +1,7 @@
+import { InputArea as SharedInputArea } from "obsidian-llm-hub-chat-ui";
+import { Composer, Autocomplete } from "obsidian-llm-hub-chat-ui";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
-import { Send, Paperclip, StopCircle, Database, Wrench, X } from "lucide-react";
+import { Paperclip, Database, Wrench, X } from "lucide-react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
 import type { McpServerInfo } from "src/core/mcpManager";
@@ -485,7 +487,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   const enabledMcpServers = mcpServerInfos.filter((server) => enabledMcpServerIds.has(server.id));
 
   return (
-    <div className="llm-hub-input-container">
+    <SharedInputArea classPrefix="llm-hub" className="llm-hub-input-container"
+      beforeInput={<>
       {/* MCP servers enabled for this chat */}
       {enabledMcpServers.length > 0 && (
         <div className="llm-hub-enabled-mcp-servers">
@@ -548,51 +551,20 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
         </div>
       )}
 
-      <div className="llm-hub-input-area">
+      </>}
+      accessories={<>
         {/* Slash command autocomplete */}
         {showSlashAutocomplete && (
-          <div className="llm-hub-autocomplete">
-            {filteredSlashCommands.map((cmd, index) => (
-              <div
-                key={cmd.name}
-                className={`llm-hub-autocomplete-item ${
-                  index === slashIndex ? "active" : ""
-                }`}
-                onClick={() => selectSlashCommand(cmd)}
-                onMouseEnter={() => setSlashIndex(index)}
-              >
-                <span className="llm-hub-autocomplete-name">
-                  /{cmd.name}
-                </span>
-                <span className="llm-hub-autocomplete-desc">
-                  {cmd.description || cmd.promptTemplate.slice(0, 40)}
-                </span>
-              </div>
-            ))}
-          </div>
+          <Autocomplete classPrefix="llm-hub"
+            items={filteredSlashCommands.map(cmd => ({ id: cmd.name, label: `/${cmd.name}`, description: cmd.description || cmd.promptTemplate.slice(0, 40) }))}
+            activeIndex={slashIndex} onSelect={index => selectSlashCommand(filteredSlashCommands[index])} onHover={setSlashIndex} />
         )}
 
         {/* Mention autocomplete */}
         {showMentionAutocomplete && (
-          <div className="llm-hub-autocomplete" ref={mentionAutocompleteRef}>
-            {filteredMentions.map((mention, index) => (
-              <div
-                key={mention.value}
-                className={`llm-hub-autocomplete-item ${
-                  index === mentionIndex ? "active" : ""
-                }`}
-                onClick={() => selectMention(mention)}
-                onMouseEnter={() => setMentionIndex(index)}
-              >
-                <span className="llm-hub-autocomplete-name">
-                  {mention.kind === "wikilink" ? `[[${mention.value}]]` : mention.value}
-                </span>
-                <span className="llm-hub-autocomplete-desc">
-                  {mention.description}
-                </span>
-              </div>
-            ))}
-          </div>
+          <Autocomplete classPrefix="llm-hub" containerRef={mentionAutocompleteRef}
+            items={filteredMentions.map(mention => ({ id: mention.value, label: mention.kind === "wikilink" ? `[[${mention.value}]]` : mention.value, description: mention.description }))}
+            activeIndex={mentionIndex} onSelect={index => selectMention(filteredMentions[index])} onHover={setMentionIndex} />
         )}
 
         {/* Hidden file input */}
@@ -678,36 +650,19 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           </div>
         </div>
 
-        <textarea
-          ref={textareaRef}
-          className="llm-hub-input"
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder={t("input.placeholder")}
-          rows={3}
-        />
-        <div className="llm-hub-send-buttons">
-          {isLoading ? (
-            <button
-              className="llm-hub-stop-btn"
-              onClick={onStop}
-              title={t("input.stop")}
-            >
-              <StopCircle size={18} />
-            </button>
-          ) : (
-            <button
-              className="llm-hub-send-btn"
-              onClick={handleSubmit}
-              disabled={!input.trim() && pendingAttachments.length === 0}
-              title={t("input.send")}
-            >
-              <Send size={18} />
-            </button>
-          )}
-        </div>
-      </div>
+        </>}
+      composer={<Composer classPrefix="llm-hub" textareaRef={textareaRef}
+          textarea={{ value: input,
+          onChange: handleInputChange,
+          onKeyDown: handleKeyDown,
+          placeholder: t("input.placeholder") }}
+          isLoading={isLoading}
+          canSend={!!input.trim() || pendingAttachments.length > 0}
+          onSend={handleSubmit} onStop={onStop}
+          sendLabel={t("input.send")} stopLabel={t("input.stop")}
+
+        />}
+      footer={<>
 
       {/* Model & RAG selector */}
       {(availableModels.length > 1 || ragSettingNames.length > 0) && (
@@ -771,7 +726,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           disabled={isLoading}
         />
       )}
-    </div>
+    </>}
+    />
   );
 });
 

@@ -1,3 +1,4 @@
+import { buildChatStyles, chatStylesPlugin } from "obsidian-llm-hub-chat-ui/styles";
 import esbuild from "esbuild";
 import process from "process";
 
@@ -9,12 +10,15 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = process.argv.includes("production");
 
+await buildChatStyles({ classPrefix: "llm-hub" });
+
 const context = await esbuild.context({
   banner: {
     js: banner,
   },
   entryPoints: ["src/main.ts"],
   bundle: true,
+  plugins: [chatStylesPlugin({ classPrefix: "llm-hub" })],
   platform: "node",
   inject: ["./process-shim.js"],
   alias: {

@@ -1,3 +1,5 @@
+import { ChatHeader } from "obsidian-llm-hub-chat-ui";
+import { ChatLayout, HistoryList } from "obsidian-llm-hub-chat-ui";
 import {
   useState,
   useEffect,
@@ -1270,10 +1272,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   }, [messages, plugin, llmConfig, selectedRagSetting, ragEnabled, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, getEffectiveSkillPathsForSend, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
   return (
-    <div className="llm-hub-chat">
+    <ChatLayout className="llm-hub-chat">
       {/* Header */}
-      <div className="llm-hub-chat-header">
-        <div className="llm-hub-header-actions">
+      <ChatHeader classPrefix="llm-hub" >
           <button
             className="llm-hub-header-btn llm-hub-sidebar-width-btn"
             onClick={() => setIsSidebarWide(onToggleSidebarWidth())}
@@ -1311,40 +1312,17 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           >
             <History size={16} />
           </button>
-        </div>
-      </div>
+        </ChatHeader>
 
       {/* History panel */}
-      {showHistory && (
-        <div className="llm-hub-history-panel">
-          {chatHistories.length === 0 ? (
-            <div className="llm-hub-history-empty">{t("chat.noChats")}</div>
-          ) : (
-            chatHistories.map((history) => (
-              <div
-                key={history.id}
-                className={`llm-hub-history-item ${currentChatId === history.id ? "active" : ""}`}
-                onClick={() => loadChat(history)}
-              >
-                <div className="llm-hub-history-title">{history.title}</div>
-                <div className="llm-hub-history-meta">
-                  <span>{formatHistoryDate(history.updatedAt)}</span>
-                  <button
-                    className="llm-hub-history-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void deleteChat(history);
-                    }}
-                    title={t("chat.deleteChat")}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      {showHistory && <HistoryList classPrefix="llm-hub"
+        entries={chatHistories.map(history => ({ ...history, dateLabel: formatHistoryDate(history.updatedAt) }))}
+        currentId={currentChatId} emptyLabel={t("chat.noChats")} deleteLabel={t("chat.deleteChat")}
+        onSelect={history => { void loadChat(history); }}
+        onDelete={(history) => { void deleteChat(history); }}
+        panel deleteIcon={<Trash2 size={12} />}
+
+      />}
 
       {/* Messages */}
       <MessageList
@@ -1423,7 +1401,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           });
         }}
       />
-    </div>
+    </ChatLayout>
   );
 });
 

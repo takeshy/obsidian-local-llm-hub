@@ -1,6 +1,8 @@
+import { ToolIndicator } from "obsidian-llm-hub-chat-ui";
+import { MessageBubble as SharedMessageBubble, MessageContent, Attachments, UsageInfo } from "obsidian-llm-hub-chat-ui";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { type App, MarkdownRenderer, Component, Notice, MarkdownView } from "obsidian";
-import { Copy, Check } from "lucide-react";
+
 import type { Message, ToolCall, ToolResult, RagCitation } from "src/types";
 import { discoverSkills } from "src/core/skillsLoader";
 import { isBuiltinSkillPath } from "src/core/builtinSkills";
@@ -72,7 +74,6 @@ export default function MessageBubble({
     }
     return map;
   }, [message.toolCalls, message.toolResults, app]);
-
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -168,30 +169,9 @@ export default function MessageBubble({
   };
 
   return (
-    <div
-      className={`llm-hub-message ${
-        isUser ? "llm-hub-message-user" : "llm-hub-message-assistant"
-      } ${isStreaming ? "llm-hub-message-streaming" : ""}`}
-    >
-      <div className="llm-hub-message-header">
-        <span className="llm-hub-message-role">
-          {getModelDisplayName()}
-        </span>
-        <span className="llm-hub-message-time">
-          {formatTime(message.timestamp)}
-        </span>
-        {!isStreaming && (
-          <button
-            className="llm-hub-copy-btn"
-            onClick={() => {
-              void handleCopy();
-            }}
-            title={t("message.copyToClipboard")}
-          >
-            {copied ? <Check size={14} /> : <Copy size={14} />}
-          </button>
-        )}
-      </div>
+    <SharedMessageBubble classPrefix="llm-hub" isUser={isUser} isStreaming={isStreaming}
+      roleLabel={getModelDisplayName()} timeLabel={formatTime(message.timestamp)} copied={copied}
+      copyLabel={t("message.copyToClipboard")} onCopy={() => { void handleCopy(); }}>
 
       {/* RAG indicator */}
       {message.ragUsed && (
@@ -258,18 +238,7 @@ export default function MessageBubble({
       )}
 
       {/* Attachments display */}
-      {message.attachments && message.attachments.length > 0 && (
-        <div className="llm-hub-attachments">
-          {message.attachments.map((attachment, index) => (
-            <span key={index} className="llm-hub-attachment">
-              {attachment.type === "image" && "🖼️"}
-              {attachment.type === "pdf" && "📄"}
-              {attachment.type === "text" && "📃"}
-              {" "}{attachment.name}
-            </span>
-          ))}
-        </div>
-      )}
+      <Attachments classPrefix="llm-hub" attachments={message.attachments} />
 
       {/* Tool calls indicator */}
       {message.toolCalls && message.toolCalls.length > 0 && (
@@ -280,10 +249,8 @@ export default function MessageBubble({
               const failedWorkflowPath = failedWorkflowPaths.get(toolCall.id);
               const noteTarget = noteTargets.get(toolCall.id);
               return (
-                <span key={index} className="llm-hub-tool-indicator-group">
-                  <span
-                    className="llm-hub-tool-indicator llm-hub-tool-clickable"
-                    onClick={() => {
+                <ToolIndicator key={index} classPrefix="llm-hub" icon={icon} label={label}
+                  detail={getToolDetail(toolCall)} onClick={() => {
                       if (noteTarget) {
                         void app.workspace.openLinkText(noteTarget, "", false).catch(() => {
                           new Notice(getToolDetail(toolCall), 3000);
@@ -292,22 +259,10 @@ export default function MessageBubble({
                         new Notice(getToolDetail(toolCall), 3000);
                       }
                     }}
-                    title={getToolDetail(toolCall)}
-                  >
-                    {icon} {label}
-                  </span>
-                  {failedWorkflowPath && (
-                    <button
-                      className="llm-hub-tool-open-workflow-btn"
-                      onClick={() => {
+                  workflowAction={failedWorkflowPath ? { label: t("message.openWorkflow"), title: t("message.clickToOpen", { source: failedWorkflowPath }), onClick: () => {
                         void openWorkflowInPanel(app, failedWorkflowPath);
-                      }}
-                      title={t("message.clickToOpen", { source: failedWorkflowPath })}
-                    >
-                      📂 {t("message.openWorkflow")}
-                    </button>
-                  )}
-                </span>
+                      } } : undefined}
+                />
               );
             })}
           </div>
@@ -320,34 +275,14 @@ export default function MessageBubble({
       )}
 
       {/* Thinking content (collapsible) */}
-      {message.thinking && (
-        <details className="llm-hub-thinking" open={isStreaming || !message.content}>
-          <summary className="llm-hub-thinking-summary">
-            {t("message.thinking")}
-          </summary>
-          <div className="llm-hub-thinking-content">
-            {message.thinking}
-          </div>
-        </details>
-      )}
-
-      <div className="llm-hub-message-content" ref={contentRef} />
+      <MessageContent classPrefix="llm-hub" contentRef={contentRef} thinking={message.thinking}
+        thinkingLabel={t("message.thinking")} thinkingOpen={isStreaming || !message.content} />
 
       {/* Usage info */}
-      {!isUser && !isStreaming && (message.usage || message.elapsedMs) && (
-        <div className="llm-hub-usage-info">
-          {message.elapsedMs !== undefined && (
-            <span>{formatElapsed(message.elapsedMs)}</span>
-          )}
-          {message.usage && message.usage.inputTokens !== undefined && message.usage.outputTokens !== undefined && (
-            <span>
-              {formatNumber(message.usage.inputTokens)} → {formatNumber(message.usage.outputTokens)} {t("message.tokens")}
-              {message.usage.thinkingTokens ? ` (${t("message.thinkingTokens")} ${formatNumber(message.usage.thinkingTokens)})` : ""}
-            </span>
-          )}
-        </div>
-      )}
-    </div>
+      <UsageInfo classPrefix="llm-hub" isUser={isUser} isStreaming={isStreaming}
+        elapsedMs={message.elapsedMs} usage={message.usage}
+        tokensLabel={t("message.tokens")} thinkingTokensLabel={t("message.thinkingTokens")} />
+    </SharedMessageBubble>
   );
 }
 
@@ -597,13 +532,4 @@ function formatTime(timestamp: number): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function formatElapsed(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString();
 }
