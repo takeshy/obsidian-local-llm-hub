@@ -1,3 +1,10 @@
+import {
+  acceptedAttachmentTypes,
+  detectComposerTrigger,
+  fileToAttachment,
+  isAttachmentRejection,
+  type AttachmentKind,
+} from "obsidian-llm-hub-common/chat";
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-common";
 import { Composer, Autocomplete, Attachments, VaultToolMenu, VaultToolButton, EnabledMcpServers, McpServerToggles, VaultToolSection, InputButtons, SearchSelector, ModelRow, HistoryLimit } from "obsidian-llm-hub-common";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
@@ -70,13 +77,8 @@ interface MentionItem {
   kind: "variable" | "mention" | "wikilink";
 }
 
-const SUPPORTED_TYPES = {
-  image: ["image/png", "image/jpeg", "image/gif", "image/webp"],
-  pdf: ["application/pdf"],
-  text: ["text/plain", "text/markdown", "text/csv", "application/json"],
-};
-
-const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024; // 20MB
+// Local models take no audio or video, so those kinds are not offered here.
+const ATTACHMENT_KINDS: readonly AttachmentKind[] = ["image", "pdf", "text"];
 
 const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea({
   onSend,
@@ -260,33 +262,20 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     }
     setShowSlashAutocomplete(false);
 
-    // Check for [[ wikilink trigger
-    const textBeforeCursor = value.substring(0, cursorPos);
-    const wikiMatch = textBeforeCursor.match(/\[\[([^\]\n]*)$/);
-    if (wikiMatch) {
-      const query = wikiMatch[1];
-      const startPos = cursorPos - wikiMatch[0].length;
-      const mentions = buildWikilinkCandidates(query);
+    // Which menu the text calls for is decided in the shared library, so the
+    // three plugins cannot disagree about when one opens.
+    const trigger = detectComposerTrigger(value, cursorPos);
+    if (trigger && trigger.kind !== "command") {
+      const mentions = trigger.kind === "wikilink"
+        ? buildWikilinkCandidates(trigger.query)
+        : buildMentionCandidates(trigger.query);
       setFilteredMentions(mentions);
-      setMentionStartPos(startPos);
+      setMentionStartPos(trigger.startPos);
       setShowMentionAutocomplete(mentions.length > 0);
       setMentionIndex(0);
       return;
     }
-
-    // Check for @ mention trigger
-    const atMatch = textBeforeCursor.match(/@([^\s@]*)$/);
-    if (atMatch) {
-      const query = atMatch[1];
-      const startPos = cursorPos - atMatch[0].length;
-      const mentions = buildMentionCandidates(query);
-      setFilteredMentions(mentions);
-      setMentionStartPos(startPos);
-      setShowMentionAutocomplete(mentions.length > 0);
-      setMentionIndex(0);
-    } else {
-      setShowMentionAutocomplete(false);
-    }
+    setShowMentionAutocomplete(false);
   };
 
   const selectMention = (mention: MentionItem) => {
@@ -437,42 +426,12 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   };
 
   const processFile = async (file: File): Promise<Attachment | null> => {
-    const mimeType = file.type;
-
-    if (file.size > MAX_ATTACHMENT_SIZE) {
-      new Notice(t("input.fileTooLarge", { name: file.name }));
+    const result = await fileToAttachment(file, ATTACHMENT_KINDS);
+    if (isAttachmentRejection(result)) {
+      if (result.reason === "too-large") new Notice(t("input.fileTooLarge", { name: file.name }));
       return null;
     }
-
-    if (SUPPORTED_TYPES.image.includes(mimeType)) {
-      const data = await fileToBase64(file);
-      return { name: file.name, type: "image", mimeType, data };
-    }
-
-    if (SUPPORTED_TYPES.pdf.includes(mimeType)) {
-      const data = await fileToBase64(file);
-      return { name: file.name, type: "pdf", mimeType, data };
-    }
-
-    if (SUPPORTED_TYPES.text.includes(mimeType) || file.name.endsWith(".md") || file.name.endsWith(".txt")) {
-      const data = await fileToBase64(file);
-      return { name: file.name, type: "text", mimeType: mimeType || "text/plain", data };
-    }
-
-    return null;
-  };
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    return result;
   };
 
   const removeAttachment = (index: number) => {
@@ -480,7 +439,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   };
 
   const getAllAcceptedTypes = () => {
-    return [...SUPPORTED_TYPES.image, ...SUPPORTED_TYPES.pdf, ...SUPPORTED_TYPES.text, ".md", ".txt"].join(",");
+    return acceptedAttachmentTypes(ATTACHMENT_KINDS);
   };
 
   const enabledMcpServers = mcpServerInfos.filter((server) => enabledMcpServerIds.has(server.id));
