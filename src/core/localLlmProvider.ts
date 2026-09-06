@@ -12,8 +12,14 @@
 
 import { requestUrl } from "obsidian";
 import type { Message, StreamChunk, LocalLlmConfig, ToolDefinition, ToolCall } from "../types";
-import { extractInlineToolCalls } from "./toolCallParser";
-import type { NodeHttpModule } from "./nodeCompat";
+import {
+  extractInlineToolCalls,
+  formatStreamIdleTimeoutError,
+  getHttpModule,
+  getStreamIdleTimeoutMs,
+  parseThinkTags,
+  StreamSignal,
+} from "obsidian-llm-hub-common/core";
 
 // OpenAI-compatible API types
 interface OpenAiMessage {
@@ -359,7 +365,7 @@ export async function* localLlmChatStream(
     }
     if (chunk.type === "done") {
       if (!sawNativeToolCall && accumulatedText.trim()) {
-        const { toolCalls, cleanedText } = extractInlineToolCalls(accumulatedText, activeTools);
+        const { toolCalls, cleanedText } = extractInlineToolCalls(accumulatedText, activeTools.map(tool => tool.function.name));
         if (toolCalls.length > 0) {
           // Tell the consumer to drop the raw JSON we already streamed; emit
           // this before the tool_call chunks so any UI that echoes the
@@ -868,130 +874,3 @@ async function* openaiChatStream(
   }
 }
 
-/** Idle timeout for stream chunks (ms). If no data arrives for this duration, treat it as a stall. */
-const STREAM_IDLE_TIMEOUT_MS = 120_000;
-
-export function getStreamIdleTimeoutMs(config: LocalLlmConfig): number {
-  const seconds = config.streamIdleTimeoutSeconds;
-  return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0
-    ? seconds * 1000
-    : STREAM_IDLE_TIMEOUT_MS;
-}
-
-function formatStreamIdleTimeoutError(timeoutMs: number): string {
-  return `Stream timed out: no data received for ${timeoutMs / 1000} seconds`;
-}
-
-/**
- * Robust signaling queue for bridging Node.js event callbacks to an async generator.
- * Uses a version counter to avoid lost notifications.
- */
-class StreamSignal {
-  private version = 0;
-  private resolve: (() => void) | null = null;
-
-  /** Wake up the waiting generator. Safe to call multiple times. */
-  notify(): void {
-    this.version++;
-    const fn = this.resolve;
-    this.resolve = null;
-    fn?.();
-  }
-
-  /** Wait until notified or timed out. Returns false on timeout. */
-  async wait(timeoutMs: number): Promise<boolean> {
-    const vBefore = this.version;
-    return new Promise<boolean>((res) => {
-      const timer = window.setTimeout(() => { this.resolve = null; res(false); }, timeoutMs);
-      this.resolve = () => { window.clearTimeout(timer); this.resolve = null; res(true); };
-      // Double-check after setting resolve (covers notify() called between vBefore read and here)
-      if (this.version !== vBefore) { window.clearTimeout(timer); this.resolve = null; res(true); }
-    });
-  }
-}
-
-/** Load Node.js http or https module (desktop only, bypasses CORS). */
-function getHttpModule(protocol: string): NodeHttpModule {
-  const runtimeWindow = activeWindow as unknown as {
-    require?: (id: string) => unknown;
-    module?: { require?: (id: string) => unknown };
-  };
-  const loader =
-    runtimeWindow.require ||
-    runtimeWindow.module?.require;
-  if (!loader) {
-    throw new Error("Node.js http module is not available in this environment");
-  }
-  const moduleName = protocol === "https:" ? "https" : "http";
-  return loader(moduleName) as NodeHttpModule;
-}
-
-/**
- * Parse <think>...</think> tags from streaming content.
- */
-function parseThinkTags(
-  content: string,
-  inThinkTag: boolean,
-  tagBuffer: string,
-): { items: StreamChunk[]; inThinkTag: boolean; tagBuffer: string } {
-  const items: StreamChunk[] = [];
-  let text = tagBuffer + content;
-  tagBuffer = "";
-
-  while (text.length > 0) {
-    if (!inThinkTag) {
-      const openIdx = text.indexOf("<think>");
-      if (openIdx !== -1) {
-        if (openIdx > 0) {
-          items.push({ type: "text", content: text.slice(0, openIdx) });
-        }
-        inThinkTag = true;
-        text = text.slice(openIdx + 7);
-      } else {
-        const partial = getPartialTagMatch(text, "<think>");
-        if (partial > 0) {
-          const safe = text.slice(0, text.length - partial);
-          if (safe) items.push({ type: "text", content: safe });
-          tagBuffer = text.slice(text.length - partial);
-          text = "";
-        } else {
-          items.push({ type: "text", content: text });
-          text = "";
-        }
-      }
-    } else {
-      const closeIdx = text.indexOf("</think>");
-      if (closeIdx !== -1) {
-        if (closeIdx > 0) {
-          items.push({ type: "thinking", content: text.slice(0, closeIdx) });
-        }
-        inThinkTag = false;
-        text = text.slice(closeIdx + 8);
-      } else {
-        const partial = getPartialTagMatch(text, "</think>");
-        if (partial > 0) {
-          const safe = text.slice(0, text.length - partial);
-          if (safe) items.push({ type: "thinking", content: safe });
-          tagBuffer = text.slice(text.length - partial);
-          text = "";
-        } else {
-          items.push({ type: "thinking", content: text });
-          text = "";
-        }
-      }
-    }
-  }
-
-  return { items, inThinkTag, tagBuffer };
-}
-
-/** Check if the end of `text` is a prefix of `tag`. Returns match length (0 if none). */
-function getPartialTagMatch(text: string, tag: string): number {
-  const maxCheck = Math.min(text.length, tag.length - 1);
-  for (let len = maxCheck; len > 0; len--) {
-    if (text.endsWith(tag.slice(0, len))) {
-      return len;
-    }
-  }
-  return 0;
-}
