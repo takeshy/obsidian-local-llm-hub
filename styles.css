@@ -216,160 +216,8 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   justify-content: flex-end;
 }
 
-/* ── CryptView ────────────────────────────────────── */
-.llm-hub-crypt-container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.llm-hub-crypt-error {
-  padding: 20px;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.llm-hub-crypt-password {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 40px;
-  text-align: center;
-}
-
-.llm-hub-crypt-password-icon {
-  color: var(--text-muted);
-  margin-bottom: 16px;
-}
-
-.llm-hub-crypt-password h3 {
-  margin: 0 0 8px;
-}
-
-.llm-hub-crypt-password p {
-  color: var(--text-muted);
-  margin-bottom: 16px;
-}
-
-.llm-hub-crypt-password-form {
-  display: flex;
-  gap: 8px;
-  max-width: 400px;
-  width: 100%;
-}
-
-.llm-hub-crypt-password-form input {
-  flex: 1;
-}
-
-.llm-hub-crypt-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-muted);
-}
-
-.llm-hub-crypt-editor {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.llm-hub-crypt-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--background-modifier-border);
-  flex-shrink: 0;
-}
-
-.llm-hub-crypt-toolbar-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.llm-hub-crypt-toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.llm-hub-crypt-filename {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 500;
-  font-size: 13px;
-}
-
-.llm-hub-crypt-unsaved {
-  font-size: 12px;
-  color: var(--text-warning);
-}
-
-.llm-hub-crypt-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.llm-hub-crypt-btn:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
-
-.llm-hub-crypt-btn.active {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border-color: var(--interactive-accent);
-}
-
-.llm-hub-crypt-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.llm-hub-crypt-btn-decrypt {
-  color: var(--text-error);
-}
-
-.llm-hub-crypt-content {
-  flex: 1;
-  overflow: auto;
-}
-
 .llm-hub-crypt-preview {
   padding: 16px;
-}
-
-.llm-hub-crypt-textarea {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  border: none;
-  resize: none;
-  padding: 16px;
-  font-family: var(--font-monospace);
-  font-size: 14px;
-  background: var(--background-primary);
-  color: var(--text-normal);
-}
-
-.llm-hub-crypt-textarea:focus {
-  outline: none;
 }
 
 .llm-hub-edit-history-modal {
@@ -7855,4 +7703,376 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 .llm-hub-workflow-sidebar-canvas-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Encrypted note view and selection highlight */
+
+/* ===================================
+   CryptView / CryptEditor Styles
+   =================================== */
+
+.llm-hub-crypt-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.is-mobile .llm-hub-crypt-container {
+  height: 100%;
+  max-height: 100%;
+}
+
+/* Password Entry Screen */
+.llm-hub-crypt-password {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+.llm-hub-crypt-password-icon {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.llm-hub-crypt-password h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.llm-hub-crypt-password p {
+  color: var(--text-muted);
+  margin: 0 0 1.5rem 0;
+}
+
+.llm-hub-crypt-metadata {
+  display: flex;
+  flex-shrink: 0;
+  gap: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary-alt);
+}
+
+.llm-hub-crypt-password .llm-hub-crypt-metadata {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 0 1.5rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  text-align: left;
+}
+
+.llm-hub-crypt-metadata-description,
+.llm-hub-crypt-metadata-fields {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.llm-hub-crypt-metadata-description > span,
+.llm-hub-crypt-metadata-fields > span {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.llm-hub-crypt-metadata-description p {
+  margin: 0;
+  color: var(--text-normal);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.llm-hub-crypt-metadata-fields dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.llm-hub-crypt-metadata-fields dl > div {
+  display: inline-flex;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary);
+}
+
+.llm-hub-crypt-metadata-fields dt,
+.llm-hub-crypt-metadata-fields dd {
+  margin: 0;
+  padding: 0.2rem 0.45rem;
+  overflow-wrap: anywhere;
+  font-size: var(--font-ui-smaller);
+}
+
+.llm-hub-crypt-metadata-fields dt {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-crypt-metadata-fields dd {
+  border-left: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.llm-hub-crypt-password-form {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.llm-hub-crypt-password-form input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 1rem;
+}
+
+.llm-hub-crypt-password-form input:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+.llm-hub-crypt-password-form button {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Loading Screen */
+.llm-hub-crypt-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: var(--text-muted);
+}
+
+/* Editor Container */
+.llm-hub-crypt-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.is-mobile .llm-hub-crypt-editor {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+/* Toolbar */
+.llm-hub-crypt-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  flex-shrink: 0;
+}
+
+.llm-hub-crypt-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.llm-hub-crypt-filename {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.llm-hub-crypt-unsaved {
+  font-size: 0.85rem;
+  color: var(--text-warning);
+  font-style: italic;
+}
+
+.llm-hub-crypt-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Toolbar Buttons */
+.llm-hub-crypt-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.llm-hub-crypt-btn:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+
+.llm-hub-crypt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.llm-hub-crypt-btn-decrypt {
+  color: var(--text-warning);
+  border-color: var(--text-warning);
+}
+
+.llm-hub-crypt-btn-decrypt:hover:not(:disabled) {
+  background: var(--text-warning);
+  color: var(--background-primary);
+}
+
+/* Content Area */
+.llm-hub-crypt-content {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.llm-hub-crypt-edit-content { display: flex; min-height: 100%; flex-direction: column; gap: 1rem; }
+
+.llm-hub-crypt-metadata-editor { display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem; border: 1px solid var(--background-modifier-border); border-radius: 9px; background: var(--background-secondary); }
+
+.llm-hub-crypt-metadata-editor label { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.llm-hub-crypt-metadata-editor label > span, .llm-hub-crypt-metadata-editor-heading > span { color: var(--text-muted); font-size: var(--font-ui-small); font-weight: var(--font-medium); }
+
+.llm-hub-crypt-metadata-editor input { height: 34px; padding: 0 0.65rem; border: 1px solid var(--background-modifier-border); border-radius: 7px; color: var(--text-normal); background: var(--background-primary); }
+
+.llm-hub-crypt-metadata-editor input:focus { border-color: var(--interactive-accent); outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 15%, transparent); }
+
+.llm-hub-crypt-metadata-editor-heading { display: flex; align-items: center; justify-content: space-between; }
+
+.llm-hub-crypt-metadata-editor-heading button { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.5rem; font-size: var(--font-ui-smaller); }
+
+.llm-hub-crypt-metadata-editor-rows { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.llm-hub-crypt-metadata-editor-rows > div { display: grid; grid-template-columns: minmax(80px, 0.8fr) minmax(120px, 1.2fr) 28px; gap: 0.4rem; }
+
+.llm-hub-crypt-metadata-editor-rows > div > button { display: grid; width: 28px; height: 28px; align-self: center; place-items: center; padding: 0; }
+
+/* Textarea (Edit mode) */
+.llm-hub-crypt-textarea {
+  width: 100%;
+  flex: 1;
+  height: 100%;
+  min-height: 300px;
+  padding: 1rem;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: none;
+}
+
+.llm-hub-crypt-textarea:focus {
+  border-color: var(--interactive-accent);
+  outline: none;
+}
+
+/* Error State */
+.llm-hub-crypt-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-error);
+  font-size: 1rem;
+}
+
+/* Mobile Responsive - CryptView */
+.is-mobile .llm-hub-crypt-toolbar {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.is-mobile .llm-hub-crypt-toolbar-left {
+  width: 100%;
+  justify-content: center;
+}
+
+.is-mobile .llm-hub-crypt-toolbar-right {
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.is-mobile .llm-hub-crypt-btn {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.is-mobile .llm-hub-crypt-content {
+  padding: 0.5rem;
+  min-height: 40vh;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.is-mobile .llm-hub-crypt-textarea {
+  height: auto;
+  min-height: 35vh;
+}
+
+.is-mobile .llm-hub-crypt-password {
+  padding-top: 4rem;
+}
+
+.is-mobile .llm-hub-crypt-password-form {
+  flex-direction: column;
+}
+
+.is-mobile .llm-hub-crypt-password-form input {
+  width: 100%;
+}
+
+.is-mobile .llm-hub-crypt-password-form button {
+  width: 100%;
+}
+
+/* Encrypted note view button states */
+
+/* Encrypted note view button states */
+
+.llm-hub-crypt-btn.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
 }

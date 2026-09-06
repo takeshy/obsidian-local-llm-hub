@@ -194,7 +194,7 @@ export class LocalLlmHubPlugin extends Plugin {
     this.encryptionManager = new EncryptionManager(this);
 
     // Initialize workflow manager
-    this.workflowManager = new WorkflowManager(this);
+    this.workflowManager = new WorkflowManager(this, this.selectionManager);
 
     // Initialize selection manager
     this.selectionManager = new SelectionManager(this);
