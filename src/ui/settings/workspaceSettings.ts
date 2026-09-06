@@ -3,7 +3,7 @@ import { t } from "src/i18n";
 import { DEFAULT_SETTINGS, SKILLS_FOLDER, WORKSPACE_FOLDER } from "src/types";
 import { isUnsafePath, normalizePathSeparators } from "src/core/pathAccess";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import { normalizeVaultScopePath } from "src/core/vaultToolScope";
+import { normalizeVaultScopePath } from "obsidian-llm-hub-common/core";
 
 interface SettingsContext {
   plugin: LocalLlmHubPlugin;

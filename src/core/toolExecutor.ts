@@ -19,7 +19,7 @@ import {
   assertVaultToolPathAllowed,
   isFileAllowedForVaultTools,
   isPathNavigableForVaultTools,
-} from "./vaultToolScope";
+} from "obsidian-llm-hub-common/core";
 
 export interface ToolExecutionResult {
   success: boolean;

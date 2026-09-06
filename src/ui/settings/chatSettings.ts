@@ -1,7 +1,7 @@
 import { Notice, Setting } from "obsidian";
 import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import { normalizeVaultScopePath } from "src/core/vaultToolScope";
+import { normalizeVaultScopePath } from "obsidian-llm-hub-common/core";
 
 interface SettingsContext {
   plugin: LocalLlmHubPlugin;
