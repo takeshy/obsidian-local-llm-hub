@@ -447,14 +447,6 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 }
 
 /* ── Settings Textarea ────────────────────────────── */
-.llm-hub-settings-textarea-container .setting-item-control {
-  width: 100%;
-}
-
-.llm-hub-settings-textarea {
-  width: 100%;
-  min-width: 200px;
-}
 
 /* ===============================================
    Workflow Styles
