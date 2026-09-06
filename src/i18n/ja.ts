@@ -281,9 +281,6 @@ export const ja: Record<string, string> = {
   // Settings - Slash Commands
   "settings.promptTemplate.desc": "{selection}で選択テキスト、{content}でアクティブノートを使用",
   "settings.promptTemplate.placeholder": "以下を英語に翻訳してください:\n\n{selection}",
-  "settings.commandVaultToolMode": "Vaultツールモード",
-  "settings.commandVaultToolMode.desc": "このコマンド使用時にVaultツールモードを上書き",
-  "settings.commandVaultToolModeCurrent": "現在の設定を使用",
 
   // Slash command input
   "input.slashCommand": "スラッシュコマンド",

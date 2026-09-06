@@ -276,9 +276,6 @@ export const en = {
   // Settings - Slash Commands
   "settings.promptTemplate.desc": "Use {selection} for selected text, {content} for active note",
   "settings.promptTemplate.placeholder": "Translate the following to english:\\n\\n{selection}",
-  "settings.commandVaultToolMode": "Vault tool mode",
-  "settings.commandVaultToolMode.desc": "Override vault tool mode when this command is used",
-  "settings.commandVaultToolModeCurrent": "Use current setting",
 
   // Slash command input
   "input.slashCommand": "Slash command",

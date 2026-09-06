@@ -1,6 +1,9 @@
 import { Setting, Notice } from "obsidian";
 import { t } from "src/i18n";
-import { SlashCommandModal } from "./SlashCommandModal";
+// This host runs one configured model and its slash commands do not override
+// search or MCP, so the modal is opened with only the Vault access row.
+import { SlashCommandModal } from "obsidian-llm-hub-common/modals";
+import type { SlashCommand } from "src/types";
 
 interface SettingsContext {
   plugin: import("src/plugin").LocalLlmHubPlugin;
@@ -24,7 +27,8 @@ export function displaySlashCommandSettings(containerEl: HTMLElement, ctx: Setti
           new SlashCommandModal(
             app,
             null,
-            async (command) => {
+            {},
+            async (command: SlashCommand) => {
               plugin.settings.slashCommands.push(command);
               await plugin.saveSettings();
               display();
@@ -52,7 +56,8 @@ export function displaySlashCommandSettings(containerEl: HTMLElement, ctx: Setti
             new SlashCommandModal(
               app,
               command,
-              async (updated) => {
+              {},
+              async (updated: SlashCommand) => {
                 const index = plugin.settings.slashCommands.findIndex(
                   (c) => c.id === command.id
                 );
