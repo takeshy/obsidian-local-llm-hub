@@ -486,7 +486,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   const enabledMcpServers = mcpServerInfos.filter((server) => enabledMcpServerIds.has(server.id));
 
   return (
-    <SharedInputArea classPrefix="llm-hub" className="llm-hub-input-container"
+    <SharedInputArea classPrefix="llm-hub"
       beforeInput={<>
       {/* MCP servers enabled for this chat */}
       <EnabledMcpServers

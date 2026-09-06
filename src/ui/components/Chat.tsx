@@ -1,5 +1,5 @@
 import { ChatHeader } from "obsidian-llm-hub-chat-ui";
-import { ChatLayout, HistoryList } from "obsidian-llm-hub-chat-ui";
+import { ChatLayout, HistoryList, HeaderButton, SidebarWidthButton, SaveNoteButton } from "obsidian-llm-hub-chat-ui";
 import {
   useState,
   useEffect,
@@ -10,7 +10,7 @@ import {
   useImperativeHandle,
 } from "react";
 import { TFile, Notice } from "obsidian";
-import { Plus, History, Trash2, FileText, Loader2, Check, Maximize2, Minimize2 } from "lucide-react";
+import { Plus, History, Trash2 } from "lucide-react";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import {
   type Message,
@@ -1275,46 +1275,37 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   }, [messages, plugin, llmConfig, selectedRagSetting, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, getEffectiveSkillPathsForSend, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
   return (
-    <ChatLayout className="llm-hub-chat">
+    <ChatLayout classPrefix="llm-hub">
       {/* Header */}
       <ChatHeader classPrefix="llm-hub" >
-          <button
-            className="llm-hub-header-btn llm-hub-sidebar-width-btn"
-            onClick={() => setIsSidebarWide(onToggleSidebarWidth())}
+          <SidebarWidthButton
+            classPrefix="llm-hub"
+            wide={isSidebarWide}
             title={isSidebarWide ? t("chat.narrowSidebar") : t("chat.widenSidebar")}
-          >
-            {isSidebarWide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
-          <button
-            className="llm-hub-header-btn"
-            onClick={() => { void handleSaveAsNote(); }}
-            disabled={saveNoteState === "saving" || messages.length === 0}
+            onClick={() => setIsSidebarWide(onToggleSidebarWidth())}
+          />
+          <SaveNoteButton
+            classPrefix="llm-hub"
+            state={saveNoteState}
+            disabled={messages.length === 0}
             title={saveNoteState === "saved" ? t("chat.savedAsNote", { path: "" }) : t("chat.saveAsNote")}
-          >
-            {saveNoteState === "idle" && <FileText size={16} />}
-            {saveNoteState === "saving" && <Loader2 size={16} className="llm-hub-spin" />}
-            {saveNoteState === "saved" && <Check size={16} />}
-          </button>
-          <button
-            className="llm-hub-header-btn"
-            onClick={newChat}
-            disabled={isLoading}
-            title={t("chat.newChat")}
-          >
+            onClick={() => { void handleSaveAsNote(); }}
+          />
+          <HeaderButton classPrefix="llm-hub" title={t("chat.newChat")} disabled={isLoading} onClick={newChat}>
             <Plus size={16} />
-          </button>
-          <button
-            className="llm-hub-header-btn"
+          </HeaderButton>
+          <HeaderButton
+            classPrefix="llm-hub"
+            title={t("chat.history")}
             onClick={() => {
               setShowHistory(!showHistory);
               if (!showHistory) {
                 void loadChatHistories();
               }
             }}
-            title={t("chat.history")}
           >
             <History size={16} />
-          </button>
+          </HeaderButton>
         </ChatHeader>
 
       {/* History panel */}
