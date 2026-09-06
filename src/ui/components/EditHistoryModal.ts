@@ -1,9 +1,9 @@
 import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import { t } from "src/i18n";
-import { formatError } from "src/utils/error";
+import { formatError } from "obsidian-llm-hub-common/core";
 import { getEditHistoryManager, type EditHistoryEntry } from "src/core/editHistory";
 import { reconstructContent } from "src/core/diffUtils";
-import { setDestructiveButton } from "src/ui/buttonCompat";
+import { setDestructiveButton } from "obsidian-llm-hub-common/obsidian";
 
 type DisplayEntry = EditHistoryEntry & { origin: "local" };
 

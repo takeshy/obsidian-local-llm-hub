@@ -7,7 +7,7 @@ import { getRagStore } from "src/core/ragStore";
 import { deleteRagIndex } from "src/core/ragStorage";
 import { fetchEmbeddingModels } from "src/core/localLlmProvider";
 import { RagSettingNameModal } from "./RagSettingNameModal";
-import { setDestructiveButton } from "src/ui/buttonCompat";
+import { setDestructiveButton } from "obsidian-llm-hub-common/obsidian";
 
 interface SettingsContext {
   plugin: LocalLlmHubPlugin;

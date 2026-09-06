@@ -3,7 +3,7 @@ import type { ExecutionRecord } from "src/workflow/types";
 
 import { ExecutionHistoryManager, formatDuration, EncryptionConfig } from "src/workflow/history";
 import { cryptoCache } from "src/core/cryptoCache";
-import { decryptPrivateKey } from "src/core/crypto";
+import { decryptPrivateKey } from "obsidian-llm-hub-common/core";
 import { t } from "src/i18n";
 import { WORKSPACE_FOLDER } from "src/types";
 

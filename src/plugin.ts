@@ -8,7 +8,7 @@ import { type LocalLlmHubSettings, type LocalLlmProfile, type RagSetting, DEFAUL
 import { WorkspaceStateManager } from "src/core/workspaceStateManager";
 import { getRagStore } from "src/core/ragStore";
 import { initLocale, t } from "src/i18n";
-import { formatError } from "src/utils/error";
+import { formatError } from "obsidian-llm-hub-common/core";
 import { EncryptionManager } from "src/plugin/encryptionManager";
 import { WorkflowManager } from "src/plugin/workflowManager";
 import { SelectionManager } from "src/plugin/selectionManager";

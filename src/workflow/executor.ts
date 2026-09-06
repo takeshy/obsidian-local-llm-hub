@@ -40,8 +40,8 @@ import {
 } from "./nodeHandlers";
 import { parseWorkflowFromMarkdown } from "./parser";
 import { ExecutionHistoryManager, EncryptionConfig } from "./history";
-import { isEncryptedFile } from "../core/crypto";
-import { formatError } from "../utils/error";
+import { isEncryptedFile } from "obsidian-llm-hub-common/core";
+import { formatError } from "obsidian-llm-hub-common/core";
 import { assertVaultToolFileAllowed, assertVaultToolPathAllowed } from "../core/vaultToolScope";
 
 const MAX_ITERATIONS = 1000; // Prevent infinite loops
