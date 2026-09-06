@@ -78,18 +78,14 @@ export const en = {
   "settings.folderAlreadyExists": "The destination folder already exists. Choose another folder.",
   "settings.folderMoveFailed": "Failed to move the folder: {{error}}",
   "settings.saveChatHistoryDesc": "Keep restorable conversation history in the workspace folder",
-  "settings.maxSavedChatHistoriesDesc": "Delete the oldest automatic histories above this limit. Use 0 for unlimited.",
   "settings.manualChatSaveFolderDesc": "Folder used by the save as note button in chat. Leave blank for the vault root.",
   "settings.manualChatSaveFolderPlaceholder": "Vault root",
   "settings.manualChatSaveFolderInvalidPath": "Use a vault-relative folder without '.' or '..' path segments.",
-  "settings.systemPromptDesc": "Custom instructions for the AI assistant",
   "settings.hideWorkspaceFolder": "Hide workspace folder in file tree",
   "settings.hideWorkspaceFolderDesc": "Hide the workspace folder from the file explorer",
   "settings.vaultToolAllowedFolders": "LLM vault tool folders",
   "settings.vaultToolAllowedFoldersDesc": "Comma-separated vault folders that LLM vault tools and LLM-triggered skill workflows may access. Leave empty to allow the whole vault. This does not limit RAG, manual attachments, @note mentions, scripts, shell commands, or external tools provided by enabled servers.",
   "settings.vaultToolAllowedFoldersPlaceholder": "Example: public, shared/docs",
-  "settings.vaultToolAllowedFoldersInvalid": "Use vault-relative folders; dot and double-dot path segments are not allowed",
-  "settings.systemPromptPlaceholder": "E.g. Always respond in japanese",
 
   // Settings - RAG
   "settings.rag": "Local rag",

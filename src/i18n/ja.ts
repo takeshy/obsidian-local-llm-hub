@@ -74,18 +74,14 @@ export const ja: Record<string, string> = {
   "settings.folderAlreadyExists": "移動先フォルダが既に存在します。別のフォルダを指定してください。",
   "settings.folderMoveFailed": "フォルダを移動できませんでした: {{error}}",
   "settings.saveChatHistoryDesc": "会話を復元するための履歴をワークスペースフォルダに保存します",
-  "settings.maxSavedChatHistoriesDesc": "上限を超えた古い自動履歴を削除します。0の場合は無制限です。",
   "settings.manualChatSaveFolderDesc": "Chatの「ノートとして保存」ボタンで使う保存先です。空欄の場合はVault直下です。",
   "settings.manualChatSaveFolderPlaceholder": "Vault直下",
   "settings.manualChatSaveFolderInvalidPath": "'.' や '..' を含まないVault相対フォルダを指定してください。",
-  "settings.systemPromptDesc": "AIアシスタントへのカスタム指示",
   "settings.hideWorkspaceFolder": "ファイルツリーでワークスペースフォルダを非表示",
   "settings.hideWorkspaceFolderDesc": "ファイルエクスプローラーからワークスペースフォルダを非表示にする",
   "settings.vaultToolAllowedFolders": "LLMのVaultツール許可フォルダ",
   "settings.vaultToolAllowedFoldersDesc": "LLMのVaultツールとLLMから起動されたSkill WorkflowがアクセスできるVaultフォルダをカンマ区切りで指定します。空の場合はVault全体を許可します。RAG、手動添付、@noteメンション、MCPツール、スクリプト、シェルコマンドは制限しません。",
   "settings.vaultToolAllowedFoldersPlaceholder": "例: Public, Shared/Docs",
-  "settings.vaultToolAllowedFoldersInvalid": "Vault相対フォルダを指定してください。「.」または「..」のパス要素は使用できません。",
-  "settings.systemPromptPlaceholder": "例: 常に日本語で回答してください",
 
   // Settings - RAG
   "settings.rag": "ローカルRAG",

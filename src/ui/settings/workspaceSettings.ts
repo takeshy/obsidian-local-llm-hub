@@ -3,7 +3,11 @@ import { t } from "src/i18n";
 import { DEFAULT_SETTINGS, SKILLS_FOLDER, WORKSPACE_FOLDER } from "src/types";
 import { isUnsafePath, normalizePathSeparators } from "src/core/pathAccess";
 import type { LocalLlmHubPlugin } from "src/plugin";
-import { normalizeVaultScopePath } from "obsidian-llm-hub-common/core";
+import {
+  addAllowedVaultFoldersSetting,
+  addMaxSavedChatHistoriesSetting,
+  addSystemPromptSetting,
+} from "obsidian-llm-hub-common/settings";
 
 interface SettingsContext {
   plugin: LocalLlmHubPlugin;
@@ -113,33 +117,19 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
         });
     });
 
-  new Setting(containerEl)
-    .setName(t("settings.vaultToolAllowedFolders"))
-    .setDesc(t("settings.vaultToolAllowedFoldersDesc"))
-    .addText((text) => {
-      text
-        .setPlaceholder(t("settings.vaultToolAllowedFoldersPlaceholder"))
-        .setValue(plugin.settings.vaultToolAllowedFolders.join(", "));
-      text.inputEl.addEventListener("blur", () => {
-        void (async () => {
-          const enteredFolders = text.inputEl.value
-            .split(",")
-            .map((folder) => folder.trim().replace(/\/+$/g, ""))
-            .filter(Boolean);
-          const normalizedFolders = enteredFolders.map(normalizeVaultScopePath);
-          if (normalizedFolders.some((folder) => folder === null)) {
-            new Notice(t("settings.vaultToolAllowedFoldersInvalid"));
-            text.setValue(plugin.settings.vaultToolAllowedFolders.join(", "));
-            return;
-          }
-          plugin.settings.vaultToolAllowedFolders = normalizedFolders.filter(
-            (folder): folder is string => folder !== null,
-          );
-          text.setValue(plugin.settings.vaultToolAllowedFolders.join(", "));
-          await plugin.saveSettings();
-        })();
-      });
-    });
+  addAllowedVaultFoldersSetting(
+    containerEl,
+    ctx,
+    {
+      name: t("settings.vaultToolAllowedFolders"),
+      desc: t("settings.vaultToolAllowedFoldersDesc"),
+      placeholder: t("settings.vaultToolAllowedFoldersPlaceholder"),
+    },
+    {
+      get: () => plugin.settings.vaultToolAllowedFolders,
+      set: (folders) => { plugin.settings.vaultToolAllowedFolders = folders; },
+    },
+  );
 
   new Setting(containerEl)
     .setName(t("settings.saveChatHistory"))
@@ -153,35 +143,6 @@ export function displayWorkspaceSettings(containerEl: HTMLElement, ctx: Settings
         });
     });
 
-  new Setting(containerEl)
-    .setName(t("settings.maxSavedChatHistories"))
-    .setDesc(t("settings.maxSavedChatHistoriesDesc"))
-    .addText((text) => {
-      text.setValue(String(plugin.settings.maxSavedChatHistories));
-      text.inputEl.type = "number";
-      text.inputEl.min = "0";
-      text.inputEl.step = "1";
-      text.inputEl.addEventListener("blur", () => {
-        const parsed = Number.parseInt(text.inputEl.value, 10);
-        const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_SETTINGS.maxSavedChatHistories;
-        plugin.settings.maxSavedChatHistories = value;
-        text.inputEl.value = String(value);
-        void plugin.saveSettings();
-      });
-    });
-
-  new Setting(containerEl)
-    .setName(t("settings.systemPrompt"))
-    .setDesc(t("settings.systemPromptDesc"))
-    .addTextArea((text) => {
-      text
-        .setPlaceholder(t("settings.systemPromptPlaceholder"))
-        .setValue(plugin.settings.systemPrompt)
-        .onChange(async (value) => {
-          plugin.settings.systemPrompt = value;
-          await plugin.saveSettings();
-        });
-      text.inputEl.rows = 3;
-      text.inputEl.addClass("llm-hub-wide-input");
-    });
+  addMaxSavedChatHistoriesSetting(containerEl, ctx, DEFAULT_SETTINGS.maxSavedChatHistories);
+  addSystemPromptSetting(containerEl, ctx, 3);
 }
