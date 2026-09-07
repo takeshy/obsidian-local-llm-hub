@@ -28,6 +28,7 @@ import {
   accumulateStreamChunk,
   createStreamAccumulation,
   generateChatId,
+  runChatTurn,
   resolveMessageVariables as resolveMessageVariablesShared,
   useChatHistories,
   useChatStreamSessions,
@@ -684,436 +685,429 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       return;
     }
 
-    // Activate skill if specified via slash command
-    if (skillPath) {
-      setActiveSkillPaths(prev =>
-        prev.includes(skillPath) ? prev : [...prev, skillPath]
-      );
-    }
-
-    const resolvedContent = content ? await resolveMessageVariables(content) : "";
-
-    // Determine display content for the user message
-    let displayContent = resolvedContent.trim();
-    if (!displayContent && skillPath) {
-      const skill = availableSkills.find(s => s.folderPath === skillPath);
-      displayContent = skill ? `/${skill.name}` : `/${skillPath}`;
-    }
-    if (!displayContent && attachments) {
-      displayContent = `[${attachments.length} file(s) attached]`;
-    }
-
-    // Build LLM content including decoded text attachments
-    const llmContent = `${resolvedContent}${buildAttachmentContext(attachments)}`.trim();
-
-    const userMessage: Message = {
-      role: "user",
-      content: displayContent,
-      llmContent: llmContent || displayContent,
-      timestamp: Date.now(),
-      attachments,
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    // Owns this stream from here on: if the user switches chats it keeps running in the
-    // background and saves into the chat it started in.
-    const session = createStreamSession();
-    setIsLoading(true);
-    setStreamingContent("");
-    setStreamingThinking("");
-
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-    const startTime = Date.now();
+    // Populated while the turn runs; the teardown has to reach it whichever
+    // way the turn ended.
     const temporaryAgentPluginServerIds: string[] = [];
 
-    try {
-      // Build system prompt
-      let systemPrompt = "You are a helpful AI assistant integrated with Obsidian.";
-
-      if (plugin.settings.systemPrompt) {
-        systemPrompt += `\n\nAdditional instructions: ${plugin.settings.systemPrompt}`;
-      }
-
-      if (activeOkfBundleIds.some(isBuiltinOkfBundleId)) {
-        systemPrompt += buildBuiltinOkfSystemPrompt();
-      }
-      const okfRoot = getOkfRoot();
-      const externalOkfBundleIds = activeOkfBundleIds.filter(id => !isBuiltinOkfBundleId(id));
-      if (okfRoot && externalOkfBundleIds.length > 0) {
-        systemPrompt += await buildOkfSystemPrompt(plugin.app, okfRoot, externalOkfBundleIds);
-      }
-
-      let ragSources: string[] | undefined;
-      let ragCitations: RagCitation[] | undefined;
-      const hasRagContext = false;
-      let ragSearchCount = 0;
-      const activeRagSetting = selectedRagSetting
-        ? plugin.getRagSearchSetting(selectedRagSetting)
-        : undefined;
-
-      // Skill instructions injection (include skillPath from slash command even if state hasn't updated yet)
-      let skillsUsedNames: string[] | undefined;
-      let loadedSkillsList: LoadedSkill[] = [];
-      const effectiveSkillPaths = getEffectiveSkillPathsForSend(skillPath);
-      if (effectiveSkillPaths.length > 0) {
-        const activeMetadata = availableSkills.filter(s => effectiveSkillPaths.includes(s.folderPath));
-        loadedSkillsList = activeMetadata.map(m => loadSkill(plugin.app, m));
-        const skillPrompt = buildSkillSystemPrompt(loadedSkillsList);
-        if (skillPrompt) {
-          systemPrompt += skillPrompt;
-          skillsUsedNames = loadedSkillsList.map(s => s.name);
+    await runChatTurn<{ startTime: number }>({
+      messages, setMessages, setIsLoading, setStreamingContent, setStreamingThinking,
+      abortControllerRef, createStreamSession,
+      describeError: buildErrorMessage,
+    }, {
+      prepare: async () => {
+        // Activate skill if specified via slash command
+        if (skillPath) {
+          setActiveSkillPaths(prev =>
+            prev.includes(skillPath) ? prev : [...prev, skillPath]
+          );
         }
-      }
 
-      if (vaultToolMode === "noSearch") {
-        systemPrompt += buildNoDiscoverySystemPrompt({
-          ragRequested: Boolean(selectedRagSetting),
-          hasRagContext,
-        });
-      }
+        const resolvedContent = content ? await resolveMessageVariables(content) : "";
 
-      // Tested Agent Plugin MCP servers are connected only for turns where a
-      // skill from the same enabled package is active.
-      const resolvedMcpServers = resolveAgentPluginMcpServers(plugin.settings.mcpServers, effectiveSkillPaths, plugin.settings.agentPlugins);
-      for (const server of resolvedMcpServers) {
-        const persisted = plugin.settings.mcpServers.find(item => item.id === server.id);
-        if (!server.enabled || !server.agentPlugin || persisted?.enabled) continue;
-        const result = await plugin.mcpManager.connectServer(server);
-        if (result.success) temporaryAgentPluginServerIds.push(asLocalMcpServer(server).id);
-      }
-
-      // Get vault tools based on mode + MCP tools (MCP always available if servers enabled)
-      // AnythingLLM does not support OpenAI function calling — skip tools entirely
-      const isAnythingLlm = llmConfig.framework === "anythingllm";
-      const vaultTools = isAnythingLlm ? [] : getVaultTools(vaultToolMode);
-      const mcpTools = isAnythingLlm
-        ? []
-        : plugin.mcpManager.getAllTools([...enabledMcpServerIds, ...temporaryAgentPluginServerIds]);
-      if (isAnythingLlm && (vaultToolMode !== "none" || enabledMcpServerIds.size > 0)) {
-        new Notice(t("chat.anythingLlmToolsNotSupported"));
-      }
-      const tools = [...vaultTools, ...mcpTools];
-
-      // Vault skills are loaded lazily — their SKILL.md (workflow IDs,
-      // inputVariables, full instructions) is only reachable via read_note.
-      // If any such skill is active we must keep read_note available even
-      // when vaultToolMode === "none" would otherwise strip it, or the model
-      // gets neither inline workflow metadata nor the tool to fetch it.
-      const hasActiveVaultSkill = loadedSkillsList.some(s => !isBuiltinSkillPath(s.folderPath));
-      if (
-        hasActiveVaultSkill &&
-        !isAnythingLlm &&
-        !tools.some(t => t.function.name === "read_note")
-      ) {
-        tools.push(readNoteTool);
-      }
-
-      // Add skill workflow tool if any active skill has workflows
-      const skillWorkflowMap: Map<string, { skill: LoadedSkill; workflowRef: SkillWorkflowRef; vaultPath: string }> = loadedSkillsList.length > 0
-        ? collectSkillWorkflows(loadedSkillsList)
-        : new Map<string, { skill: LoadedSkill; workflowRef: SkillWorkflowRef; vaultPath: string }>();
-      if (skillWorkflowMap.size > 0 && !isAnythingLlm) {
-        tools.push(skillWorkflowTool);
-      }
-
-      // Add execute_javascript tool, and tell the model how to reach mentioned
-      // files: their content is not inlined for tool-capable models (see
-      // resolveMessageVariables), so it has to fetch them itself.
-      if (vaultToolMode !== "none" && !isAnythingLlm) {
-        tools.push(EXECUTE_JAVASCRIPT_TOOL);
-        systemPrompt += "\n\nA bare vault-relative path in the user's message (for example `folder/note.md` or `folder/document.pdf`) is a file the user referenced by mention, not a literal string. Its content is not inlined into the message. Call read_note with that exact path before answering anything that depends on it.";
-      }
-
-      // Workflow spec lookup tool — enables the LLM to fetch authoritative
-      // node docs on demand (e.g. when debugging workflows or generating YAML).
-      if (!isAnythingLlm) {
-        tools.push(GET_WORKFLOW_SPEC_TOOL);
-      }
-
-      if (activeOkfBundleIds.length > 0 && !isAnythingLlm) {
-        tools.push(READ_OKF_DOCUMENT_TOOL);
-      }
-
-      if (selectedRagSetting && activeRagSetting && !isAnythingLlm) {
-        tools.push(RAG_SEARCH_TOOL);
-        systemPrompt += `\n\nThe selected RAG index is available through the ${RAG_SEARCH_TOOL_NAME} tool. Use it with a self-contained, focused semantic query when the user's request may depend on indexed vault knowledge. Do not claim that the index lacks relevant information before searching it. At most ${MAX_RAG_SEARCHES_PER_TURN} RAG searches are allowed per turn; each search returns at most ${MAX_DYNAMIC_RAG_RESULTS} chunks.`;
-      }
-
-      // Conversation messages for the API (includes tool call/result messages)
-      const conversationMessages: Message[] = limitConversationHistory([...trimRagSearchHistory(messages), userMessage], maxPreviousMessages);
-      let fullContent = "";
-      let thinkingContent = "";
-      let currentRoundThinking = "";
-      let stopped = false;
-      let usage: Message["usage"] | undefined;
-      const allToolCalls: ToolCall[] = [];
-      const allToolResults: ToolResult[] = [];
-      // Stream one round from the LLM, returns collected tool calls
-      const streamOneRound = async (useTools: boolean): Promise<{
-        toolCalls: ToolCall[];
-        incompleteToolCall: boolean;
-        emptyText: boolean;
-      }> => {
-        // Thinking is shown for the whole turn, so each round appends to what
-        // the earlier rounds already said; the text starts over each round.
-        const priorThinking = thinkingContent;
-        const round = createStreamAccumulation();
-        fullContent = "";
-        currentRoundThinking = "";
-
-        for await (const chunk of localLlmChatStream(
-          llmConfig,
-          conversationMessages,
-          systemPrompt,
-          abortController.signal,
-          useTools && tools.length > 0 ? tools : undefined,
-        )) {
-          if (abortController.signal.aborted) {
-            stopped = true;
-            break;
-          }
-
-          accumulateStreamChunk(round, chunk);
-          fullContent = round.text;
-          currentRoundThinking = round.thinking;
-          thinkingContent = priorThinking + round.thinking;
-
-          if (session.isActive()) {
-            if (chunk.type === "text" || chunk.type === "replace_text") setStreamingContent(fullContent);
-            else if (chunk.type === "thinking") setStreamingThinking(thinkingContent);
-            else if (chunk.type === "tool_call" && chunk.toolCall) {
-              setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.args).join(", ")})...`);
-            }
-          }
+        // Determine display content for the user message
+        let displayContent = resolvedContent.trim();
+        if (!displayContent && skillPath) {
+          const skill = availableSkills.find(s => s.folderPath === skillPath);
+          displayContent = skill ? `/${skill.name}` : `/${skillPath}`;
         }
-        // Only the final chunk carries the totals; a retried round replaces them.
-        if (round.usage) usage = round.usage;
+        if (!displayContent && attachments) {
+          displayContent = `[${attachments.length} file(s) attached]`;
+        }
+
+        // Build LLM content including decoded text attachments
+        const llmContent = `${resolvedContent}${buildAttachmentContext(attachments)}`.trim();
+
+        const userMessage: Message = {
+          role: "user",
+          content: displayContent,
+          llmContent: llmContent || displayContent,
+          timestamp: Date.now(),
+          attachments,
+        };
 
         return {
-          toolCalls: round.toolCalls,
-          incompleteToolCall: round.incompleteToolCall,
-          emptyText: fullContent.trim().length === 0,
+          userMessage,
+          trace: { name: "chat-message", input: llmContent || displayContent },
+          context: { startTime: Date.now() },
         };
-      };
+      },
 
-      const streamOneRoundWithRetry = async (useTools: boolean, retryEmptyText = false): Promise<ToolCall[]> => {
-        const maxAttempts = 3;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          const result = await streamOneRound(useTools);
-          const shouldRetry =
-            result.toolCalls.length === 0 &&
-            (result.incompleteToolCall || (retryEmptyText && result.emptyText));
-          if (!shouldRetry) return result.toolCalls;
-          console.warn(`[llm-hub] Server returned an incomplete tool continuation; retrying round (${attempt}/${maxAttempts})`);
-        }
-        throw new Error("The server repeatedly returned an incomplete response after a tool result.");
-      };
+      run: async (turn, { startTime }) => {
+        const { abortController, session, userMessage } = turn;
+          // Build system prompt
+          let systemPrompt = "You are a helpful AI assistant integrated with Obsidian.";
 
-      // First round - try with tools
-      let pendingToolCalls: ToolCall[];
-      try {
-        pendingToolCalls = await streamOneRoundWithRetry(tools.length > 0);
-      } catch (firstError) {
-        if (tools.length > 0) {
-          // Tools not supported by this model - set mode to none and show notice
-          new Notice(t("chat.toolsNotSupported"));
-          setVaultToolMode("none");
-        }
-        throw firstError;
-      }
+          if (plugin.settings.systemPrompt) {
+            systemPrompt += `\n\nAdditional instructions: ${plugin.settings.systemPrompt}`;
+          }
 
-      // Tool call loop: execute tools → send results → stream again
-      while (!stopped && pendingToolCalls.length > 0) {
-        allToolCalls.push(...pendingToolCalls);
-        const assistantMsg: Message = {
-          role: "assistant",
-          content: fullContent,
-          timestamp: Date.now(),
-          thinking: currentRoundThinking || undefined,
-          toolCalls: pendingToolCalls,
-        };
-        conversationMessages.push(assistantMsg);
+          if (activeOkfBundleIds.some(isBuiltinOkfBundleId)) {
+            systemPrompt += buildBuiltinOkfSystemPrompt();
+          }
+          const okfRoot = getOkfRoot();
+          const externalOkfBundleIds = activeOkfBundleIds.filter(id => !isBuiltinOkfBundleId(id));
+          if (okfRoot && externalOkfBundleIds.length > 0) {
+            systemPrompt += await buildOkfSystemPrompt(plugin.app, okfRoot, externalOkfBundleIds);
+          }
 
-        for (const tc of pendingToolCalls) {
-          if (session.isActive()) setStreamingContent(fullContent + `\n\n🔧 ${tc.name}...`);
+          let ragSources: string[] | undefined;
+          let ragCitations: RagCitation[] | undefined;
+          const hasRagContext = false;
+          let ragSearchCount = 0;
+          const activeRagSetting = selectedRagSetting
+            ? plugin.getRagSearchSetting(selectedRagSetting)
+            : undefined;
 
-          const result: ToolExecutionResult = tc.name === RAG_SEARCH_TOOL_NAME
-            ? await (async () => {
-              if (!selectedRagSetting || !activeRagSetting) {
-                return { success: false, result: "RAG is not enabled for this turn." };
-              }
-              if (ragSearchCount >= MAX_RAG_SEARCHES_PER_TURN) {
-                return {
-                  success: false,
-                  result: `RAG search limit reached (${MAX_RAG_SEARCHES_PER_TURN} searches per turn).`,
-                };
-              }
-              const query = typeof tc.args.query === "string" ? tc.args.query.trim() : "";
-              if (!query) return { success: false, result: "A non-empty query is required." };
-
-              let results: RagSearchResult[];
-              try {
-                results = await getRagStore().search(
-                  selectedRagSetting,
-                  query,
-                  { ...activeRagSetting, topK: Math.min(activeRagSetting.topK, MAX_DYNAMIC_RAG_RESULTS) },
-                  llmConfig,
-                  plugin.app,
-                );
-              } catch (err) {
-                // Not counted against the budget: the index was never reached.
-                return { success: false, result: `RAG search failed: ${formatError(err)}` };
-              }
-              ragSearchCount++;
-              if (results.length > 0) {
-                ragSources = [...new Set([...(ragSources ?? []), ...results.map(item => item.filePath)])];
-                // A refined query usually overlaps the automatic one, so the same
-                // chunk must not produce a second citation.
-                ragCitations = mergeRagCitations(ragCitations, results.map(item => ({
-                  filePath: item.filePath,
-                  ...(item.heading ? { heading: item.heading } : {}),
-                  startOffset: item.startOffset,
-                  ...(item.pageLabel ? { pageLabel: item.pageLabel } : {}),
-                })));
-              }
-              return {
-                success: true,
-                result: formatRagSearchToolResult(
-                  query,
-                  results,
-                  MAX_RAG_SEARCHES_PER_TURN - ragSearchCount,
-                ),
-              };
-            })()
-            : tc.name === GET_WORKFLOW_SPEC_TOOL_NAME
-            ? { success: true, result: handleGetWorkflowSpec(tc.args, plugin) }
-            : tc.name === READ_OKF_DOCUMENT_TOOL_NAME
-              ? {
-                success: true,
-                result: JSON.stringify(await executeReadOkfDocumentTool(
-                  plugin.app,
-                  getOkfRoot(),
-                  activeOkfBundleIds,
-                  typeof tc.args.bundleId === "string" ? tc.args.bundleId : "",
-                  typeof tc.args.path === "string" ? tc.args.path : "",
-                )),
-              }
-              : await executeToolCall(tc, {
-              app: plugin.app,
-              mcpManager: plugin.mcpManager,
-              vaultToolMode,
-              vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
-              pdfInputMode: llmConfig.pdfInputMode === "native" && llmConfig.framework !== "ollama"
-                ? "native"
-                : "extract-text",
-              onProposeEdit: async (path, oldContent, newContent, context) => {
-                const displayPath = context?.mode === "rename" && context.targetPath
-                  ? `${path} → ${context.targetPath}`
-                  : path;
-                const modal = new EditConfirmationModal(
-                  plugin.app,
-                  displayPath,
-                  newContent,
-                  context?.mode ?? "overwrite",
-                  oldContent,
-                );
-                const response = await modal.openAndWait();
-                if (response.action === "save") {
-                  return { accepted: true, openFile: response.openFile };
-                }
-                if (response.action === "edit") {
-                  return { accepted: false, feedback: response.additionalRequest };
-                }
-                return { accepted: false, cancelled: true };
-              },
-              onRunSkillWorkflow: skillWorkflowMap.size > 0
-                ? (workflowId, variablesJson) => executeSkillWorkflow(plugin, workflowId, variablesJson, skillWorkflowMap)
-                : undefined,
-            });
-          const toolResultMsg: Message = {
-            role: "tool",
-            content: result.result,
-            timestamp: Date.now(),
-            toolCallId: tc.id,
-            toolName: tc.name,
-            attachments: result.attachments,
-          };
-          conversationMessages.push(toolResultMsg);
-
-          let parsedResult: unknown = result.result;
-          if (tc.name === SKILL_WORKFLOW_TOOL_NAME && typeof result.result === "string") {
-            const trimmed = result.result.trim();
-            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-              try {
-                parsedResult = JSON.parse(trimmed);
-              } catch {
-                // keep raw string
-              }
+          // Skill instructions injection (include skillPath from slash command even if state hasn't updated yet)
+          let skillsUsedNames: string[] | undefined;
+          let loadedSkillsList: LoadedSkill[] = [];
+          const effectiveSkillPaths = getEffectiveSkillPathsForSend(skillPath);
+          if (effectiveSkillPaths.length > 0) {
+            const activeMetadata = availableSkills.filter(s => effectiveSkillPaths.includes(s.folderPath));
+            loadedSkillsList = activeMetadata.map(m => loadSkill(plugin.app, m));
+            const skillPrompt = buildSkillSystemPrompt(loadedSkillsList);
+            if (skillPrompt) {
+              systemPrompt += skillPrompt;
+              skillsUsedNames = loadedSkillsList.map(s => s.name);
             }
           }
-          allToolResults.push({ toolCallId: tc.id, result: parsedResult, attachments: result.attachments });
-          if (result.cancelled) {
-            stopped = true;
-            break;
+
+          if (vaultToolMode === "noSearch") {
+            systemPrompt += buildNoDiscoverySystemPrompt({
+              ragRequested: Boolean(selectedRagSetting),
+              hasRagContext,
+            });
           }
-        }
 
-        if (session.isActive()) setStreamingContent("");
+          // Tested Agent Plugin MCP servers are connected only for turns where a
+          // skill from the same enabled package is active.
+          const resolvedMcpServers = resolveAgentPluginMcpServers(plugin.settings.mcpServers, effectiveSkillPaths, plugin.settings.agentPlugins);
+          for (const server of resolvedMcpServers) {
+            const persisted = plugin.settings.mcpServers.find(item => item.id === server.id);
+            if (!server.enabled || !server.agentPlugin || persisted?.enabled) continue;
+            const result = await plugin.mcpManager.connectServer(server);
+            if (result.success) temporaryAgentPluginServerIds.push(asLocalMcpServer(server).id);
+          }
 
-        if (stopped) break;
-        // A continuation with neither text nor another tool call is not a
-        // useful completion. Retry it for every tool instead of maintaining a
-        // partial allowlist of read tools (which omitted list_notes and
-        // list_folders).
-        pendingToolCalls = await streamOneRoundWithRetry(true, true);
-      }
+          // Get vault tools based on mode + MCP tools (MCP always available if servers enabled)
+          // AnythingLLM does not support OpenAI function calling — skip tools entirely
+          const isAnythingLlm = llmConfig.framework === "anythingllm";
+          const vaultTools = isAnythingLlm ? [] : getVaultTools(vaultToolMode);
+          const mcpTools = isAnythingLlm
+            ? []
+            : plugin.mcpManager.getAllTools([...enabledMcpServerIds, ...temporaryAgentPluginServerIds]);
+          if (isAnythingLlm && (vaultToolMode !== "none" || enabledMcpServerIds.size > 0)) {
+            new Notice(t("chat.anythingLlmToolsNotSupported"));
+          }
+          const tools = [...vaultTools, ...mcpTools];
 
-      if (stopped) {
-        fullContent = fullContent
-          ? `${fullContent}\n\n${t("chat.generationStopped")}`
-          : t("chat.generationStopped");
-      }
+          // Vault skills are loaded lazily — their SKILL.md (workflow IDs,
+          // inputVariables, full instructions) is only reachable via read_note.
+          // If any such skill is active we must keep read_note available even
+          // when vaultToolMode === "none" would otherwise strip it, or the model
+          // gets neither inline workflow metadata nor the tool to fetch it.
+          const hasActiveVaultSkill = loadedSkillsList.some(s => !isBuiltinSkillPath(s.folderPath));
+          if (
+            hasActiveVaultSkill &&
+            !isAnythingLlm &&
+            !tools.some(t => t.function.name === "read_note")
+          ) {
+            tools.push(readNoteTool);
+          }
 
-      const elapsedMs = Date.now() - startTime;
+          // Add skill workflow tool if any active skill has workflows
+          const skillWorkflowMap: Map<string, { skill: LoadedSkill; workflowRef: SkillWorkflowRef; vaultPath: string }> = loadedSkillsList.length > 0
+            ? collectSkillWorkflows(loadedSkillsList)
+            : new Map<string, { skill: LoadedSkill; workflowRef: SkillWorkflowRef; vaultPath: string }>();
+          if (skillWorkflowMap.size > 0 && !isAnythingLlm) {
+            tools.push(skillWorkflowTool);
+          }
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: fullContent,
-        timestamp: Date.now(),
-        model: llmConfig.model || "local-llm",
-        thinking: thinkingContent || undefined,
-        ragUsed: !!ragSources,
-        ragSources,
-        ragCitations,
-        skillsUsed: skillsUsedNames,
-        toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
-        toolResults: allToolResults.length > 0 ? allToolResults : undefined,
-        usage,
-        elapsedMs,
-      };
+          // Add execute_javascript tool, and tell the model how to reach mentioned
+          // files: their content is not inlined for tool-capable models (see
+          // resolveMessageVariables), so it has to fetch them itself.
+          if (vaultToolMode !== "none" && !isAnythingLlm) {
+            tools.push(EXECUTE_JAVASCRIPT_TOOL);
+            systemPrompt += "\n\nA bare vault-relative path in the user's message (for example `folder/note.md` or `folder/document.pdf`) is a file the user referenced by mention, not a literal string. Its content is not inlined into the message. Call read_note with that exact path before answering anything that depends on it.";
+          }
 
-      // Display messages: original history + user message + final assistant message
-      // (tool call/result messages are internal, not shown in UI)
-      const displayMessages = [...messages, userMessage, assistantMessage];
-      await session.saveResult(displayMessages);
-    } catch (error) {
-      const errorMessage = buildErrorMessage(error);
+          // Workflow spec lookup tool — enables the LLM to fetch authoritative
+          // node docs on demand (e.g. when debugging workflows or generating YAML).
+          if (!isAnythingLlm) {
+            tools.push(GET_WORKFLOW_SPEC_TOOL);
+          }
 
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: errorMessage,
-        timestamp: Date.now(),
-        model: llmConfig.model || "local-llm",
-      };
+          if (activeOkfBundleIds.length > 0 && !isAnythingLlm) {
+            tools.push(READ_OKF_DOCUMENT_TOOL);
+          }
 
-      if (session.isActive()) {
-        setMessages(prev => [...prev, assistantMessage]);
-      }
-    } finally {
-      for (const id of temporaryAgentPluginServerIds) await plugin.mcpManager.disconnectServer(id);
-      session.cleanup(abortController);
-    }
+          if (selectedRagSetting && activeRagSetting && !isAnythingLlm) {
+            tools.push(RAG_SEARCH_TOOL);
+            systemPrompt += `\n\nThe selected RAG index is available through the ${RAG_SEARCH_TOOL_NAME} tool. Use it with a self-contained, focused semantic query when the user's request may depend on indexed vault knowledge. Do not claim that the index lacks relevant information before searching it. At most ${MAX_RAG_SEARCHES_PER_TURN} RAG searches are allowed per turn; each search returns at most ${MAX_DYNAMIC_RAG_RESULTS} chunks.`;
+          }
+
+          // Conversation messages for the API (includes tool call/result messages)
+          const conversationMessages: Message[] = limitConversationHistory([...trimRagSearchHistory(messages), userMessage], maxPreviousMessages);
+          let fullContent = "";
+          let thinkingContent = "";
+          let currentRoundThinking = "";
+          let stopped = false;
+          let usage: Message["usage"] | undefined;
+          const allToolCalls: ToolCall[] = [];
+          const allToolResults: ToolResult[] = [];
+          // Stream one round from the LLM, returns collected tool calls
+          const streamOneRound = async (useTools: boolean): Promise<{
+            toolCalls: ToolCall[];
+            incompleteToolCall: boolean;
+            emptyText: boolean;
+          }> => {
+            // Thinking is shown for the whole turn, so each round appends to what
+            // the earlier rounds already said; the text starts over each round.
+            const priorThinking = thinkingContent;
+            const round = createStreamAccumulation();
+            fullContent = "";
+            currentRoundThinking = "";
+
+            for await (const chunk of localLlmChatStream(
+              llmConfig,
+              conversationMessages,
+              systemPrompt,
+              abortController.signal,
+              useTools && tools.length > 0 ? tools : undefined,
+            )) {
+              if (abortController.signal.aborted) {
+                stopped = true;
+                break;
+              }
+
+              accumulateStreamChunk(round, chunk);
+              fullContent = round.text;
+              currentRoundThinking = round.thinking;
+              thinkingContent = priorThinking + round.thinking;
+
+              if (session.isActive()) {
+                if (chunk.type === "text" || chunk.type === "replace_text") setStreamingContent(fullContent);
+                else if (chunk.type === "thinking") setStreamingThinking(thinkingContent);
+                else if (chunk.type === "tool_call" && chunk.toolCall) {
+                  setStreamingContent(fullContent + `\n\n🔧 ${chunk.toolCall.name}(${Object.values(chunk.toolCall.args).join(", ")})...`);
+                }
+              }
+            }
+            // Only the final chunk carries the totals; a retried round replaces them.
+            if (round.usage) usage = round.usage;
+
+            return {
+              toolCalls: round.toolCalls,
+              incompleteToolCall: round.incompleteToolCall,
+              emptyText: fullContent.trim().length === 0,
+            };
+          };
+
+          const streamOneRoundWithRetry = async (useTools: boolean, retryEmptyText = false): Promise<ToolCall[]> => {
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const result = await streamOneRound(useTools);
+              const shouldRetry =
+                result.toolCalls.length === 0 &&
+                (result.incompleteToolCall || (retryEmptyText && result.emptyText));
+              if (!shouldRetry) return result.toolCalls;
+              console.warn(`[llm-hub] Server returned an incomplete tool continuation; retrying round (${attempt}/${maxAttempts})`);
+            }
+            throw new Error("The server repeatedly returned an incomplete response after a tool result.");
+          };
+
+          // First round - try with tools
+          let pendingToolCalls: ToolCall[];
+          try {
+            pendingToolCalls = await streamOneRoundWithRetry(tools.length > 0);
+          } catch (firstError) {
+            if (tools.length > 0) {
+              // Tools not supported by this model - set mode to none and show notice
+              new Notice(t("chat.toolsNotSupported"));
+              setVaultToolMode("none");
+            }
+            throw firstError;
+          }
+
+          // Tool call loop: execute tools → send results → stream again
+          while (!stopped && pendingToolCalls.length > 0) {
+            allToolCalls.push(...pendingToolCalls);
+            const assistantMsg: Message = {
+              role: "assistant",
+              content: fullContent,
+              timestamp: Date.now(),
+              thinking: currentRoundThinking || undefined,
+              toolCalls: pendingToolCalls,
+            };
+            conversationMessages.push(assistantMsg);
+
+            for (const tc of pendingToolCalls) {
+              if (session.isActive()) setStreamingContent(fullContent + `\n\n🔧 ${tc.name}...`);
+
+              const result: ToolExecutionResult = tc.name === RAG_SEARCH_TOOL_NAME
+                ? await (async () => {
+                  if (!selectedRagSetting || !activeRagSetting) {
+                    return { success: false, result: "RAG is not enabled for this turn." };
+                  }
+                  if (ragSearchCount >= MAX_RAG_SEARCHES_PER_TURN) {
+                    return {
+                      success: false,
+                      result: `RAG search limit reached (${MAX_RAG_SEARCHES_PER_TURN} searches per turn).`,
+                    };
+                  }
+                  const query = typeof tc.args.query === "string" ? tc.args.query.trim() : "";
+                  if (!query) return { success: false, result: "A non-empty query is required." };
+
+                  let results: RagSearchResult[];
+                  try {
+                    results = await getRagStore().search(
+                      selectedRagSetting,
+                      query,
+                      { ...activeRagSetting, topK: Math.min(activeRagSetting.topK, MAX_DYNAMIC_RAG_RESULTS) },
+                      llmConfig,
+                      plugin.app,
+                    );
+                  } catch (err) {
+                    // Not counted against the budget: the index was never reached.
+                    return { success: false, result: `RAG search failed: ${formatError(err)}` };
+                  }
+                  ragSearchCount++;
+                  if (results.length > 0) {
+                    ragSources = [...new Set([...(ragSources ?? []), ...results.map(item => item.filePath)])];
+                    // A refined query usually overlaps the automatic one, so the same
+                    // chunk must not produce a second citation.
+                    ragCitations = mergeRagCitations(ragCitations, results.map(item => ({
+                      filePath: item.filePath,
+                      ...(item.heading ? { heading: item.heading } : {}),
+                      startOffset: item.startOffset,
+                      ...(item.pageLabel ? { pageLabel: item.pageLabel } : {}),
+                    })));
+                  }
+                  return {
+                    success: true,
+                    result: formatRagSearchToolResult(
+                      query,
+                      results,
+                      MAX_RAG_SEARCHES_PER_TURN - ragSearchCount,
+                    ),
+                  };
+                })()
+                : tc.name === GET_WORKFLOW_SPEC_TOOL_NAME
+                ? { success: true, result: handleGetWorkflowSpec(tc.args, plugin) }
+                : tc.name === READ_OKF_DOCUMENT_TOOL_NAME
+                  ? {
+                    success: true,
+                    result: JSON.stringify(await executeReadOkfDocumentTool(
+                      plugin.app,
+                      getOkfRoot(),
+                      activeOkfBundleIds,
+                      typeof tc.args.bundleId === "string" ? tc.args.bundleId : "",
+                      typeof tc.args.path === "string" ? tc.args.path : "",
+                    )),
+                  }
+                  : await executeToolCall(tc, {
+                  app: plugin.app,
+                  mcpManager: plugin.mcpManager,
+                  vaultToolMode,
+                  vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
+                  pdfInputMode: llmConfig.pdfInputMode === "native" && llmConfig.framework !== "ollama"
+                    ? "native"
+                    : "extract-text",
+                  onProposeEdit: async (path, oldContent, newContent, context) => {
+                    const displayPath = context?.mode === "rename" && context.targetPath
+                      ? `${path} → ${context.targetPath}`
+                      : path;
+                    const modal = new EditConfirmationModal(
+                      plugin.app,
+                      displayPath,
+                      newContent,
+                      context?.mode ?? "overwrite",
+                      oldContent,
+                    );
+                    const response = await modal.openAndWait();
+                    if (response.action === "save") {
+                      return { accepted: true, openFile: response.openFile };
+                    }
+                    if (response.action === "edit") {
+                      return { accepted: false, feedback: response.additionalRequest };
+                    }
+                    return { accepted: false, cancelled: true };
+                  },
+                  onRunSkillWorkflow: skillWorkflowMap.size > 0
+                    ? (workflowId, variablesJson) => executeSkillWorkflow(plugin, workflowId, variablesJson, skillWorkflowMap)
+                    : undefined,
+                });
+              const toolResultMsg: Message = {
+                role: "tool",
+                content: result.result,
+                timestamp: Date.now(),
+                toolCallId: tc.id,
+                toolName: tc.name,
+                attachments: result.attachments,
+              };
+              conversationMessages.push(toolResultMsg);
+
+              let parsedResult: unknown = result.result;
+              if (tc.name === SKILL_WORKFLOW_TOOL_NAME && typeof result.result === "string") {
+                const trimmed = result.result.trim();
+                if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                  try {
+                    parsedResult = JSON.parse(trimmed);
+                  } catch {
+                    // keep raw string
+                  }
+                }
+              }
+              allToolResults.push({ toolCallId: tc.id, result: parsedResult, attachments: result.attachments });
+              if (result.cancelled) {
+                stopped = true;
+                break;
+              }
+            }
+
+            if (session.isActive()) setStreamingContent("");
+
+            if (stopped) break;
+            // A continuation with neither text nor another tool call is not a
+            // useful completion. Retry it for every tool instead of maintaining a
+            // partial allowlist of read tools (which omitted list_notes and
+            // list_folders).
+            pendingToolCalls = await streamOneRoundWithRetry(true, true);
+          }
+
+          if (stopped) {
+            fullContent = fullContent
+              ? `${fullContent}\n\n${t("chat.generationStopped")}`
+              : t("chat.generationStopped");
+          }
+
+          const elapsedMs = Date.now() - startTime;
+
+          const assistantMessage: Message = {
+            role: "assistant",
+            content: fullContent,
+            timestamp: Date.now(),
+            model: llmConfig.model || "local-llm",
+            thinking: thinkingContent || undefined,
+            ragUsed: !!ragSources,
+            ragSources,
+            ragCitations,
+            skillsUsed: skillsUsedNames,
+            toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
+            toolResults: allToolResults.length > 0 ? allToolResults : undefined,
+            usage,
+            elapsedMs,
+          };
+
+          // Only this message reaches the chat: the tool call and result
+          // messages are internal to the turn.
+          return assistantMessage;
+      },
+
+      onSettled: async () => {
+        for (const id of temporaryAgentPluginServerIds) await plugin.mcpManager.disconnectServer(id);
+      },
+    });
   }, [messages, plugin, llmConfig, selectedRagSetting, vaultToolMode, ragAvailable, resolveMessageVariables, saveCurrentChat, getEffectiveSkillPathsForSend, availableSkills, enabledMcpServerIds, getOkfRoot, activeOkfBundleIds]);
 
   return (
