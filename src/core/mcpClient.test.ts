@@ -39,4 +39,18 @@ describe("McpClient", () => {
 
     await expect(start).rejects.toThrow("MCP process error: spawn missing-node ENOENT");
   });
+
+  it("sends tool input in the MCP arguments field", async () => {
+    const client = new McpClient("node", []);
+    const sendRequest = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "ok" }],
+    });
+    (client as unknown as { sendRequest: typeof sendRequest }).sendRequest = sendRequest;
+
+    await expect(client.callTool("get-web-search-summaries", { query: "Obsidian" })).resolves.toBe("ok");
+    expect(sendRequest).toHaveBeenCalledWith("tools/call", {
+      name: "get-web-search-summaries",
+      arguments: { query: "Obsidian" },
+    });
+  });
 });
