@@ -3217,6 +3217,76 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   cursor: pointer;
 }
 
+.llm-hub-search-selector {
+  position: relative;
+  flex: 0 0 auto;
+  max-width: 220px;
+}
+
+.llm-hub-search-selector-button {
+  width: 100%;
+  max-width: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.llm-hub-search-selector-menu {
+  position: absolute;
+  top: auto;
+  bottom: calc(100% + 4px);
+  right: 0;
+  z-index: 100;
+  min-width: 230px;
+  max-width: min(340px, 90vw);
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.llm-hub-search-selector-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 5px;
+  color: var(--text-normal);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.llm-hub-search-selector-option:hover {
+  background: var(--background-modifier-hover);
+}
+
+.llm-hub-search-selector-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.llm-hub-search-selector-option input {
+  margin: 0;
+}
+
+.llm-hub-search-selector-separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--background-modifier-border);
+}
+
+.is-mobile .llm-hub-search-selector {
+  max-width: none;
+  flex: 1 1 100%;
+}
+
 .llm-hub-model-picker {
   position: relative;
   min-width: 60px;
