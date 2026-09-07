@@ -107,27 +107,7 @@ export interface RagConfig {
 }
 
 // Tool definitions (OpenAI-compatible format, shared by Ollama and LM Studio)
-export interface ToolDefinition {
-  type: "function";
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: "object";
-      properties: Record<string, ToolParameter>;
-      required?: string[];
-    };
-  };
-}
-
-export interface ToolParameter {
-  type: string;
-  description?: string;
-  enum?: string[];
-  properties?: Record<string, ToolParameter>;
-  required?: string[];
-  items?: ToolParameter;
-}
+export type { OpenAiToolDefinition as ToolDefinition, ToolPropertyDefinition as ToolParameter } from "obsidian-llm-hub-common/core";
 
 // Tool call from LLM response
 
