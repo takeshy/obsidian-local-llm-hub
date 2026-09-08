@@ -562,6 +562,7 @@ export class LocalLlmHubPlugin extends Plugin {
   async loadSettings(): Promise<void> {
     const data = await this.loadData() as Partial<LocalLlmHubSettings> | null;
     this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+    this.settings.voiceChat = { ...DEFAULT_SETTINGS.voiceChat, ...data?.voiceChat };
     let needsSave = false;
     if (data && Object.keys(data).length > 0 && data.maxSavedChatHistories === undefined) {
       this.settings.maxSavedChatHistories = 0;

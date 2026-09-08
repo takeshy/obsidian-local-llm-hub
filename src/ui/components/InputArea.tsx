@@ -5,6 +5,7 @@ import {
   isAttachmentRejection,
   type AttachmentKind,
 } from "obsidian-llm-hub-common/chat";
+import type { VoiceChatSettings } from "obsidian-llm-hub-common/chat";
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-common";
 import { Composer, Autocomplete, Attachments, VaultToolControl, EnabledMcpServers, InputButtons, SearchSelector, ModelRow } from "obsidian-llm-hub-common";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
@@ -61,6 +62,8 @@ interface InputAreaProps {
   onMaxPreviousMessagesChange: (count: number) => void;
   inputHistory: string[];
   onInputHistoryAdd: (prompt: string) => void;
+  voiceChatSettings: VoiceChatSettings;
+  onAutoReadAloudChange: (enabled: boolean) => void;
 }
 
 export interface InputAreaHandle {
@@ -120,6 +123,8 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   onMaxPreviousMessagesChange,
   inputHistory,
   onInputHistoryAdd,
+  voiceChatSettings,
+  onAutoReadAloudChange,
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -239,6 +244,16 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       historyIndexRef.current = null;
       historyDraftRef.current = "";
     }
+  };
+
+  const handleVoiceSubmit = (content: string) => {
+    if (!content.trim() || isLoading) return;
+    onInputHistoryAdd(content);
+    void onSend(content, pendingAttachments.length > 0 ? pendingAttachments : undefined);
+    setInput("");
+    setPendingAttachments([]);
+    historyIndexRef.current = null;
+    historyDraftRef.current = "";
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -550,6 +565,11 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
               value: maxPreviousMessages,
               onChange: onMaxPreviousMessagesChange,
             }}
+            autoReadAloud={{
+              label: t("input.autoReadAloud"),
+              enabled: voiceChatSettings.autoReadAloud,
+              onChange: onAutoReadAloudChange,
+            }}
           />
         </InputButtons>
 
@@ -561,6 +581,11 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           placeholder: t("input.placeholder") }}
           isLoading={isLoading}
           canSend={!!input.trim() || pendingAttachments.length > 0}
+          voiceSubmit={{
+            enabled: voiceChatSettings.submitOnPaste && !isLoading,
+            phrase: voiceChatSettings.submitPhrase,
+            onSubmit: handleVoiceSubmit,
+          }}
           onSend={handleSubmit} onStop={onStop}
           sendLabel={t("input.send")} stopLabel={t("input.stop")}
 

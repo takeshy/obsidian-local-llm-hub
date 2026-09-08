@@ -1,4 +1,5 @@
 import type { McpServerConfig } from "obsidian-llm-hub-common/core";
+import { DEFAULT_VOICE_CHAT_SETTINGS, type VoiceChatSettings } from "obsidian-llm-hub-common/core";
 import type { McpFraming } from "obsidian-llm-hub-common/core";
 export type { McpServerConfig, McpTransport, McpFraming } from "obsidian-llm-hub-common/core";
 
@@ -204,6 +205,7 @@ export interface LocalLlmHubSettings {
   maxSavedChatHistories: number;
   manualChatSaveFolder: string;
   systemPrompt: string;
+  voiceChat: VoiceChatSettings;
   encryption: EncryptionSettings;
   editHistory: EditHistorySettings;
   slashCommands: SlashCommand[];
@@ -257,6 +259,7 @@ export const DEFAULT_SETTINGS: LocalLlmHubSettings = {
   maxSavedChatHistories: 100,
   manualChatSaveFolder: "",
   systemPrompt: "",
+  voiceChat: { ...DEFAULT_VOICE_CHAT_SETTINGS },
   encryption: { ...DEFAULT_ENCRYPTION_SETTINGS },
   editHistory: { ...DEFAULT_EDIT_HISTORY_SETTINGS },
   slashCommands: [],

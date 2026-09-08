@@ -32,6 +32,8 @@ import {
   resolveMessageVariables as resolveMessageVariablesShared,
   useChatHistories,
   useChatStreamSessions,
+  useAutoReadAloud,
+  buildReadAloudSystemPrompt,
   type ChatStorageHost,
   type CommandVariableSources,
 } from "obsidian-llm-hub-common/chat";
@@ -186,6 +188,16 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     leaveCurrentChat,
   } = useChatStreamSessions({ setMessages, saveChatToDisk, currentChatId });
   const inputAreaRef = useRef<InputAreaHandle>(null);
+  const [voiceChatSettings, setVoiceChatSettings] = useState(() => ({ ...plugin.settings.voiceChat }));
+  useAutoReadAloud(messages, isLoading, voiceChatSettings.autoReadAloud);
+  const handleAutoReadAloudChange = useCallback((enabled: boolean) => {
+    setVoiceChatSettings((previous) => {
+      const next = { ...previous, autoReadAloud: enabled };
+      plugin.settings.voiceChat = next;
+      void plugin.saveSettings();
+      return next;
+    });
+  }, [plugin]);
   // Set to true once user interacts (newChat, loadChat, sendMessage)
   // so the mount-time restore doesn't overwrite their action.
   // The mount-time restore must not overwrite a chat the user has already acted on.
@@ -218,6 +230,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       // Sync RAG settings
       setRagSettingNames(plugin.getRagSettingNames());
       setSelectedRagSetting(plugin.getSelectedRagSettingName());
+      setVoiceChatSettings({ ...plugin.settings.voiceChat });
     };
     const onRagChanged = () => {
       setRagSettingNames(plugin.getRagSettingNames());
@@ -778,6 +791,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
               hasRagContext,
             });
           }
+          if (plugin.settings.voiceChat.autoReadAloud) systemPrompt += buildReadAloudSystemPrompt();
 
           // Tested Agent Plugin MCP servers are connected only for turns where a
           // skill from the same enabled package is active.
@@ -1234,6 +1248,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
             return next;
           });
         }}
+        voiceChatSettings={voiceChatSettings}
+        onAutoReadAloudChange={handleAutoReadAloudChange}
       />
     </ChatLayout>
   );
