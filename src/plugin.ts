@@ -112,6 +112,7 @@ export class LocalLlmHubPlugin extends Plugin {
       getWorkflowSpecification: () => WORKFLOW_SPECIFICATION,
       getWorkspaceFolder: () => this.settings.workspaceFolder,
       getSkillsFolder: () => this.settings.skillsFolder || SKILLS_FOLDER,
+      notifySkillsChanged: () => this.settingsEmitter.emit("skills-changed"),
       getHistoryEncryption: () => this.settings.encryption,
       getPluginVersion: () => this.manifest.version,
       getWorkflowHotkeys: () => this.settings.enabledWorkflowHotkeys,
@@ -193,11 +194,11 @@ export class LocalLlmHubPlugin extends Plugin {
     // Initialize encryption manager
     this.encryptionManager = new EncryptionManager(this);
 
-    // Initialize workflow manager
-    this.workflowManager = new WorkflowManager(this, this.selectionManager);
-
     // Initialize selection manager
     this.selectionManager = new SelectionManager(this);
+
+    // Initialize workflow manager after its selection dependency is ready
+    this.workflowManager = new WorkflowManager(this, this.selectionManager);
 
     // Settings tab
     this.addSettingTab(new SettingsTab(this.app, this));

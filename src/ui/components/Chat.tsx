@@ -833,7 +833,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 
           // Workflow spec lookup tool — enables the LLM to fetch authoritative
           // node docs on demand (e.g. when debugging workflows or generating YAML).
-          if (!isAnythingLlm) {
+          if (vaultToolMode !== "none" && !isAnythingLlm) {
             tools.push(GET_WORKFLOW_SPEC_TOOL);
           }
 

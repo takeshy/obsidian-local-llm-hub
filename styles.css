@@ -4263,6 +4263,42 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   max-height: 400px;
 }
 
+.llm-hub-workflow-execution-node {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 10px 12px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--text-faint);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.llm-hub-workflow-execution-node:hover {
+  background: var(--background-primary-alt);
+  border-color: var(--background-modifier-border-hover);
+}
+
+.llm-hub-workflow-execution-node-pending {
+  opacity: 0.72;
+}
+
+.llm-hub-workflow-execution-node-running {
+  border-left-color: var(--interactive-accent);
+  background: var(--background-primary-alt);
+}
+
+.llm-hub-workflow-execution-node-completed {
+  border-left-color: var(--color-green);
+}
+
+.llm-hub-workflow-execution-node-error {
+  border-left-color: var(--color-red);
+}
+
 .llm-hub-workflow-execution-node-type {
   font-size: 10px;
   font-weight: 600;
@@ -4302,12 +4338,12 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   margin-top: 4px;
 }
 
-.llm-hub-workflow-execution-node-connections .llm-hub-conn-true {
+.llm-hub-workflow-execution-node-connections .llm-hub-workflow-execution-conn-true {
   color: var(--color-green);
   margin-right: 8px;
 }
 
-.llm-hub-workflow-execution-node-connections .llm-hub-conn-false {
+.llm-hub-workflow-execution-node-connections .llm-hub-workflow-execution-conn-false {
   color: var(--color-red);
 }
 
@@ -4668,9 +4704,19 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 }
 
 /* History Modal Styles */
+.llm-hub-workflow-history-modal-container {
+  width: min(900px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  height: min(680px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
+  box-sizing: border-box;
+}
+
 .llm-hub-workflow-history-modal {
   padding: 20px;
-  min-width: 700px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -4844,6 +4890,7 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 /* History Detail Panel */
 .llm-hub-workflow-history-detail-panel {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -4856,6 +4903,7 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 
 .llm-hub-workflow-history-detail {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
@@ -4942,6 +4990,13 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 .is-mobile .llm-hub-workflow-history-modal {
   min-width: unset;
   padding: 12px;
+}
+
+.is-mobile .llm-hub-workflow-history-modal-container {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
 }
 
 .is-mobile .llm-hub-workflow-history-container {
@@ -5276,8 +5331,26 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
    =============================================== */
 
 .llm-hub-workflow-preview-modal {
+  width: min(760px, calc(100vw - 32px));
   min-width: 600px;
   max-width: 900px;
+  max-height: calc(100vh - 48px);
+}
+
+.llm-hub-workflow-preview-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 80px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.llm-hub-workflow-preview-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 8px;
 }
 
 .llm-hub-workflow-preview-modal-content .modal-drag-handle {
@@ -5508,9 +5581,13 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 }
 
 .llm-hub-workflow-preview-buttons {
+  flex: 0 0 auto;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
 }
 
 .llm-hub-workflow-preview-buttons button {
@@ -5520,6 +5597,20 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 /* Workflow Preview Modal - Mobile */
 .is-mobile .llm-hub-workflow-preview-name {
   flex-shrink: 0;
+}
+
+.is-mobile .llm-hub-workflow-preview-modal {
+  width: 100vw;
+  min-width: 0;
+  max-width: 100vw;
+  max-height: 100vh;
+}
+
+.is-mobile .llm-hub-workflow-preview-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .is-mobile .llm-hub-workflow-preview-nodes {
@@ -7427,7 +7518,11 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 .llm-hub-workflow-node-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
+}
+
+.llm-hub-workflow-node-wrapper {
+  min-width: 0;
 }
 
 .llm-hub-workflow-empty-state {
@@ -7496,6 +7591,20 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   background-color: var(--background-secondary);
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.llm-hub-workflow-node-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 /* Node Summary */
@@ -7847,12 +7956,21 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   gap: 4px;
 }
 
+.llm-hub-workflow-selector-node-wrapper {
+  min-width: 0;
+}
+
 .llm-hub-workflow-selector-nodes .llm-hub-workflow-node-header {
   margin-left: 0;
 }
 
 .llm-hub-workflow-selector-nodes .llm-hub-workflow-node-summary {
   margin-left: 0;
+}
+
+.llm-hub-workflow-selector-nodes .llm-hub-workflow-node-comment {
+  margin-left: 0;
+  white-space: pre-wrap;
 }
 
 /* Workflow Selector - AI Workflow History */
@@ -7925,16 +8043,21 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 
 /* Node Card */
 .llm-hub-workflow-node-card {
-  background-color: var(--background-secondary);
+  background-color: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  padding: 10px 12px;
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: 8px;
+  padding: 12px 14px;
   cursor: pointer;
   position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .llm-hub-workflow-node-card:hover {
   background-color: var(--background-secondary-alt);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 
 /* Node Comment */
