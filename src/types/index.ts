@@ -238,6 +238,13 @@ export interface LocalLlmHubSettings {
    * next reload and let reconnect races silently flip saved state.
    */
   mcpServerEnabled?: Partial<Record<string, boolean>>;
+  /**
+   * The skills the user turned on or off in the chat skill list, as folder paths.
+   * A selection built from the user's own skills is a standing preference and is
+   * restored as it was; one that holds only built-in skills is left to the
+   * defaults (see restoredSkillPaths).
+   */
+  activeSkillPaths?: string[];
 }
 
 /** Fixed skills folder name. */

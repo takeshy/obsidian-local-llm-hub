@@ -56,7 +56,7 @@ import {
 } from "src/core/ragSearchTool";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
 import { resolveAgentPluginMcpServers } from "src/core/agentPlugins";
-import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
+import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, restoredSkillPaths, prunedSkillPaths, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
 import { buildBuiltinOkfSystemPrompt, buildOkfSystemPrompt, discoverOkfBundles, getBuiltinOkfBundle, isBuiltinOkfBundleId, type OkfBundle } from "src/core/okfLoader";
 import { executeReadOkfDocumentTool, READ_OKF_DOCUMENT_TOOL, READ_OKF_DOCUMENT_TOOL_NAME } from "src/core/okfDocumentTool";
 import { parseWorkflowFromMarkdown } from "src/workflow/parser";
@@ -75,7 +75,7 @@ import {
   parseMarkdownToMessages,
   formatHistoryDate,
 } from "./chat/chatHistory";
-import { resolveEffectiveSkillPaths } from "./chat/contextSkills";
+import { resolveEffectiveSkillPaths, useSkillPathPersistence } from "./chat/contextSkills";
 import { buildNoDiscoverySystemPrompt } from "./chat/noDiscoveryPrompt";
 import MessageList from "./MessageList";
 import InputArea, { type InputAreaHandle } from "./InputArea";
@@ -141,9 +141,15 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<SkillMetadata[]>(getBuiltinSkillMetadata);
+  // A selection the user built from their own skills is a standing preference;
+  // one that holds only built-in skills is left to the shipped defaults.
   const [activeSkillPaths, setActiveSkillPaths] = useState<string[]>(
-    () => DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)
+    () => restoredSkillPaths(plugin.settings.activeSkillPaths, DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)),
   );
+  useSkillPathPersistence(activeSkillPaths, (paths) => {
+    plugin.settings.activeSkillPaths = [...paths];
+    void plugin.saveSettings();
+  });
   const [okfBundles, setOkfBundles] = useState<OkfBundle[]>([]);
   const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
   const [mcpServerInfos, setMcpServerInfos] = useState<McpServerInfo[]>([]);
@@ -321,7 +327,15 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 
   // Discover skills (on mount + when skills-changed is emitted)
   const refreshSkills = useCallback(() => {
-    void discoverSkills(plugin.app, plugin.settings.skillsFolder).then(setAvailableSkills);
+    void discoverSkills(plugin.app, plugin.settings.skillsFolder).then((skills) => {
+      setAvailableSkills(skills);
+      // A saved selection outlives the folders it names: a skill can be
+      // renamed, deleted, or belong to an agent plugin that is now off.
+      setActiveSkillPaths((previous) => {
+        const pruned = prunedSkillPaths(previous, skills);
+        return pruned.length === previous.length ? previous : pruned;
+      });
+    });
   }, [plugin]);
 
   useEffect(() => {
@@ -601,7 +615,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setMessages(history.messages);
     setCurrentChatId(history.id);
     setShowHistory(false);
-  }, [leaveCurrentChat]);
+  }, [leaveCurrentChat, plugin]);
 
   // New chat
   const newChat = useCallback(() => {
@@ -612,7 +626,9 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setStreamingContent("");
     setStreamingThinking("");
     setShowHistory(false);
-    setActiveSkillPaths(DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath));
+    // A new chat keeps the skills the user chose; only a built-in-only
+    // selection falls back to the shipped defaults.
+    setActiveSkillPaths(restoredSkillPaths(plugin.settings.activeSkillPaths, DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)));
   }, [leaveCurrentChat]);
 
   // Delete a chat
