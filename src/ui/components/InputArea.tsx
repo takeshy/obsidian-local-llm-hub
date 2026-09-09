@@ -6,8 +6,9 @@ import {
   type AttachmentKind,
 } from "obsidian-llm-hub-common/chat";
 import type { VoiceChatSettings, VoiceConversationSession } from "obsidian-llm-hub-common/chat";
+import { clampReadAloudRate, MAX_READ_ALOUD_RATE, MIN_READ_ALOUD_RATE } from "obsidian-llm-hub-common/chat";
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-common";
-import { Composer, Autocomplete, Attachments, VaultToolControl, EnabledMcpServers, ReadAloudChip, InputButtons, SearchSelector, ModelRow } from "obsidian-llm-hub-common";
+import { Composer, Autocomplete, Attachments, VaultToolControl, EnabledMcpServers, ChipRow, ReadAloudChip, VoiceConversationChip, InputButtons, SearchSelector, ModelRow } from "obsidian-llm-hub-common";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
@@ -65,6 +66,7 @@ interface InputAreaProps {
   voiceChatSettings: VoiceChatSettings;
   voiceConversation: VoiceConversationSession;
   onAutoReadAloudChange: (enabled: boolean) => void;
+  onReadAloudRateChange: (rate: number) => void;
 }
 
 export interface InputAreaHandle {
@@ -127,6 +129,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   voiceChatSettings,
   voiceConversation,
   onAutoReadAloudChange,
+  onReadAloudRateChange,
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
@@ -246,6 +249,23 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       historyIndexRef.current = null;
       historyDraftRef.current = "";
     }
+  };
+
+  // Text from a popup opened for a conversation that has since ended, or one
+  // that answered while a turn was still running: keep the words at the caret
+  // instead of sending them.
+  const insertDictation = (text: string) => {
+    const caret = textareaRef.current?.selectionStart ?? input.length;
+    const end = textareaRef.current?.selectionEnd ?? caret;
+    const before = input.slice(0, caret);
+    const separator = before && !/\s$/.test(before) ? " " : "";
+    const next = before + separator + text + input.slice(end);
+    setInput(next);
+    const position = before.length + separator.length + text.length;
+    window.setTimeout(() => {
+      textareaRef.current?.focus();
+      textareaRef.current?.setSelectionRange(position, position);
+    }, 0);
   };
 
   const handleVoiceSubmit = (content: string) => {
@@ -472,26 +492,35 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   return (
     <SharedInputArea classPrefix="llm-hub"
       beforeInput={<>
-      {/* Reading aloud stays visible outside the transcript while it is on */}
-      {voiceChatSettings.autoReadAloud && <ReadAloudChip
-        classPrefix="llm-hub"
-        label={t("input.readAloudChip")}
-        removeTitle={t("input.readAloudChipOff")}
-        onDisable={() => onAutoReadAloudChange(false)}
-      />}
+      <ChipRow classPrefix="llm-hub">
+        {/* Reading aloud stays visible outside the transcript while it is on */}
+        {voiceChatSettings.autoReadAloud && <ReadAloudChip
+          classPrefix="llm-hub"
+          label={t("input.readAloudChip")}
+          removeTitle={t("input.readAloudChipOff")}
+          onDisable={() => onAutoReadAloudChange(false)}
+        />}
 
-      {/* MCP servers enabled for this chat */}
-      <EnabledMcpServers
-        classPrefix="llm-hub"
-        disabled={isLoading}
-        onDisable={(id) => onMcpServerToggle(id, false)}
-        servers={enabledMcpServers.map((server) => ({
-          id: server.id,
-          name: server.name,
-          title: t("input.mcpServerEnabled", { name: server.name }),
-          removeTitle: t("input.mcpServerDisable", { name: server.name }),
-        }))}
-      />
+        {voiceConversation.active && <VoiceConversationChip
+          classPrefix="llm-hub"
+          label={t("input.voiceConversationChip")}
+          removeTitle={t("input.voiceConversationEnd")}
+          onEnd={voiceConversation.end}
+        />}
+
+        {/* MCP servers enabled for this chat */}
+        <EnabledMcpServers
+          classPrefix="llm-hub"
+          disabled={isLoading}
+          onDisable={(id) => onMcpServerToggle(id, false)}
+          servers={enabledMcpServers.map((server) => ({
+            id: server.id,
+            name: server.name,
+            title: t("input.mcpServerEnabled", { name: server.name }),
+            removeTitle: t("input.mcpServerDisable", { name: server.name }),
+          }))}
+        />
+      </ChipRow>
 
       {/* Pending attachments display */}
       <Attachments
@@ -579,6 +608,14 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
               label: t("input.autoReadAloud"),
               enabled: voiceChatSettings.autoReadAloud,
               onChange: onAutoReadAloudChange,
+              rate: {
+                label: t("input.readAloudRate"),
+                value: clampReadAloudRate(voiceChatSettings.readAloudRate),
+                min: MIN_READ_ALOUD_RATE,
+                max: MAX_READ_ALOUD_RATE,
+                step: 0.1,
+                onChange: onReadAloudRateChange,
+              },
             }}
           />
         </InputButtons>
@@ -594,12 +631,11 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           voiceConversation={{
             available: voiceConversation.available,
             active: voiceConversation.active,
-            phrase: voiceChatSettings.submitPhrase,
             label: t("input.voiceConversation"),
-            activeLabel: t("input.voiceConversationActive"),
-            onToggle: voiceConversation.toggle,
+            onOpen: voiceConversation.open,
             onSubmit: handleVoiceSubmit,
             onEnd: voiceConversation.end,
+            onInsert: insertDictation,
           }}
           voiceSubmit={{
             enabled: voiceChatSettings.submitOnPaste && !isLoading,

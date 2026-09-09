@@ -34,6 +34,7 @@ import {
   useChatStreamSessions,
   useAutoReadAloud,
   useReadAloudRate,
+  clampReadAloudRate,
   useVoiceConversation,
   buildReadAloudSystemPrompt,
   type ChatStorageHost,
@@ -201,10 +202,19 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       return next;
     });
   }, [plugin]);
+  const handleReadAloudRateChange = useCallback((rate: number) => {
+    setVoiceChatSettings((previous) => {
+      const next = { ...previous, readAloudRate: clampReadAloudRate(rate) };
+      plugin.settings.voiceChat = next;
+      void plugin.saveSettings();
+      return next;
+    });
+  }, [plugin]);
   // The transcript arrives as a paste from speech-popup, so the session only
   // has to open the popup again once each answer lands.
   const voiceConversation = useVoiceConversation(messages, isLoading, {
     command: voiceChatSettings.speechPopupCommand,
+    chatId: currentChatId,
     readAloud: voiceChatSettings.autoReadAloud,
     onError: (message: string) => { new Notice(message); },
     onOpened: () => inputAreaRef.current?.focus(),
@@ -1263,6 +1273,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         voiceChatSettings={voiceChatSettings}
         voiceConversation={voiceConversation}
         onAutoReadAloudChange={handleAutoReadAloudChange}
+        onReadAloudRateChange={handleReadAloudRateChange}
       />
     </ChatLayout>
   );
