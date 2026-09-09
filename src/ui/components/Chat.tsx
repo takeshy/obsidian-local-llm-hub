@@ -141,8 +141,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<SkillMetadata[]>(getBuiltinSkillMetadata);
-  const [activeSkillPaths, setActiveSkillPaths] = useState<string[]>(
-    () => DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)
+  // The user's explicit skill selection is a standing preference (persisted in
+  // plugin.settings.activeSkillPaths), not a per-chat default: absent means the
+  // fresh-user default of only the built-in skills.
+  const [activeSkillPaths, setActiveSkillPaths] = useState<string[]>(() =>
+    plugin.settings.activeSkillPaths ?? DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)
   );
   const [okfBundles, setOkfBundles] = useState<OkfBundle[]>([]);
   const [activeOkfBundleIds, setActiveOkfBundleIds] = useState<string[]>([]);
@@ -321,7 +324,17 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 
   // Discover skills (on mount + when skills-changed is emitted)
   const refreshSkills = useCallback(() => {
-    void discoverSkills(plugin.app, plugin.settings.skillsFolder).then(setAvailableSkills);
+    void discoverSkills(plugin.app, plugin.settings.skillsFolder).then(skills => {
+      setAvailableSkills(skills);
+      // The persisted skill selection can go stale (a skill folder renamed or
+      // deleted after the last save). Prune saved paths that no longer exist
+      // among the discovered skills; an empty persisted list is "defaults
+      // only", which needs no pruning.
+      const valid = new Set(skills.map(s => s.folderPath));
+      setActiveSkillPaths(previous =>
+        previous.length === 0 ? previous : previous.filter(path => valid.has(path))
+      );
+    });
   }, [plugin]);
 
   useEffect(() => {
@@ -367,7 +380,14 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         else next.add(folderPath);
         return next;
       });
-      setActiveSkillPaths(prev => prev.filter(path => !CONTEXT_SKILL_PATHS.has(path)));
+      setActiveSkillPaths(prev => {
+        const next = prev.filter(path => !CONTEXT_SKILL_PATHS.has(path));
+        if (next !== prev) {
+          plugin.settings.activeSkillPaths = next;
+          void plugin.saveSettings();
+        }
+        return next;
+      });
       return;
     }
     if (
@@ -375,12 +395,15 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       && !disabledContextSkillPaths.has(activeContextSkillPath)
       && CONTEXT_SKILL_PATHS.has(folderPath)
     ) return;
-    setActiveSkillPaths(prev =>
-      prev.includes(folderPath)
+    setActiveSkillPaths(prev => {
+      const next = prev.includes(folderPath)
         ? prev.filter(p => p !== folderPath)
-        : [...prev, folderPath]
-    );
-  }, [activeContextSkillPath, disabledContextSkillPaths]);
+        : [...prev, folderPath];
+      plugin.settings.activeSkillPaths = next;
+      void plugin.saveSettings();
+      return next;
+    });
+  }, [plugin, activeContextSkillPath, disabledContextSkillPaths]);
 
   const getOkfSource = useCallback((): KnowledgeSource | null => {
     const source = (plugin.settings.knowledgeSources || []).find(s => s.enabled && s.type === "okf" && s.path.trim());
@@ -612,7 +635,6 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setStreamingContent("");
     setStreamingThinking("");
     setShowHistory(false);
-    setActiveSkillPaths(DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath));
   }, [leaveCurrentChat]);
 
   // Delete a chat
@@ -732,9 +754,14 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       prepare: async () => {
         // Activate skill if specified via slash command
         if (skillPath) {
-          setActiveSkillPaths(prev =>
-            prev.includes(skillPath) ? prev : [...prev, skillPath]
-          );
+          setActiveSkillPaths(prev => {
+            const next = prev.includes(skillPath) ? prev : [...prev, skillPath];
+            if (next !== prev) {
+              plugin.settings.activeSkillPaths = next;
+              void plugin.saveSettings();
+            }
+            return next;
+          });
         }
 
         const resolvedContent = content ? await resolveMessageVariables(content) : "";

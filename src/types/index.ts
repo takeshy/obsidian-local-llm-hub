@@ -238,6 +238,14 @@ export interface LocalLlmHubSettings {
    * next reload and let reconnect races silently flip saved state.
    */
   mcpServerEnabled?: Partial<Record<string, boolean>>;
+  /**
+   * The skills the user explicitly toggled on/off in the chat skill list, stored as
+   * folder paths. Absent means "use the defaults" (only the built-in Obsidian
+   * Markdown skill), which is the fresh-user behaviour. Unlike the context skill
+   * (auto-selected per chat context), this is a standing user preference, so it is
+   * persisted across chats and view remounts.
+   */
+  activeSkillPaths?: string[];
 }
 
 /** Fixed skills folder name. */
