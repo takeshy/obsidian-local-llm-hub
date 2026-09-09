@@ -142,6 +142,8 @@ Local LLM Hub で LLM サーバーとモデルを設定し、Discussion Hub の�
 - 終了してもポップアップは開いたままです。そのあとに貼り付けられた文章は、印だけを外して入力欄に入り、送信されません。長い文章を何回かに分けて口述し、最後に自分で送るときはこれを使います。
 - Obsidian の PATH でアプリが見つからない場合は、設定 → チャット → 「speech-popupコマンド」にフルパスを入れてください。失敗時はコマンドとエラー内容が通知に出ます。
 
+[音声会話のデモを YouTube で見る](https://www.youtube.com/watch?v=w8uyateB-0s)
+
 ### Vault ツール（Function Calling）
 
 Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral）で Vault を直接操作:
