@@ -3166,6 +3166,51 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   opacity: 0.5;
 }
 
+.llm-hub-read-aloud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.llm-hub-read-aloud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: min(240px, 80vw);
+  padding: 3px 6px;
+  border: 1px solid color-mix(in srgb, var(--color-blue) 35%, var(--background-modifier-border));
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--color-blue) 10%, var(--background-secondary));
+  color: var(--color-blue);
+  font-size: 11px;
+}
+
+.llm-hub-read-aloud-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.llm-hub-read-aloud-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.llm-hub-read-aloud-chip-remove:hover {
+  background: color-mix(in srgb, var(--color-blue) 20%, transparent);
+}
+
 .llm-hub-pending-attachments {
   display: flex;
   flex-wrap: wrap;
@@ -3397,6 +3442,7 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   gap: 4px;
 }
 
+.llm-hub-mic-btn,
 .llm-hub-send-btn,
 .llm-hub-stop-btn {
   background: transparent;
@@ -3424,6 +3470,20 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 .llm-hub-send-btn:hover:not(:disabled),
 .llm-hub-stop-btn:hover {
   background: var(--background-modifier-hover);
+}
+
+.llm-hub-mic-btn {
+  color: var(--text-muted);
+}
+
+.llm-hub-mic-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* A live session must be obvious: the popup itself may be behind Obsidian. */
+.llm-hub-mic-btn-active {
+  color: var(--interactive-accent);
 }
 
 /* Autocomplete */

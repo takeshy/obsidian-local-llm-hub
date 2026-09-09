@@ -33,6 +33,8 @@ import {
   useChatHistories,
   useChatStreamSessions,
   useAutoReadAloud,
+  useReadAloudRate,
+  useVoiceConversation,
   buildReadAloudSystemPrompt,
   type ChatStorageHost,
   type CommandVariableSources,
@@ -190,6 +192,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   const inputAreaRef = useRef<InputAreaHandle>(null);
   const [voiceChatSettings, setVoiceChatSettings] = useState(() => ({ ...plugin.settings.voiceChat }));
   useAutoReadAloud(messages, isLoading, voiceChatSettings.autoReadAloud);
+  useReadAloudRate(voiceChatSettings.readAloudRate);
   const handleAutoReadAloudChange = useCallback((enabled: boolean) => {
     setVoiceChatSettings((previous) => {
       const next = { ...previous, autoReadAloud: enabled };
@@ -198,6 +201,15 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       return next;
     });
   }, [plugin]);
+  // The transcript arrives as a paste from speech-popup, so the session only
+  // has to open the popup again once each answer lands.
+  const voiceConversation = useVoiceConversation(messages, isLoading, {
+    command: voiceChatSettings.speechPopupCommand,
+    readAloud: voiceChatSettings.autoReadAloud,
+    onError: (message: string) => { new Notice(message); },
+    onOpened: () => inputAreaRef.current?.focus(),
+    onStarted: () => handleAutoReadAloudChange(true),
+  });
   // Set to true once user interacts (newChat, loadChat, sendMessage)
   // so the mount-time restore doesn't overwrite their action.
   // The mount-time restore must not overwrite a chat the user has already acted on.
@@ -1249,6 +1261,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           });
         }}
         voiceChatSettings={voiceChatSettings}
+        voiceConversation={voiceConversation}
         onAutoReadAloudChange={handleAutoReadAloudChange}
       />
     </ChatLayout>

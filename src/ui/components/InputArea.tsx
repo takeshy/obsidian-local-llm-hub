@@ -5,9 +5,9 @@ import {
   isAttachmentRejection,
   type AttachmentKind,
 } from "obsidian-llm-hub-common/chat";
-import type { VoiceChatSettings } from "obsidian-llm-hub-common/chat";
+import type { VoiceChatSettings, VoiceConversationSession } from "obsidian-llm-hub-common/chat";
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-common";
-import { Composer, Autocomplete, Attachments, VaultToolControl, EnabledMcpServers, InputButtons, SearchSelector, ModelRow } from "obsidian-llm-hub-common";
+import { Composer, Autocomplete, Attachments, VaultToolControl, EnabledMcpServers, ReadAloudChip, InputButtons, SearchSelector, ModelRow } from "obsidian-llm-hub-common";
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
 import { Notice, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
@@ -63,6 +63,7 @@ interface InputAreaProps {
   inputHistory: string[];
   onInputHistoryAdd: (prompt: string) => void;
   voiceChatSettings: VoiceChatSettings;
+  voiceConversation: VoiceConversationSession;
   onAutoReadAloudChange: (enabled: boolean) => void;
 }
 
@@ -124,6 +125,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   inputHistory,
   onInputHistoryAdd,
   voiceChatSettings,
+  voiceConversation,
   onAutoReadAloudChange,
 }, ref) {
   const [input, setInput] = useState("");
@@ -470,6 +472,14 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   return (
     <SharedInputArea classPrefix="llm-hub"
       beforeInput={<>
+      {/* Reading aloud stays visible outside the transcript while it is on */}
+      {voiceChatSettings.autoReadAloud && <ReadAloudChip
+        classPrefix="llm-hub"
+        label={t("input.readAloudChip")}
+        removeTitle={t("input.readAloudChipOff")}
+        onDisable={() => onAutoReadAloudChange(false)}
+      />}
+
       {/* MCP servers enabled for this chat */}
       <EnabledMcpServers
         classPrefix="llm-hub"
@@ -581,6 +591,16 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
           placeholder: t("input.placeholder") }}
           isLoading={isLoading}
           canSend={!!input.trim() || pendingAttachments.length > 0}
+          voiceConversation={{
+            available: voiceConversation.available,
+            active: voiceConversation.active,
+            phrase: voiceChatSettings.submitPhrase,
+            label: t("input.voiceConversation"),
+            activeLabel: t("input.voiceConversationActive"),
+            onToggle: voiceConversation.toggle,
+            onSubmit: handleVoiceSubmit,
+            onEnd: voiceConversation.end,
+          }}
           voiceSubmit={{
             enabled: voiceChatSettings.submitOnPaste && !isLoading,
             phrase: voiceChatSettings.submitPhrase,
