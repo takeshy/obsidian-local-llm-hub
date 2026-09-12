@@ -28,6 +28,7 @@ interface SlashCommandItem {
   promptTemplate: string;
   vaultToolMode?: VaultToolMode | null;
   skillPath?: string;
+  isSkillCommand?: boolean;
 }
 
 interface InputAreaProps {
@@ -133,6 +134,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
 }, ref) {
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [pendingSkillPath, setPendingSkillPath] = useState<string | undefined>();
   const [showVaultToolMenu, setShowVaultToolMenu] = useState(false);
   // Mention autocomplete state
   const [showMentionAutocomplete, setShowMentionAutocomplete] = useState(false);
@@ -227,7 +229,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       const cmdName = skillSlashMatch[1].toLowerCase();
       const allCommands = slashCommands || [];
       const skillCmd = allCommands.find(
-        (cmd) => cmd.skillPath && cmd.name.toLowerCase() === cmdName
+        (cmd) => cmd.isSkillCommand && cmd.skillPath && cmd.name.toLowerCase() === cmdName
       );
       if (skillCmd?.skillPath) {
         const message = skillSlashMatch[2]?.trim() || "";
@@ -243,9 +245,10 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
 
     if (input.trim() || pendingAttachments.length > 0) {
       if (input.trim()) onInputHistoryAdd(input);
-      void onSend(input, pendingAttachments.length > 0 ? pendingAttachments : undefined);
+      void onSend(input, pendingAttachments.length > 0 ? pendingAttachments : undefined, pendingSkillPath);
       setInput("");
       setPendingAttachments([]);
+      setPendingSkillPath(undefined);
       historyIndexRef.current = null;
       historyDraftRef.current = "";
     }
@@ -341,18 +344,21 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   const selectSlashCommand = (cmd: SlashCommandItem) => {
     if (cmd.name === "compact") {
       setInput("");
+      setPendingSkillPath(undefined);
       setShowSlashAutocomplete(false);
       onCompact?.();
       return;
     }
     // Skill slash commands: send immediately with skill path
-    if (cmd.skillPath) {
+    if (cmd.isSkillCommand && cmd.skillPath) {
       setInput("");
+      setPendingSkillPath(undefined);
       setShowSlashAutocomplete(false);
       void onSend("", undefined, cmd.skillPath);
       return;
     }
     setInput(cmd.promptTemplate);
+    setPendingSkillPath(cmd.skillPath || undefined);
     setShowSlashAutocomplete(false);
     // Apply vault tool mode override if set
     if (cmd.vaultToolMode !== null && cmd.vaultToolMode !== undefined) {

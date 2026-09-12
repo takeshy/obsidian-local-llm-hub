@@ -2,8 +2,9 @@ import { Setting, Notice } from "obsidian";
 import { t } from "src/i18n";
 // This host runs one configured model and its slash commands do not override
 // search or MCP, so the modal is opened with only the Vault access row.
-import { SlashCommandModal } from "obsidian-llm-hub-common/modals";
+import { SlashCommandModal, type SlashCommandModalOptions } from "obsidian-llm-hub-common/modals";
 import type { SlashCommand } from "src/types";
+import { discoverSkills } from "src/core/skillsLoader";
 
 interface SettingsContext {
   plugin: import("src/plugin").LocalLlmHubPlugin;
@@ -13,6 +14,14 @@ interface SettingsContext {
 export function displaySlashCommandSettings(containerEl: HTMLElement, ctx: SettingsContext): void {
   const { plugin, display } = ctx;
   const app = plugin.app;
+  const openCommandModal = async (
+    command: SlashCommand | null,
+    onSubmit: (command: SlashCommand) => void | Promise<void>,
+  ): Promise<void> => {
+    const skills = await discoverSkills(app, plugin.settings.skillsFolder);
+    const options: SlashCommandModalOptions = { skills };
+    new SlashCommandModal(app, command, options, onSubmit).open();
+  };
 
   new Setting(containerEl).setName(t("settings.slashCommands")).setHeading();
 
@@ -24,17 +33,15 @@ export function displaySlashCommandSettings(containerEl: HTMLElement, ctx: Setti
         .setButtonText(t("settings.addCommand"))
         .setCta()
         .onClick(() => {
-          new SlashCommandModal(
-            app,
+          void openCommandModal(
             null,
-            {},
             async (command: SlashCommand) => {
               plugin.settings.slashCommands.push(command);
               await plugin.saveSettings();
               display();
               new Notice(t("settings.commandCreated", { name: command.name }));
             }
-          ).open();
+          );
         })
     );
 
@@ -53,10 +60,8 @@ export function displaySlashCommandSettings(containerEl: HTMLElement, ctx: Setti
           .setIcon("pencil")
           .setTooltip(t("settings.editCommand"))
           .onClick(() => {
-            new SlashCommandModal(
-              app,
+            void openCommandModal(
               command,
-              {},
               async (updated: SlashCommand) => {
                 const index = plugin.settings.slashCommands.findIndex(
                   (c) => c.id === command.id
@@ -68,7 +73,7 @@ export function displaySlashCommandSettings(containerEl: HTMLElement, ctx: Setti
                   new Notice(t("settings.commandUpdated", { name: updated.name }));
                 }
               }
-            ).open();
+            );
           });
       });
 

@@ -163,6 +163,7 @@ export interface SlashCommand {
   promptTemplate: string;
   description?: string;
   vaultToolMode?: VaultToolMode | null; // null = use current setting
+  skillPath?: string | null; // null = keep current skills; path = auto-select when used
 }
 
 

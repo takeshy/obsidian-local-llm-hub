@@ -1263,12 +1263,14 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
             description: cmd.description || "",
             promptTemplate: cmd.promptTemplate,
             vaultToolMode: cmd.vaultToolMode,
+            skillPath: cmd.skillPath || undefined,
           })),
           ...availableSkills.map(skill => ({
             name: skill.name,
             description: skill.description || t("skills.skill"),
             promptTemplate: "",
             skillPath: skill.folderPath,
+            isSkillCommand: true,
           })),
         ]}
         maxPreviousMessages={maxPreviousMessages}
