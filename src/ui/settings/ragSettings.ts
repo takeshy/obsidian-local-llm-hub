@@ -3,7 +3,7 @@ import { t } from "src/i18n";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import type { RagSetting, ChunkStrategy } from "src/types";
 import { DEFAULT_RAG_SETTING } from "src/types";
-import { getRagStore } from "src/core/ragStore";
+import { getRagStore, type RagSyncProgress } from "src/core/ragStore";
 import { deleteRagIndex } from "src/core/ragStorage";
 import { fetchEmbeddingModels } from "src/core/localLlmProvider";
 import {
@@ -390,29 +390,41 @@ function displaySelectedRagSetting(
           progressBar.value = 0;
           progressBar.max = 100;
           try {
-            const result = await store.sync(
-              plugin.app,
-              name,
-              currentRagSetting,
-              plugin.settings.llmConfig,
-              undefined,
-              (progress) => {
-                const percent = Math.round((progress.current / Math.max(progress.total, 1)) * 100);
-                progressBar.value = percent;
-                progressBar.max = 100;
-                if (progress.phase === "embedding") {
-                  progressText.setText(`${t("settings.ragSyncingEmbeddings")}: ${progress.filePath} (${progress.current}/${progress.total})`);
-                } else if (progress.phase === "saving") {
-                  progressText.setText(t("settings.ragSyncSaving"));
-                } else {
-                  progressText.setText(`${t("settings.ragSyncingFile")}: ${progress.filePath} (${progress.current}/${progress.total})`);
-                }
-              },
-            );
+            const failedPdfFiles = new Set<string>();
+            const handleProgress = (progress: RagSyncProgress) => {
+              const percent = Math.round((progress.current / Math.max(progress.total, 1)) * 100);
+              progressBar.value = percent;
+              progressBar.max = 100;
+              if (progress.phase === "embedding") {
+                progressText.setText(`${t("settings.ragSyncingEmbeddings")}: ${progress.filePath} (${progress.current}/${progress.total})`);
+              } else if (progress.phase === "saving") {
+                progressText.setText(t("settings.ragSyncSaving"));
+              } else {
+                progressText.setText(`${t("settings.ragSyncingFile")}: ${progress.filePath} (${progress.current}/${progress.total})`);
+              }
+            };
+            let result;
+            do {
+              result = await store.sync(
+                plugin.app,
+                name,
+                currentRagSetting,
+                plugin.settings.llmConfig,
+                undefined,
+                handleProgress,
+              );
+              result.failedFiles?.forEach(filePath => failedPdfFiles.add(filePath));
+            } while (result.deferredFiles);
             new Notice(t("settings.ragSynced", {
               count: String(result.totalChunks),
               files: String(result.indexedFiles),
             }));
+            if (failedPdfFiles.size > 0) {
+              new Notice(t("settings.ragSyncPdfFailed", {
+                count: String(failedPdfFiles.size),
+                files: Array.from(failedPdfFiles).join("\n"),
+              }));
+            }
             progressContainer.addClass("llm-hub-hidden");
             display();
           } catch (err) {
