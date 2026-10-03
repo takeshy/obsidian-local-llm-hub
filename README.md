@@ -243,7 +243,7 @@ The plugin data folder (chat history, RAG indexes, and workflow history) and the
 
 ### RAG Setup
 
-1. Enable RAG in settings
+1. Under **Settings → Local RAG**, choose **+ New** from the RAG setting dropdown and enter a name. The dropdown starts blank when no setting is selected. The new setting is selected automatically and its embedding and index options appear.
 2. Fetch and select the embedding model
 3. Configure RAG index folders (optional — defaults to entire vault; this does not restrict Vault tools)
 4. Click **Sync** to build the index
