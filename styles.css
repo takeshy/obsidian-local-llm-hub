@@ -7486,18 +7486,19 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   color: var(--text-on-accent);
 }
 
-/* Plan section grows when active */
+/* Size the plan card to its capped content without leaving unused space inside. */
 .llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-plan-section:not(.is-collapsed):not(.is-hidden) {
-  flex: 1;
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
 .llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-plan-section:not(.is-collapsed):not(.is-hidden) .llm-hub-workflow-generation-plan {
-  flex: 1 1 0;
+  /* Use the content height in auto-height modals and shrink to fit smaller screens. */
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
+  max-height: 50vh;
   overflow-y: auto;
 }
 

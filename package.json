@@ -1,6 +1,6 @@
 {
   "name": "obsidian-local-llm-hub",
-  "version": "0.22.7",
+  "version": "0.22.8",
   "description": "Chat with local LLMs via OpenAI-compatible API, with local embeddings RAG and text processing commands",
   "main": "main.js",
   "scripts": {
@@ -47,7 +47,7 @@
     "diff": "^8.0.3",
     "fflate": "^0.8.3",
     "lucide-react": "^0.503.0",
-    "obsidian-llm-hub-common": "file:vendor/obsidian-llm-hub-common-0.1.0.tgz",
+    "obsidian-llm-hub-common": "file:vendor/obsidian-llm-hub-common-0.1.2.tgz",
     "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
