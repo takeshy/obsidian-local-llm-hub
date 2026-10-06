@@ -56,7 +56,7 @@ import {
 } from "src/core/ragSearchTool";
 import { discoverSkills, loadSkill, buildSkillSystemPrompt, collectSkillWorkflows, type SkillMetadata, type LoadedSkill, type SkillWorkflowRef } from "src/core/skillsLoader";
 import { resolveAgentPluginMcpServers } from "src/core/agentPlugins";
-import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, restoredSkillPaths, prunedSkillPaths, getBuiltinSkillMetadata, isBuiltinSkillPath } from "src/core/builtinSkills";
+import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, restoredSkillPaths, prunedSkillPaths, getBuiltinSkillMetadata, isBuiltinSkillPath, fileSkillFor, type FileSkill } from "src/core/builtinSkills";
 import { buildBuiltinOkfSystemPrompt, buildOkfSystemPrompt, discoverOkfBundles, getBuiltinOkfBundle, isBuiltinOkfBundleId, type OkfBundle } from "src/core/okfLoader";
 import { executeReadOkfDocumentTool, READ_OKF_DOCUMENT_TOOL, READ_OKF_DOCUMENT_TOOL_NAME } from "src/core/okfDocumentTool";
 import { parseWorkflowFromMarkdown } from "src/workflow/parser";
@@ -75,14 +75,13 @@ import {
   parseMarkdownToMessages,
   formatHistoryDate,
 } from "./chat/chatHistory";
-import { resolveEffectiveSkillPaths, useSkillPathPersistence } from "./chat/contextSkills";
+import { withRequestedSkillPath, useSkillPathPersistence } from "./chat/contextSkills";
 import { buildNoDiscoverySystemPrompt } from "./chat/noDiscoveryPrompt";
 import MessageList from "./MessageList";
 import InputArea, { type InputAreaHandle } from "./InputArea";
 import { t } from "src/i18n";
 import { formatError } from "obsidian-llm-hub-common/core";
 import { decodeBase64Utf8 } from "src/utils/base64";
-import { runtimeSkillPath } from "src/core/runtimeSkills";
 import { extractPdfTextWithOffsets, formatExtractedPdfText } from "obsidian-llm-hub-common/vault";
 
 export interface ChatRef {
@@ -94,9 +93,6 @@ interface ChatProps {
   plugin: LocalLlmHubPlugin;
   onToggleSidebarWidth: () => boolean;
 }
-
-const DASHBOARD_SKILL_PATH = runtimeSkillPath("dashboard-hub", "dashboard");
-const CONTEXT_SKILL_PATHS = new Set([DASHBOARD_SKILL_PATH]);
 
 const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, ref) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -141,8 +137,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   const [vaultFiles, setVaultFiles] = useState<string[]>([]);
   const [hasSelection, setHasSelection] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<SkillMetadata[]>(getBuiltinSkillMetadata);
-  // A selection the user built from their own skills is a standing preference;
-  // one that holds only built-in skills is left to the shipped defaults.
+  // Chats carry over the previous skill selection, even an empty one; only a
+  // user who never touched the list starts from the shipped defaults.
   const [activeSkillPaths, setActiveSkillPaths] = useState<string[]>(
     () => restoredSkillPaths(plugin.settings.activeSkillPaths, DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)),
   );
@@ -164,24 +160,11 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     return allowed;
   });
   const [currentDashboard, setCurrentDashboard] = useState<TFile | null>(null);
-  const [activeContextSkillPath, setActiveContextSkillPath] = useState<string | null>(null);
-  const [disabledContextSkillPaths, setDisabledContextSkillPaths] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const effectiveActiveSkillPaths = useMemo(() => resolveEffectiveSkillPaths(
-    activeSkillPaths,
-    activeContextSkillPath,
-    disabledContextSkillPaths,
-    CONTEXT_SKILL_PATHS,
-  ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
+  // The file open in the editor and the skill that fits it. The skill is only
+  // offered on the empty chat; opening a file never switches it on.
+  const [editorFile, setEditorFile] = useState<{ file: TFile; skill: FileSkill } | null>(null);
   const getEffectiveSkillPathsForSend = useCallback((skillPath?: string) =>
-    resolveEffectiveSkillPaths(
-      activeSkillPaths,
-      activeContextSkillPath,
-      disabledContextSkillPaths,
-      CONTEXT_SKILL_PATHS,
-      skillPath,
-    ), [activeSkillPaths, activeContextSkillPath, disabledContextSkillPaths]);
+    withRequestedSkillPath(activeSkillPaths, skillPath), [activeSkillPaths]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
@@ -374,27 +357,16 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
   }, [plugin, refreshMcpServerInfos]);
 
   const handleToggleSkill = useCallback((folderPath: string) => {
-    if (folderPath === activeContextSkillPath && CONTEXT_SKILL_PATHS.has(folderPath)) {
-      setDisabledContextSkillPaths(prev => {
-        const next = new Set(prev);
-        if (next.has(folderPath)) next.delete(folderPath);
-        else next.add(folderPath);
-        return next;
-      });
-      setActiveSkillPaths(prev => prev.filter(path => !CONTEXT_SKILL_PATHS.has(path)));
-      return;
-    }
-    if (
-      activeContextSkillPath
-      && !disabledContextSkillPaths.has(activeContextSkillPath)
-      && CONTEXT_SKILL_PATHS.has(folderPath)
-    ) return;
     setActiveSkillPaths(prev =>
       prev.includes(folderPath)
         ? prev.filter(p => p !== folderPath)
         : [...prev, folderPath]
     );
-  }, [activeContextSkillPath, disabledContextSkillPaths]);
+  }, []);
+
+  const handleEnableSkill = useCallback((folderPath: string) => {
+    setActiveSkillPaths(prev => prev.includes(folderPath) ? prev : [...prev, folderPath]);
+  }, []);
 
   const getOkfSource = useCallback((): KnowledgeSource | null => {
     const source = (plugin.settings.knowledgeSources || []).find(s => s.enabled && s.type === "okf" && s.path.trim());
@@ -456,10 +428,14 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 
   useEffect(() => {
     const refreshDashboard = () => {
-      const activeFile = plugin.app.workspace.getActiveFile();
-      if (activeFile?.extension === "dashboard") {
-        setCurrentDashboard(activeFile);
-        setActiveContextSkillPath(DASHBOARD_SKILL_PATH);
+      // The chat lives in a sidebar, so the editor file is the one in the most
+      // recent leaf of the main area, not whatever leaf has focus.
+      const leafFile = (plugin.app.workspace.getMostRecentLeaf()?.view as { file?: TFile | null } | undefined)?.file;
+      const editorFile = leafFile instanceof TFile ? leafFile : null;
+      const skill = fileSkillFor(editorFile?.extension);
+      setEditorFile(editorFile && skill ? { file: editorFile, skill } : null);
+      if (editorFile?.extension === "dashboard") {
+        setCurrentDashboard(editorFile);
         return;
       }
       let openDashboard: TFile | null = null;
@@ -471,25 +447,25 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
       });
       if (openDashboard) {
         setCurrentDashboard(openDashboard);
-        setActiveContextSkillPath(DASHBOARD_SKILL_PATH);
         return;
       }
       const dashboards = plugin.app.vault.getFiles()
         .filter(file => file.extension === "dashboard")
         .sort((a, b) => b.stat.mtime - a.stat.mtime);
       setCurrentDashboard(dashboards[0] ?? null);
-      setActiveContextSkillPath(null);
     };
     refreshDashboard();
     plugin.app.vault.on("create", refreshDashboard);
     plugin.app.vault.on("delete", refreshDashboard);
     plugin.app.vault.on("rename", refreshDashboard);
     plugin.app.workspace.on("active-leaf-change", refreshDashboard);
+    plugin.app.workspace.on("file-open", refreshDashboard);
     return () => {
       plugin.app.vault.off("create", refreshDashboard);
       plugin.app.vault.off("delete", refreshDashboard);
       plugin.app.vault.off("rename", refreshDashboard);
       plugin.app.workspace.off("active-leaf-change", refreshDashboard);
+      plugin.app.workspace.off("file-open", refreshDashboard);
     };
   }, [plugin]);
 
@@ -546,13 +522,23 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     void promptForValue(plugin.app, t("dashboard.createNamePrompt"), "Dashboard", false).then((name) => {
       if (name === null) return;
       void plugin.createDashboard(name).then((file) => {
-        if (file) {
-          setCurrentDashboard(file);
-          setActiveContextSkillPath(DASHBOARD_SKILL_PATH);
-        }
+        if (file) setCurrentDashboard(file);
       });
     });
   }, [plugin]);
+
+  const editorFileSkill = useMemo(() => {
+    if (!editorFile) return null;
+    const skill = availableSkills.find(s => s.folderPath === editorFile.skill.skillPath);
+    if (!skill) return null;
+    return {
+      fileName: editorFile.file.name,
+      kind: editorFile.skill.kind,
+      skillName: skill.name,
+      enabled: activeSkillPaths.includes(skill.folderPath),
+      onEnable: () => handleEnableSkill(skill.folderPath),
+    };
+  }, [editorFile, availableSkills, activeSkillPaths, handleEnableSkill]);
 
   const handleAskHelp = useCallback(() => {
     const builtinBundle = getBuiltinOkfBundle();
@@ -626,8 +612,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setStreamingContent("");
     setStreamingThinking("");
     setShowHistory(false);
-    // A new chat keeps the skills the user chose; only a built-in-only
-    // selection falls back to the shipped defaults.
+    // A new chat keeps the previous chat's skill selection as is.
     setActiveSkillPaths(restoredSkillPaths(plugin.settings.activeSkillPaths, DEFAULT_BUILTIN_SKILL_IDS.map(builtinFolderPath)));
   }, [leaveCurrentChat]);
 
@@ -1220,6 +1205,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           path: currentDashboard.path,
         } : null}
         onOpenDashboard={currentDashboard ? handleOpenDashboard : undefined}
+        fileSkill={editorFileSkill}
         onCreateDashboard={handleCreateDashboard}
         onAskHelp={handleAskHelp}
       />
@@ -1252,7 +1238,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
         enabledMcpServerIds={enabledMcpServerIds}
         onMcpServerToggle={handleMcpServerToggle}
         availableSkills={availableSkills}
-        activeSkillPaths={effectiveActiveSkillPaths}
+        activeSkillPaths={activeSkillPaths}
         onToggleSkill={handleToggleSkill}
         okfBundles={okfBundles}
         activeOkfBundleIds={activeOkfBundleIds}
