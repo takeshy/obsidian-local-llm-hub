@@ -1,54 +1,49 @@
-import { TFile } from "obsidian";
+import { buildSkillSystemPrompt, collectSkillWorkflows, type LoadedSkill } from "src/core/skillsLoader";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import { localLlmChatStream } from "src/core/localLlmProvider";
-import { getVaultTools } from "src/core/tools";
+import { getVaultTools, readNoteTool, skillWorkflowTool } from "src/core/tools";
 import { executeToolCall } from "src/core/toolExecutor";
 import { loadBuiltinSkill, builtinFolderPath } from "src/core/builtinSkills";
 import { WORKFLOW_SPECIFICATION } from "src/workflow/workflowSpec";
+import { getRagStore } from "src/core/ragStore";
+import { runSkillWorkflow } from "obsidian-llm-hub-common/workflow";
+import {
+  assertTimelineAnswerSupported, dashboardBasePrompt, dashboardRewritePrompt, dashboardWorkflowPrompt,
+  listDashboardSkills, loadDashboardSkills, runDashboardWorkflow as runWorkflow, stripYamlFence,
+  timelineAnswerMessages, timelineAnswerSystemPrompt,
+  type DashboardAiModel, type DashboardBaseRequest, type DashboardRewriteRequest, type DashboardTimelineAnswerOptions,
+  type DashboardTimelineAnswerRequest, type DashboardWorkflowGenerationRequest, type DashboardWorkflowRequest,
+} from "obsidian-llm-hub-common/dashboard";
 import type { Message, ToolCall, ToolDefinition } from "src/types";
-import { parseWorkflowFromMarkdown } from "src/workflow/parser";
-import { WorkflowExecutor } from "src/workflow/executor";
-import type { PromptCallbacks, WorkflowInput } from "src/workflow/types";
 
-export interface DashboardAiModel { id: string; name: string; capabilities: { text: boolean; vaultRead: boolean; tools: boolean } }
-interface WorkflowRequest { workflowPath: string; outputVariable?: string; abortSignal?: AbortSignal }
-interface BaseRequest { modelId: string; instruction: string; currentYaml?: string; basePath?: string; allowVaultRead: boolean; previousResult?: string; abortSignal?: AbortSignal }
-interface RewriteRequest { modelId: string; content: string; instruction: string; previousResult?: string; context: "timeline" | "memo"; abortSignal?: AbortSignal }
-interface WorkflowGenerationRequest { modelId: string; mode: "create" | "modify"; instruction: string; currentMarkdown?: string; previousResult?: string; outputContract: { outputVariable: string; format: "markdown" | "html" }; allowVaultRead: boolean; abortSignal?: AbortSignal }
+export type { DashboardAiModel };
+export type TimelineAnswerRequest = DashboardTimelineAnswerRequest;
+export type TimelineAnswerOptions = DashboardTimelineAnswerOptions;
 
 export function listDashboardModels(plugin: LocalLlmHubPlugin): DashboardAiModel[] {
   const names = [...new Set([plugin.settings.llmConfig.model, ...plugin.settings.availableModels].filter(Boolean))];
   return names.map((id) => ({ id, name: id, capabilities: { text: true, vaultRead: true, tools: true } }));
 }
-function headlessCallbacks(): PromptCallbacks {
-  return { promptForFile: () => Promise.resolve(null), promptForAnyFile: () => Promise.resolve(null), promptForNewFilePath: () => Promise.resolve(null),
-    promptForSelection: () => Promise.resolve(null), promptForValue: () => Promise.resolve(null),
-    promptForConfirmation: () => Promise.resolve({ action: "cancel" as const }), promptForDialog: () => Promise.resolve(null), promptForPassword: () => Promise.resolve(null) };
-}
-function extract(values: Map<string, string | number>, name?: string): string | null {
-  const str = (value: unknown) => typeof value === "string" ? value : typeof value === "number" ? String(value) : null;
-  if (name) return str(values.get(name)); const result = str(values.get("result")); if (result != null) return result;
-  for (const [key, value] of values) { const text = str(value); if (!key.startsWith("_") && text) return text; } return null;
-}
-export async function runDashboardWorkflow(plugin: LocalLlmHubPlugin, request: WorkflowRequest): Promise<string> {
-  const file = plugin.app.vault.getAbstractFileByPath(request.workflowPath);
-  if (!(file instanceof TFile)) throw new Error(`Workflow not found: ${request.workflowPath}`);
-  const workflow = parseWorkflowFromMarkdown(await plugin.app.vault.read(file));
-  const input: WorkflowInput = { variables: new Map() };
-  const execution = await new WorkflowExecutor(plugin.app).execute(workflow, input, undefined, {
-    workflowPath: file.path, workflowName: file.basename, recordHistory: false,
-    abortSignal: request.abortSignal ?? new AbortController().signal,
-  }, headlessCallbacks());
-  const text = extract(execution.context.variables, request.outputVariable);
-  if (text == null) throw new Error("Workflow output is not a string. Store it in `result`, or set Output variable.");
-  return text;
+
+export function runDashboardWorkflow(plugin: LocalLlmHubPlugin, request: DashboardWorkflowRequest): Promise<string> {
+  return runWorkflow(plugin.app, request);
 }
 
 const READ_TOOLS = new Set(["read_timeline", "read_note", "search_notes", "list_notes", "list_folders", "get_active_note"]);
-async function generate(plugin: LocalLlmHubPlugin, modelId: string, prompt: string, systemPrompt: string, signal?: AbortSignal, vaultRead = false): Promise<string> {
+async function generate(plugin: LocalLlmHubPlugin, modelId: string, prompt: string | Message[], systemPrompt: string, signal?: AbortSignal, vaultRead = false, mcpServerIds: string[] = [], skills: LoadedSkill[] = []): Promise<string> {
   const config = { ...plugin.settings.llmConfig, model: modelId };
-  const tools: ToolDefinition[] | undefined = vaultRead ? getVaultTools("all").filter((tool) => READ_TOOLS.has(tool.function.name)) : undefined;
-  const conversation: Message[] = [{ role: "user", content: prompt, timestamp: Date.now() }];
+  const vaultTools = vaultRead ? getVaultTools("all").filter((tool) => READ_TOOLS.has(tool.function.name)) : [];
+  const mcpTools = mcpServerIds.length > 0 ? plugin.mcpManager.getAllTools(mcpServerIds) : [];
+  // As in Chat: a vault skill's SKILL.md is reached through read_note, and skill
+  // workflows run in the usual execution modal.
+  const workflows = collectSkillWorkflows(skills);
+  const skillTools = [
+    ...(skills.some((skill) => !skill.instructions) && !vaultRead ? [readNoteTool] : []),
+    ...(workflows.size > 0 ? [skillWorkflowTool] : []),
+  ];
+  const all = [...vaultTools, ...mcpTools, ...skillTools];
+  const tools: ToolDefinition[] | undefined = all.length > 0 ? all : undefined;
+  const conversation: Message[] = typeof prompt === "string" ? [{ role: "user", content: prompt, timestamp: Date.now() }] : [...prompt];
   for (let round = 0; round < 12; round += 1) {
     let output = ""; const calls: ToolCall[] = [];
     for await (const chunk of localLlmChatStream(config, conversation, systemPrompt, signal, tools)) {
@@ -61,30 +56,72 @@ async function generate(plugin: LocalLlmHubPlugin, modelId: string, prompt: stri
     if (calls.length === 0) { if (!output.trim()) throw new Error("AI returned an empty response."); return output.trim(); }
     conversation.push({ role: "assistant", content: output, timestamp: Date.now(), toolCalls: calls });
     for (const call of calls) {
+      // executeToolCall dispatches any known tool, so refuse names that were never offered.
+      if (!tools?.some((tool) => tool.function.name === call.name)) {
+        conversation.push({ role: "tool", content: `Tool is not available: ${call.name}`, timestamp: Date.now(), toolCallId: call.id, toolName: call.name });
+        continue;
+      }
       const result = await executeToolCall(call, {
         app: plugin.app,
         vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
+        ...(mcpTools.length > 0 ? { mcpManager: plugin.mcpManager } : {}),
+        ...(workflows.size > 0 ? {
+          onRunSkillWorkflow: async (workflowId: string, variables: string | undefined) => JSON.stringify(await runSkillWorkflow(
+            plugin.app, workflowId, variables, workflows, { vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders })),
+        } : {}),
       });
       conversation.push({ role: "tool", content: result.result, timestamp: Date.now(), toolCallId: call.id, toolName: call.name });
     }
   }
   throw new Error("AI exceeded the read-only tool-call limit.");
 }
-function stripFence(text: string): string { return text.replace(/^\s*```(?:ya?ml)?\s*/i, "").replace(/\s*```\s*$/, "").trim(); }
-function baseSystem(): string { const skill = loadBuiltinSkill(builtinFolderPath("obsidian-bases")); return `Return only valid Obsidian Bases YAML. Verify real properties with read-only Vault tools when available.\n\n${skill ? `${skill.instructions}\n${skill.references.join("\n\n")}` : ""}`; }
-export async function generateDashboardBase(plugin: LocalLlmHubPlugin, request: BaseRequest): Promise<string> {
-  const source = request.previousResult || request.currentYaml;
-  return stripFence(await generate(plugin, request.modelId, source ? `Revise this Base.\nInstruction: ${request.instruction}\n\nCurrent YAML:\n${source}` : `Create an Obsidian Base.\nInstruction: ${request.instruction}`,
-    baseSystem(), request.abortSignal, request.allowVaultRead));
+
+export async function generateDashboardBase(plugin: LocalLlmHubPlugin, request: DashboardBaseRequest): Promise<string> {
+  const { prompt, systemPrompt } = dashboardBasePrompt(request, loadBuiltinSkill(builtinFolderPath("obsidian-bases")));
+  return stripYamlFence(await generate(plugin, request.modelId, prompt, systemPrompt, request.abortSignal, request.allowVaultRead));
 }
-export function rewriteDashboardText(plugin: LocalLlmHubPlugin, request: RewriteRequest): Promise<string> {
-  return generate(plugin, request.modelId, `Instruction: ${request.instruction}\n\nText:\n${request.previousResult || request.content}`,
-    `Rewrite the ${request.context} text. Return only rewritten text.`, request.abortSignal);
+export function rewriteDashboardText(plugin: LocalLlmHubPlugin, request: DashboardRewriteRequest): Promise<string> {
+  const { prompt, systemPrompt } = dashboardRewritePrompt(request);
+  return generate(plugin, request.modelId, prompt, systemPrompt, request.abortSignal);
 }
-export function generateDashboardWorkflow(plugin: LocalLlmHubPlugin, request: WorkflowGenerationRequest): Promise<string> {
-  const source = request.previousResult || request.currentMarkdown;
-  return generate(plugin, request.modelId,
-    `${request.mode === "modify" ? "Revise" : "Create"} an unattended Obsidian Workflow.\nInstruction: ${request.instruction}\nOutput ${request.outputContract.format} to ${request.outputContract.outputVariable}.${source ? `\n\nCurrent workflow:\n${source}` : ""}`,
-    `Return only a complete Markdown document with a workflow YAML block. Do not use interactive nodes.\n\n${WORKFLOW_SPECIFICATION}`,
-    request.abortSignal, request.allowVaultRead);
+export function generateDashboardWorkflow(plugin: LocalLlmHubPlugin, request: DashboardWorkflowGenerationRequest): Promise<string> {
+  const { prompt, systemPrompt } = dashboardWorkflowPrompt(request, WORKFLOW_SPECIFICATION);
+  return generate(plugin, request.modelId, prompt, systemPrompt, request.abortSignal, request.allowVaultRead);
+}
+
+export async function getDashboardTimelineOptions(plugin: LocalLlmHubPlugin): Promise<TimelineAnswerOptions> {
+  // AnythingLLM has no tool calling and answers from its own workspace documents,
+  // so Chat offers neither the local RAG index, MCP, nor skills there.
+  if (plugin.settings.llmConfig.framework === "anythingllm") return { vaultRead: true, webSearch: false, ragSettings: [], mcpServers: [], skills: [] };
+  return {
+    vaultRead: true,
+    webSearch: false,
+    ragSettings: plugin.getRagSettingNames().filter((name) => plugin.getRagSearchSetting(name) !== null),
+    // Only connected servers can be used.
+    mcpServers: plugin.mcpManager.getServerInfos().map((info) => info.name),
+    skills: await listDashboardSkills(plugin.app, plugin.settings.skillsFolder),
+  };
+}
+
+export async function answerDashboardTimeline(plugin: LocalLlmHubPlugin, request: TimelineAnswerRequest): Promise<string> {
+  assertTimelineAnswerSupported(request, { webSearch: false });
+  const anythingLlm = plugin.settings.llmConfig.framework === "anythingllm";
+  let ragContext: string | undefined;
+  if (request.ragSetting) {
+    const setting = plugin.getRagSearchSetting(request.ragSetting);
+    if (!setting) throw new Error(`RAG setting "${request.ragSetting}" was not found.`);
+    const results = await getRagStore().search(request.ragSetting, request.question, setting, { ...plugin.settings.llmConfig, model: request.modelId }, plugin.app);
+    if (results.length > 0) {
+      ragContext = "\n\nRelevant excerpts from the user's RAG index. Prefer them over guessing and cite file paths when you use them:\n"
+        + results.map((result) => `--- ${result.filePath}${result.heading ? ` # ${result.heading}` : ""}${result.pageLabel ? ` (${result.pageLabel})` : ""}\n${result.text}`).join("\n\n");
+    }
+  }
+  const mcpServerIds = anythingLlm ? []
+    : plugin.mcpManager.getServerInfos().filter((info) => request.mcpServers?.includes(info.name)).map((info) => info.id);
+  const skills = anythingLlm ? [] : await loadDashboardSkills(plugin.app, plugin.settings.skillsFolder, request.skills);
+  const systemPrompt = timelineAnswerSystemPrompt({
+    vaultRead: request.allowVaultRead, ragContext, mcp: mcpServerIds.length > 0,
+    skillPrompt: buildSkillSystemPrompt(skills), additionalInstructions: plugin.settings.systemPrompt,
+  });
+  return generate(plugin, request.modelId, timelineAnswerMessages(request), systemPrompt, request.abortSignal, request.allowVaultRead === true, mcpServerIds, skills);
 }

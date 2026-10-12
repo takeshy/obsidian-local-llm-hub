@@ -59,17 +59,10 @@ import { resolveAgentPluginMcpServers } from "src/core/agentPlugins";
 import { DEFAULT_BUILTIN_SKILL_IDS, builtinFolderPath, restoredSkillPaths, prunedSkillPaths, getBuiltinSkillMetadata, isBuiltinSkillPath, fileSkillFor, type FileSkill } from "src/core/builtinSkills";
 import { buildBuiltinOkfSystemPrompt, buildOkfSystemPrompt, discoverOkfBundles, getBuiltinOkfBundle, isBuiltinOkfBundleId, type OkfBundle } from "src/core/okfLoader";
 import { executeReadOkfDocumentTool, READ_OKF_DOCUMENT_TOOL, READ_OKF_DOCUMENT_TOOL_NAME } from "src/core/okfDocumentTool";
-import { parseWorkflowFromMarkdown } from "src/workflow/parser";
-import { WorkflowExecutor } from "src/workflow/executor";
+import { runSkillWorkflow } from "obsidian-llm-hub-common/workflow";
 import type { McpServerInfo } from "src/core/mcpManager";
-import { EditConfirmationModal, promptForConfirmation } from "./workflow/EditConfirmationModal";
-import { WorkflowExecutionModal } from "./workflow/WorkflowExecutionModal";
-import { promptForFile, promptForAnyFile, promptForNewFilePath } from "./workflow/FilePromptModal";
+import { EditConfirmationModal } from "./workflow/EditConfirmationModal";
 import { promptForValue } from "./workflow/ValuePromptModal";
-import { promptForSelection } from "./workflow/SelectionPromptModal";
-import { promptForDialog } from "./workflow/DialogPromptModal";
-import { cryptoCache } from "src/core/cryptoCache";
-import { promptForPassword } from "src/ui/passwordPrompt";
 import { buildErrorMessage, limitConversationHistory, type ChatHistory } from "./chat/chatUtils";
 import {
   parseMarkdownToMessages,
@@ -1071,7 +1064,8 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
                     return { accepted: false, cancelled: true };
                   },
                   onRunSkillWorkflow: skillWorkflowMap.size > 0
-                    ? (workflowId, variablesJson) => executeSkillWorkflow(plugin, workflowId, variablesJson, skillWorkflowMap)
+                    ? async (workflowId, variablesJson) => JSON.stringify(await runSkillWorkflow(plugin.app, workflowId, variablesJson, skillWorkflowMap,
+                      { vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders }))
                     : undefined,
                 });
               const toolResultMsg: Message = {
@@ -1286,150 +1280,3 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 Chat.displayName = "Chat";
 
 export default Chat;
-
-
-/**
- * Execute a skill workflow headlessly and return results.
- */
-async function executeSkillWorkflow(
-  plugin: LocalLlmHubPlugin,
-  workflowId: string,
-  variablesJson: string | undefined,
-  skillWorkflowMap: Map<string, {
-    skill: LoadedSkill;
-    workflowRef: SkillWorkflowRef;
-    vaultPath: string;
-  }>,
-): Promise<string> {
-  const entry = skillWorkflowMap.get(workflowId);
-  if (!entry) {
-    const available = [...skillWorkflowMap.keys()].join(", ");
-    return JSON.stringify({ error: `Unknown workflow ID: ${workflowId}. Available: ${available}`, workflowId });
-  }
-
-  const { vaultPath } = entry;
-  const workflowDisplayName = vaultPath.substring(vaultPath.lastIndexOf("/") + 1).replace(/\.md$/, "") || workflowId;
-
-  const file = plugin.app.vault.getAbstractFileByPath(vaultPath);
-  if (!(file instanceof TFile)) {
-    return JSON.stringify({ error: `Workflow file not found: ${vaultPath}`, workflowId, workflowPath: vaultPath });
-  }
-
-  const content = await plugin.app.vault.read(file);
-
-  let workflow;
-  try {
-    workflow = parseWorkflowFromMarkdown(content);
-  } catch (e) {
-    return JSON.stringify({ error: `Failed to parse workflow: ${e instanceof Error ? e.message : String(e)}`, workflowId, workflowPath: vaultPath });
-  }
-
-  // Build input variables
-  const variables = new Map<string, string | number>();
-  if (variablesJson) {
-    try {
-      const parsed = JSON.parse(variablesJson) as Record<string, string | number>;
-      for (const [key, value] of Object.entries(parsed)) {
-        variables.set(key, value);
-      }
-    } catch {
-      return JSON.stringify({ error: `Invalid variables JSON: ${variablesJson}`, workflowId, workflowPath: vaultPath });
-    }
-  }
-
-  // Execute with the same execution modal as the normal workflow panel
-  const executor = new WorkflowExecutor(plugin.app);
-  const abortController = new AbortController();
-
-  const modal = new WorkflowExecutionModal(
-    plugin.app, workflow, workflowDisplayName, abortController, () => {},
-  );
-  modal.open();
-
-  let executionModalRef: WorkflowExecutionModal | null = modal;
-
-  const callbacks = {
-    promptForFile: (defaultPath?: string) => promptForFile(plugin.app, defaultPath || "Select a file"),
-    promptForAnyFile: (extensions?: string[], defaultPath?: string) =>
-      promptForAnyFile(plugin.app, extensions, defaultPath || "Select a file"),
-    promptForNewFilePath: (extensions?: string[], defaultPath?: string) =>
-      promptForNewFilePath(plugin.app, extensions, defaultPath),
-    promptForSelection: () => promptForSelection(plugin.app, "Select text"),
-    promptForValue: (prompt: string, defaultValue?: string, multiline?: boolean) =>
-      promptForValue(plugin.app, prompt, defaultValue || "", multiline || false),
-    promptForConfirmation: (filePath: string, content: string, mode: string) =>
-      promptForConfirmation(plugin.app, filePath, content, mode),
-    promptForDialog: (title: string, message: string, options: string[], multiSelect: boolean, button1: string, button2?: string, markdown?: boolean, inputTitle?: string, defaults?: { input?: string; selected?: string[] }, multiline?: boolean) =>
-      promptForDialog(plugin.app, title, message, options, multiSelect, button1, button2, markdown, inputTitle, defaults, multiline),
-    openFile: async (notePath: string) => {
-      const noteFile = plugin.app.vault.getAbstractFileByPath(notePath);
-      if (noteFile instanceof TFile) {
-        await plugin.app.workspace.getLeaf().openFile(noteFile);
-      }
-    },
-    promptForPassword: async () => {
-      const cached = cryptoCache.getPassword();
-      if (cached) return cached;
-      return promptForPassword(plugin.app);
-    },
-    onThinking: (nodeId: string, thinking: string) => {
-      executionModalRef?.updateThinking(nodeId, thinking);
-    },
-  };
-
-  try {
-    const result = await executor.execute(
-      workflow,
-      { variables },
-      (log) => executionModalRef?.updateFromLog(log),
-      {
-        workflowPath: vaultPath,
-        workflowName: workflowDisplayName,
-        recordHistory: true,
-        abortSignal: abortController.signal,
-        vaultToolAllowedFolders: plugin.settings.vaultToolAllowedFolders,
-        workflowDefinitionRoot: entry.skill.folderPath,
-      },
-      callbacks,
-    );
-
-    modal.setComplete(true);
-
-    // Collect output variables
-    const outputVars: Record<string, string | number> = {};
-    result.context.variables.forEach((value, key) => {
-      if (!key.startsWith("__")) {
-        outputVars[key] = value;
-      }
-    });
-
-    const logs = result.context.logs.map(log => ({
-      node: log.nodeType,
-      status: log.status,
-      message: log.message,
-    }));
-
-    // Extract saved files from successful note/file operations
-    const fileNodeTypes = new Set(["note", "file-save"]);
-    const savedFiles = result.context.logs
-      .filter(log => fileNodeTypes.has(log.nodeType) && log.status === "success" && typeof log.output === "string")
-      .map(log => log.output as string);
-
-    return JSON.stringify({
-      success: true,
-      workflowId,
-      variables: outputVars,
-      logs,
-      ...(savedFiles.length > 0 ? { savedFiles } : {}),
-    });
-  } catch (e) {
-    modal.setComplete(false);
-    return JSON.stringify({
-      error: `Workflow execution failed: ${e instanceof Error ? e.message : String(e)}. Do not retry automatically — report the error to the user and ask how to proceed.`,
-      workflowId,
-      workflowPath: vaultPath,
-    });
-  } finally {
-    executionModalRef = null;
-  }
-}
