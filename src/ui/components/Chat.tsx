@@ -29,7 +29,7 @@ import {
   createStreamAccumulation,
   generateChatId,
   runChatTurn,
-  resolveMessageVariables as resolveMessageVariablesShared,
+  FILE_MENTION_TOOL_PROMPT,
   useChatHistories,
   useChatStreamSessions,
   useAutoReadAloud,
@@ -71,6 +71,7 @@ import {
 import { withRequestedSkillPath, useSkillPathPersistence } from "./chat/contextSkills";
 import { buildNoDiscoverySystemPrompt } from "./chat/noDiscoveryPrompt";
 import { retryToolRound } from "./chat/toolContinuation";
+import { resolveChatFileMentions, messagesForModel } from "obsidian-llm-hub-common/chat";
 import { createOllamaRequestWriter } from "../../core/ollamaRequestCapture";
 import MessageList from "./MessageList";
 import InputArea, { type InputAreaHandle } from "./InputArea";
@@ -561,28 +562,20 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
     setVaultFiles(files);
   }, [plugin]);
 
-  // Both resolvers live in the shared library; the host only supplies its selection
-  // sources and PDF extraction. This plugin has no vault-tool folder scope and no
-  // per-note character cap, so mentions it inlines are capped only by the PDF reader.
+  // References use read_note when vault tools are enabled; otherwise inline text.
   const commandVariableSources = useCallback((): CommandVariableSources => ({
     takeExternalSelection: () => null,
     getLastSelection: () => plugin.getSelection() ?? "",
     getSelectionLocation: () => plugin.getSelectionLocation(),
   }), [plugin]);
 
-  const resolveMessageVariables = useCallback((content: string): Promise<string> =>
-    resolveMessageVariablesShared(plugin.app, content, {
-      ...commandVariableSources(),
-      // Tool-capable local models receive the complete vault-relative path and can call
-      // read_note themselves (including choosing PDF pages). Inline file text only when
-      // Vault tools are disabled or unavailable.
+  const resolveMessageVariables = useCallback((content: string): ReturnType<typeof resolveChatFileMentions> =>
+    resolveChatFileMentions(plugin.app, content, commandVariableSources(), {
       inlineFileMentions: vaultToolMode === "none"
         || plugin.settings.llmConfig.framework === "anythingllm",
-      maxNoteChars: 0,
       readMentionText: async (file) => {
         if (file.extension.toLowerCase() !== "pdf") return plugin.app.vault.cachedRead(file);
-        // Inlined PDFs get the same cap as read_note: a long text layer would
-        // otherwise fill the whole context in the modes that inline mentions.
+        // Keep the same PDF extraction cap used by read_note.
         const extracted = await extractPdfTextWithOffsets(plugin.app, file.path);
         return extracted ? formatExtractedPdfText(extracted) : null;
       },
@@ -733,10 +726,12 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           );
         }
 
-        const resolvedContent = content ? await resolveMessageVariables(content) : "";
+        const { displayContent: resolvedDisplayContent, llmContent: resolvedContent } = content
+          ? await resolveMessageVariables(content)
+          : { displayContent: "", llmContent: "" };
 
         // Determine display content for the user message
-        let displayContent = resolvedContent.trim();
+        let displayContent = resolvedDisplayContent.trim();
         if (!displayContent && skillPath) {
           const skill = availableSkills.find(s => s.folderPath === skillPath);
           displayContent = skill ? `/${skill.name}` : `/${skillPath}`;
@@ -855,12 +850,10 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
             tools.push(skillWorkflowTool);
           }
 
-          // Add execute_javascript tool, and tell the model how to reach mentioned
-          // files: their content is not inlined for tool-capable models (see
-          // resolveMessageVariables), so it has to fetch them itself.
+          // Referenced files are supplied as exact paths for read_note to fetch.
           if (vaultToolMode !== "none" && !isAnythingLlm) {
             tools.push(EXECUTE_JAVASCRIPT_TOOL);
-            systemPrompt += "\n\nA bare vault-relative path in the user's message (for example `folder/note.md` or `folder/document.pdf`) is a file the user referenced by mention, not a literal string. Its content is not inlined into the message. Call read_note with that exact path before answering anything that depends on it.";
+            systemPrompt += FILE_MENTION_TOOL_PROMPT;
           }
 
           // Workflow spec lookup tool — enables the LLM to fetch authoritative
@@ -879,7 +872,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
           }
 
           // Conversation messages for the API (includes tool call/result messages)
-          const conversationMessages: Message[] = limitConversationHistory([...trimRagSearchHistory(messages), userMessage], maxPreviousMessages);
+          const conversationMessages: Message[] = messagesForModel(limitConversationHistory([...trimRagSearchHistory(messages), userMessage], maxPreviousMessages));
           let fullContent = "";
           let thinkingContent = "";
           let currentRoundThinking = "";

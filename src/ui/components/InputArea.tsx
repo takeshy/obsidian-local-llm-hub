@@ -21,6 +21,7 @@ import OkfSelector from "./OkfSelector";
 import ModelSelector from "./ModelSelector";
 import { t } from "src/i18n";
 import { isCaretOnFirstLine, isCaretOnLastLine } from "./chat/chatUtils";
+import { formatComposerMention } from "obsidian-llm-hub-common/chat";
 
 interface SlashCommandItem {
   name: string;
@@ -330,7 +331,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     const cursorPos = textareaRef.current?.selectionStart || input.length;
     const before = input.substring(0, mentionStartPos);
     const after = input.substring(cursorPos);
-    const inserted = mention.kind === "wikilink" ? `[[${mention.value}]]` : `${mention.value} `;
+    const inserted = formatComposerMention(mention.value, mention.kind);
     const newInput = before + inserted + after;
     setInput(newInput);
     setShowMentionAutocomplete(false);

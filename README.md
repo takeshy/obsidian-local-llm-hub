@@ -124,6 +124,8 @@ Configure your LLM server and models in Local LLM Hub, then select a Local LLM H
 
 Streaming chat with your local LLM. Thinking display, file attachments, `@` mentions for vault notes, multiple sessions.
 
+To discuss a note, type `@` and select it, or enter `[[Note]]` / `[[folder/Note.md]]`. Selecting a file inserts a visible wikilink. Sent chat messages retain the original references, including paths with spaces and multiple files. Only the model request adds type and byte size beside each tool-readable reference; file contents and reading instructions are not added to the displayed message. Manually typed `@folder/Note.md` is also supported (use the full vault-relative path). With Vault tools enabled, references are sent as exact vault-relative paths and the model is instructed to use `read_note` to fetch their contents; this requires a model that supports tool calling. The request includes file type and byte size without reading the body. Avoiding automatic full-file expansion prevents large files from consuming excessive tokens; the model can choose partial reads where supported. With Vault tools disabled, or when using AnythingLLM, the referenced text is included directly instead. References do not appear as attachment chips. To supply a note's text directly regardless of Vault tool settings, use the attachment button. PDF text is extracted when available.
+
 The header includes an expand/shrink control for the sidebar and a **Save as note** action. Manual exports use `YYYYMMDD-HHmmss_Chat title.md`, contain compact conversation content without history metadata, and overwrite the same chat's export when saved again.
 
 ![Chat with RAG](docs/images/chat_with_rag.png)

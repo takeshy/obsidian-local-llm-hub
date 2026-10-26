@@ -2650,6 +2650,23 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   margin-left: 20px;
 }
 
+/* Keep links readable on the user's accent-colored message background. */
+.llm-hub-message-user {
+  --link-color: var(--text-on-accent);
+  --link-color-hover: var(--text-on-accent);
+  --link-unresolved-color: var(--text-on-accent);
+  --link-unresolved-opacity: 1;
+  --link-external-color: var(--text-on-accent);
+  --link-external-color-hover: var(--text-on-accent);
+}
+
+.llm-hub-message-user .llm-hub-message-content a,
+.llm-hub-message-user .llm-hub-message-content a:hover {
+  color: var(--text-on-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 .llm-hub-message-assistant {
   background: var(--background-primary-alt);
   margin-right: 20px;
@@ -2677,7 +2694,13 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   font-size: 11px;
 }
 
-.llm-hub-copy-btn {
+button.llm-hub-copy-btn {
+  --icon-color: currentColor;
+  --icon-color-hover: currentColor;
+  --icon-opacity: 1;
+  --icon-opacity-hover: 1;
+  box-shadow: none;
+  height: auto;
   margin-left: auto;
   background: transparent;
   border: none;
@@ -2700,7 +2723,13 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   background: var(--background-modifier-hover);
 }
 
-.llm-hub-speech-btn {
+button.llm-hub-speech-btn {
+  --icon-color: currentColor;
+  --icon-color-hover: currentColor;
+  --icon-opacity: 1;
+  --icon-opacity-hover: 1;
+  box-shadow: none;
+  height: auto;
   margin-left: auto;
   background: transparent;
   border: none;
@@ -2732,11 +2761,13 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   margin-left: 0;
 }
 
-.llm-hub-message-user .llm-hub-copy-btn {
+.llm-hub-message-user .llm-hub-copy-btn,
+.llm-hub-message-user .llm-hub-speech-btn {
   color: var(--text-on-accent);
 }
 
-.llm-hub-message-user .llm-hub-copy-btn:hover {
+.llm-hub-message-user .llm-hub-copy-btn:hover,
+.llm-hub-message-user .llm-hub-speech-btn:hover {
   color: var(--text-on-accent);
   background: rgba(255, 255, 255, 0.2);
 }
@@ -8739,3 +8770,16 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
   min-height: 80px;
   resize: vertical;
 }
+
+/* A notice outside the scrolling message list, with no dismiss action. */
+.llm-hub-grounding-save-notice {
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+.llm-hub-grounding-save-notice strong { color: var(--text-normal); }
+.llm-hub-grounding-save-notice p { margin: 4px 0 0; }
+.llm-hub-google-search-suggestions { display: block; width: 100%; border: 0; }

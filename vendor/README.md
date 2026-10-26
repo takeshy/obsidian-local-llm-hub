@@ -1,21 +1,15 @@
 # Shared library package
 
-`obsidian-llm-hub-common-0.1.4.tgz` contains the prebuilt shared library, including
-its JavaScript and TypeScript declarations. Using the archive allows review
-tools to install the dependency with `npm ci --ignore-scripts`; installing from
-Git requires the library's `prepare` script to generate its `dist` directory.
+`obsidian-llm-hub-common-0.1.10.tgz` contains prebuilt JavaScript and TypeScript declarations for `npm ci --ignore-scripts`.
 
-Source: https://github.com/takeshy/obsidian-llm-hub-common/tree/08ce16eaef127ffad922e3297a642b584c51d27d
+Source: the local `obsidian-llm-hub-common` working tree based on commit `e0e7f4072930d2ffd91803f61b92fd3a3d03bb4a`, with uncommitted user-message link and icon-button styling fixes in `styles.css` and `src/index.tsx` and the 0.1.10 version update. The archive also includes pre-existing local README edits. These changes have not been committed or published to npm.
+
+The shared file-reference resolver handles wikilinks, @ references, and vault paths. Chat messages preserve the original references. Only model requests annotate each tool-readable reference with path, type, and byte size; file contents are fetched on demand and reading instructions stay in the system prompt. Hosts retain their inline fallback policy, vault tool scope, PDF reader, and character limit.
 
 Archive integrity:
 
 ```text
-sha512-Vyro9yUZ0bX7mATe8t57XclKTWxxgN/Tajk/AP5yWepe0IZCiWzqGS9BfajqtdGpEy0qQ/wzJKF9von91MKR8Q==
+sha512-UQAb7NT8ItzLICojvOG2lblSDwP07EKcPxRq1RlRlq2VslCkUucjyGXdStJD7zHFCBVILHprEYvTxSlZnk9NjA==
 ```
 
-To update it, build and test the shared library at the intended commit, then
-create its package with `npm pack`. Replace the archive, record the source
-commit and integrity here, and update the dependency and lockfile. Verify a
-fresh `npm ci --ignore-scripts`, followed by lint and build, before committing.
-
-The MIT license is included in the archive.
+Created with `npm pack`, whose prepack script runs the build and full tests. The MIT license is included.
