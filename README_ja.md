@@ -153,6 +153,8 @@ Function Calling 対応モデル（Qwen、Llama 3.1+、Mistral）で Vault を�
 
 `read_timeline` · `read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
 
+大きなテキストファイルは、`read_note` の `startLine` / `endLine` で行範囲を指定して部分的に読めます。行番号は 1 始まりで両端を含みます。例：`{"path":"Notes/Large.md","startLine":100,"endLine":150}`。結果には取得した行範囲と総行数を含むため、全文をモデルへ送らず、必要に応じて続きを取得できます。`startLine` の省略時は先頭、`endLine` の省略時は末尾まで読み、両方省略すると従来どおり全文を返します。PDF は `startPage` / `endPage` を使い、行範囲とページ範囲は混在できません。
+
 **All** / **No Discovery** / **Off** の 3 モードを入力エリアから切り替え。
 
 **設定 -> ワークスペース -> LLMのVaultツール許可フォルダ** で、LLMのVaultツールとLLMから起動されたSkill WorkflowがアクセスできるVault内フォルダを制限できます。空欄の場合はVault全体を許可します。この設定はRAGインデックス対象フォルダとは別で、RAG、手動添付、`@note`メンション、MCPツール、スクリプトは制限しません。

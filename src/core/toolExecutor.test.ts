@@ -3,6 +3,7 @@ import { TFile, TFolder, type App } from "obsidian";
 import type { ToolCall } from "../types";
 import { executeToolCall } from "./toolExecutor";
 import { extractPdfTextWithOffsets } from "obsidian-llm-hub-common/vault";
+import { readNoteTool } from "./tools";
 
 vi.mock("obsidian-llm-hub-common/vault", async (importOriginal) => ({
   ...(await importOriginal<typeof import("obsidian-llm-hub-common/vault")>()),
@@ -80,6 +81,10 @@ class MockVault {
     return this.contents.get(file.path) ?? "";
   }
 
+  async read(file: TFile): Promise<string> {
+    return this.cachedRead(file);
+  }
+
   async readBinary(file: TFile): Promise<ArrayBuffer> {
     return new TextEncoder().encode(this.contents.get(file.path) ?? "").buffer;
   }
@@ -130,6 +135,91 @@ function call(name: string, args: Record<string, unknown>): ToolCall {
 }
 
 describe("executeToolCall vault files", () => {
+  it("exposes text line ranges to the model", () => {
+    expect(readNoteTool.function.parameters.properties).toMatchObject({
+      startLine: { type: "integer" },
+      endLine: { type: "integer" },
+    });
+  });
+
+  it.each(["md", "txt", "json", "canvas"])("reads an inclusive line range from a %s file", async extension => {
+    const vault = new MockVault();
+    const path = `Notes/My File.${extension}`;
+    vault.addFile(path, "first\nsecond\nthird\nfourth");
+    const result = await executeToolCall(call("read_note", { path, startLine: 2, endLine: 3 }), { app: createApp(vault) });
+    expect(result).toEqual({ success: true, result: `Lines 2-3 of 4 from "${path}"\n\nsecond\nthird\n` });
+  });
+
+  it.each([
+    [{ endLine: 2 }, "Lines 1-2 of 3", "one\r\ntwo\r\n"],
+    [{ startLine: 2 }, "Lines 2-3 of 3", "two\r\nthree\r\n"],
+    [{ startLine: 2, endLine: 100 }, "Lines 2-3 of 3", "two\r\nthree\r\n"],
+    [{ startLine: "2", endLine: "2" }, "Lines 2-2 of 3", "two\r\n"],
+  ])("supports open ranges, numeric strings and CRLF: %j", async (range, header, selected) => {
+    const vault = new MockVault();
+    vault.addFile("Notes/Test.txt", "one\r\ntwo\r\nthree\r\n");
+    const result = await executeToolCall(call("read_note", { path: "Notes/Test.txt", ...range }), { app: createApp(vault) });
+    expect(result.success).toBe(true);
+    expect(result.result).toBe(`${header} from "Notes/Test.txt"\n\n${selected}`);
+  });
+
+  it("preserves full text reads when no range is supplied", async () => {
+    const vault = new MockVault();
+    vault.addFile("Notes/Test.md", "one\ntwo\n");
+    const result = await executeToolCall(call("read_note", { path: "Notes/Test.md" }), { app: createApp(vault) });
+    expect(result).toEqual({ success: true, result: "one\ntwo\n" });
+  });
+
+  it.each([0, -1, 1.5, "invalid", "", true, [2], Number.MAX_SAFE_INTEGER + 1])("rejects invalid line numbers: %j", async startLine => {
+    const vault = new MockVault();
+    const read = vi.spyOn(vault, "read");
+    vault.addFile("Notes/Test.md", "one\ntwo");
+    const result = await executeToolCall(call("read_note", { path: "Notes/Test.md", startLine }), { app: createApp(vault) });
+    expect(result.success).toBe(false);
+    expect(result.result).toContain("positive integers");
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ startLine: 3, endLine: 2 }, "less than or equal"],
+    [{ startLine: 5 }, "past the end"],
+    [{ startLine: 1, startPage: 1 }, "Do not mix"],
+    [{ endPage: 1 }, "Page ranges are supported for PDFs only"],
+  ])("rejects unusable or mismatched text ranges: %j", async (range, error) => {
+    const vault = new MockVault();
+    vault.addFile("Notes/Test.md", "one\ntwo");
+    const result = await executeToolCall(call("read_note", { path: "Notes/Test.md", ...range }), { app: createApp(vault) });
+    expect(result.success).toBe(false);
+    expect(result.result).toContain(error);
+  });
+
+  it("rejects line ranges for PDFs", async () => {
+    const vault = new MockVault();
+    vault.addFile("Docs/report.pdf", "%PDF");
+    const result = await executeToolCall(call("read_note", { path: "Docs/report.pdf", startLine: 1 }), { app: createApp(vault) });
+    expect(result.success).toBe(false);
+    expect(result.result).toContain("Use startPage and endPage");
+  });
+
+  it("keeps folder restrictions for partial reads", async () => {
+    const vault = new MockVault();
+    const read = vi.spyOn(vault, "read");
+    vault.addFile("Private/Secret.md", "private text");
+    const result = await executeToolCall(call("read_note", { path: "Private/Secret.md", startLine: 1 }), {
+      app: createApp(vault), vaultToolAllowedFolders: ["Public"],
+    });
+    expect(result.success).toBe(false);
+    expect(result.result).toContain("Access denied");
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("returns only the requested lines of a large file", async () => {
+    const vault = new MockVault();
+    vault.addFile("Notes/Large.md", Array.from({ length: 10000 }, (_, i) => `line ${i + 1}`).join("\n"));
+    const result = await executeToolCall(call("read_note", { path: "Notes/Large.md", startLine: 5000, endLine: 5001 }), { app: createApp(vault) });
+    expect(result).toEqual({ success: true, result: 'Lines 5000-5001 of 10000 from "Notes/Large.md"\n\nline 5000\nline 5001\n' });
+  });
+
   it("asks for confirmation before update_note changes a file", async () => {
     const vault = new MockVault();
     const file = vault.addFile("Notes/Test.md", "before");

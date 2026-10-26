@@ -12,6 +12,7 @@ import {
   formatExtractedPdfText,
   readPdfAttachment,
   MAX_NATIVE_PDF_BYTES,
+  readNote,
 } from "obsidian-llm-hub-common/vault";
 import {
   assertVaultToolFileAllowed,
@@ -116,6 +117,21 @@ export async function executeToolCall(
         const path = args.path as string;
         const startPage = args.startPage == null ? undefined : Number(args.startPage);
         const endPage = args.endPage == null ? undefined : Number(args.endPage);
+        const startLine = args.startLine == null ? undefined : Number(args.startLine);
+        const endLine = args.endLine == null ? undefined : Number(args.endLine);
+        const hasLineRange = startLine !== undefined || endLine !== undefined;
+        const hasPageRange = startPage !== undefined || endPage !== undefined;
+        if (["startLine", "endLine"].some(key => args[key] != null
+          && ((typeof args[key] !== "number" && typeof args[key] !== "string")
+            || !Number.isSafeInteger(Number(args[key])) || Number(args[key]) < 1))) {
+          return { success: false, result: "startLine and endLine must be positive integers" };
+        }
+        if (startLine !== undefined && endLine !== undefined && startLine > endLine) {
+          return { success: false, result: "startLine must be less than or equal to endLine" };
+        }
+        if (hasLineRange && hasPageRange) {
+          return { success: false, result: "Do not mix text line ranges with PDF page ranges." };
+        }
         if ((startPage !== undefined && (!Number.isInteger(startPage) || startPage < 1))
           || (endPage !== undefined && (!Number.isInteger(endPage) || endPage < 1))) {
           return { success: false, result: "startPage and endPage must be positive integers" };
@@ -137,7 +153,9 @@ export async function executeToolCall(
           };
         }
         if (extension === "pdf") {
-          const hasPageRange = startPage !== undefined || endPage !== undefined;
+          if (hasLineRange) {
+            return { success: false, result: "Line ranges are supported for text files only. Use startPage and endPage for PDFs." };
+          }
           // Oversized PDFs use their text layer instead of creating an
           // over-limit request or a very large temporary base64 string.
           if (options.pdfInputMode === "native" && (hasPageRange || (file.stat?.size ?? 0) <= MAX_NATIVE_PDF_BYTES)) {
@@ -166,6 +184,28 @@ export async function executeToolCall(
             ? `PDF pages ${startPage ?? 1}-${Math.min(endPage ?? extracted.numPages, extracted.numPages)}\n\n`
             : "";
           return { success: true, result: pageRange + formatExtractedPdfText(extracted) };
+        }
+        if (hasPageRange) {
+          return { success: false, result: "Page ranges are supported for PDFs only. Use startLine and endLine for text files." };
+        }
+        if (hasLineRange) {
+          const selected = await readNote(
+            app, file.path, false, Number.POSITIVE_INFINITY, "extract-text",
+            undefined, undefined, startLine, endLine,
+          );
+          if (!selected.success) {
+            return { success: false, result: selected.error ?? "Could not read the requested line range." };
+          }
+          if ((selected.startLine ?? 1) > (selected.totalLines ?? 1)) {
+            return {
+              success: false,
+              result: `Line ${selected.startLine} is past the end of "${file.path}" (${selected.totalLines} lines).`,
+            };
+          }
+          return {
+            success: true,
+            result: `Lines ${selected.startLine}-${selected.endLine} of ${selected.totalLines} from "${file.path}"\n\n${selected.content ?? ""}`,
+          };
         }
         const content = await app.vault.cachedRead(file);
         return { success: true, result: content };

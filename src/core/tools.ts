@@ -23,11 +23,13 @@ export const readNoteTool: ToolDefinition = {
   type: "function",
   function: {
     name: "read_note",
-    description: "Read a supported vault file by its path. Text files return their content; PDFs are attached for PDF-capable models or have their text extracted as a fallback. For PDFs, an inclusive page range can be selected with startPage and endPage.",
+    description: "Read a supported vault file by its path. For large text files, use startLine and endLine to read only the relevant lines and reduce token usage; the response includes the selected range and total line count. Omit both to read the full text. PDFs are attached for PDF-capable models or have their text extracted as a fallback; select PDF pages with startPage and endPage. Do not mix line and page ranges.",
     parameters: {
       type: "object",
       properties: {
         path: { type: "string", description: "File path relative to vault root (e.g. 'folder/note.md', 'folder/board.canvas', or 'folder/document.pdf')" },
+        startLine: { type: "integer", description: "For text files, the 1-based first line to read (inclusive). Defaults to line 1." },
+        endLine: { type: "integer", description: "For text files, the 1-based last line to read (inclusive). Defaults to the final line." },
         startPage: { type: "integer", description: "For PDFs, the 1-based first page to read (inclusive). Defaults to page 1." },
         endPage: { type: "integer", description: "For PDFs, the 1-based last page to read (inclusive). Defaults to the final page." },
       },

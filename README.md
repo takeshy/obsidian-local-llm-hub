@@ -154,6 +154,8 @@ Models with function calling support (Qwen, Llama 3.1+, Mistral) can directly in
 
 `read_timeline` · `read_note` · `create_note` · `update_note` · `rename_note` · `create_folder` · `search_notes` · `list_notes` · `list_folders` · `get_active_note` · `propose_edit` · `execute_javascript`
 
+For large text files, `read_note` supports inclusive, 1-based `startLine` / `endLine` ranges, for example `{"path":"Notes/Large.md","startLine":100,"endLine":150}`. The result includes the selected range and total line count so the model can request more lines as needed, without sending the entire file to the model. Omitting `startLine` starts at line 1; omitting `endLine` reads to the end. With both omitted, the full text is returned. For PDFs, use `startPage` / `endPage` instead; line and page ranges cannot be combined.
+
 Three modes — **All**, **No Discovery**, **Off** — selectable from the input area.
 
 In **Settings -> Workspace -> LLM vault tool folders**, you can restrict LLM vault tools and LLM-triggered skill workflows to selected vault-relative folders. Leave it empty to allow the whole vault. This setting is separate from the RAG index folders setting and does not restrict RAG, manual attachments, `@note` mentions, MCP tools, or scripts.
