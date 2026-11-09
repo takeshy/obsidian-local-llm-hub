@@ -20,12 +20,8 @@ import { registerWorkflowCodeBlockProcessor } from "src/ui/workflowCodeBlock";
 import { answerDashboardTimeline, generateDashboardBase, generateDashboardWorkflow, getDashboardTimelineOptions, listDashboardModels, rewriteDashboardText, runDashboardWorkflow, type TimelineAnswerOptions, type TimelineAnswerRequest } from "src/integrations/dashboardHubCapabilities";
 import { REGISTER_RUNTIME_SKILL_EVENT, REQUEST_RUNTIME_SKILLS_EVENT, UNREGISTER_RUNTIME_SKILL_EVENT, registerRuntimeSkill, unregisterRuntimeSkill } from "src/core/runtimeSkills";
 import { registerDiscussionHubIntegration } from "src/integrations/discussionHubCapabilities";
-import { configureWorkflowHost } from "obsidian-llm-hub-common/workflow";
+import { configureLocalWorkflowHost } from "src/workflow/host";
 import { configureStoragePrefix } from "obsidian-llm-hub-common/modals";
-import { streamWorkflowChat } from "src/core/workflowChat";
-import { WORKFLOW_SPECIFICATION } from "src/workflow/workflowSpec";
-import { SKILLS_FOLDER } from "src/types";
-import { handleCommandNode } from "src/workflow/handlers/command";
 import { configureAgentPluginBase } from "obsidian-llm-hub-common/skills";
 
 import { EditHistoryModal } from "src/ui/components/EditHistoryModal";
@@ -101,44 +97,7 @@ export class LocalLlmHubPlugin extends Plugin {
     configureClassPrefix("llm-hub");
     configureStoragePrefix("local-llm-hub");
     configureAgentPluginBase(".local-llm-hub");
-    configureWorkflowHost({
-      getModelOptions: () => (this.settings.availableModels || []).map(model => ({ value: model, label: model })),
-      getRagSettingNames: () => this.getRagSettingNames(),
-      getMcpServerNames: () => (this.settings.mcpServers || []).map(server => server.name),
-      getCurrentModel: () => this.settings.llmConfig.model || "",
-      getLastWorkflowModel: () => this.settings.lastAIWorkflowModel,
-      setLastWorkflowModel: (model) => {
-        this.settings.lastAIWorkflowModel = model;
-        void this.saveSettings();
-      },
-      getWorkflowSpecification: () => WORKFLOW_SPECIFICATION,
-      getWorkspaceFolder: () => this.settings.workspaceFolder,
-      getSkillsFolder: () => this.settings.skillsFolder || SKILLS_FOLDER,
-      notifySkillsChanged: () => this.settingsEmitter.emit("skills-changed"),
-      getHistoryEncryption: () => this.settings.encryption,
-      getPluginVersion: () => this.manifest.version,
-      getWorkflowHotkeys: () => this.settings.enabledWorkflowHotkeys,
-      setWorkflowHotkeys: (paths) => {
-        this.settings.enabledWorkflowHotkeys = paths;
-        void this.saveSettings();
-      },
-      getWorkflowEventTriggers: () => this.settings.enabledWorkflowEventTriggers,
-      setWorkflowEventTriggers: (triggers) => {
-        this.settings.enabledWorkflowEventTriggers = triggers;
-        void this.saveSettings();
-      },
-      runWorkflowFromHotkey: (path) => {
-        void this.workflowManager.executeFromHotkey(path);
-      },
-      getLastSelectedWorkflow: () => this.settings.lastSelectedWorkflowPath,
-      setLastSelectedWorkflow: (path) => {
-        this.settings.lastSelectedWorkflowPath = path;
-        void this.saveSettings();
-      },
-      streamChat: (request) => streamWorkflowChat(this, request),
-      runCommandNode: ({ node, context, app, callbacks, traceId, abortSignal }) =>
-        handleCommandNode(node, context, app, this, callbacks, traceId, abortSignal),
-    });
+    configureLocalWorkflowHost(this);
 
     let approvalModal: McpApprovalModal | undefined;
     setMcpApprovalHandler({
