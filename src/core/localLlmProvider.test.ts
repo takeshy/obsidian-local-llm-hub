@@ -84,6 +84,7 @@ describe("Ollama continuation diagnostics", () => {
     sharedChat.mockReset();
     requestUrl.mockReset().mockResolvedValue({ json: { version: "0.12.0" } });
     vi.spyOn(console, "debug").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
   afterEach(() => vi.restoreAllMocks());
 
@@ -155,6 +156,24 @@ describe("Ollama continuation diagnostics", () => {
   it("propagates transport failures as error chunks", async () => {
     streamLines.mockImplementation(async function* () { throw new Error("socket hang up"); });
     expect(await collect()).toEqual([{ type: "error", error: "socket hang up" }]);
+  });
+
+  it("records timeout diagnostics even when no response line arrives", async () => {
+    const error = "Stream timed out: no data received for 120 seconds";
+    streamLines.mockImplementation(async function* () { throw new Error(error); });
+
+    expect(await collect()).toEqual([{ type: "error", error }]);
+    expect(console.warn).toHaveBeenCalledWith("[llm-hub] Ollama request failed", expect.objectContaining({
+      requestId: expect.any(String), elapsedMs: expect.any(Number), model: chatConfig.model, error,
+    }));
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain("private");
+    expect(streamLines.mock.calls[0][0].idleTimeoutMs).toBe(120000);
+  });
+
+  it("uses the configured idle timeout for a slow local model", async () => {
+    respond({ message: { content: "Answer" }, done: true, done_reason: "stop" });
+    await collect({ streamIdleTimeoutSeconds: 600 });
+    expect(streamLines.mock.calls[0][0].idleTimeoutMs).toBe(600000);
   });
 
   it("does not send an already cancelled request", async () => {

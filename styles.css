@@ -7171,7 +7171,10 @@ button.llm-hub-speech-btn {
 .llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-request,
 .llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-history-info,
 .llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-phase-indicator,
-.llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-status,
+.llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-status {
+  flex-shrink: 0;
+}
+
 .llm-hub-workflow-generation-buttons button.is-hidden {
   display: none;
 }
@@ -7533,18 +7536,19 @@ button.llm-hub-speech-btn {
   overflow-y: auto;
 }
 
-/* Review section grows when visible */
+/* Preserve the review's content height in auto-height modals. A zero flex
+   basis collapses the body to its padding before the modal has a fixed height. */
 .llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-review-section:not(.is-hidden) {
-  flex: 1;
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
 .llm-hub-workflow-generation-modal-content > .llm-hub-workflow-generation-review-section:not(.is-hidden) .llm-hub-workflow-generation-review {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
+  max-height: 50vh;
   overflow-y: auto;
 }
 

@@ -118,11 +118,12 @@ export async function* localLlmChatStream(
   }
   if (signal?.aborted) return;
   logOllamaVersion(config);
+  const requestId = `${Date.now()}-${++requestSequence}`;
+  const startedAt = Date.now();
   // Keep the shared request builder, parser and transport. The host retains the
   // native terminal reason, which the shared parser currently discards.
   try {
     const request = buildLocalLlmRequest({ config, messages, systemPrompt, tools });
-    const requestId = `${Date.now()}-${++requestSequence}`;
     if (config.captureOllamaRequests && writeRequest) {
       try {
         await writeRequest({ requestId, body: request.body });
@@ -131,7 +132,6 @@ export async function* localLlmChatStream(
       }
     }
     if (signal?.aborted) return;
-    const startedAt = Date.now();
     const wireMessages = buildOllamaMessages(messages, systemPrompt);
     const toolResults = wireMessages.filter(message => message.role === "tool");
     console.debug("[llm-hub] Ollama request", {
@@ -201,6 +201,12 @@ export async function* localLlmChatStream(
     // Drain the HTTP response before the caller begins its next tool round.
     if (!signal?.aborted) yield* emit(parser.finish());
   } catch (error) {
-    if (!signal?.aborted) yield { type: "error", error: formatError(error) };
+    if (!signal?.aborted) {
+      const message = formatError(error);
+      console.warn("[llm-hub] Ollama request failed", {
+        requestId, elapsedMs: Date.now() - startedAt, model: config.model, error: message,
+      });
+      yield { type: "error", error: message };
+    }
   }
 }
