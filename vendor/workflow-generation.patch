@@ -1,0 +1,79 @@
+--- a/styles.css
++++ b/styles.css
+@@ -4746,7 +4746,10 @@
+ .chat-ui-workflow-generation-modal-content > .chat-ui-workflow-generation-request,
+ .chat-ui-workflow-generation-modal-content > .chat-ui-workflow-generation-history-info,
+ .chat-ui-workflow-generation-modal-content > .chat-ui-workflow-generation-phase-indicator,
+-.chat-ui-workflow-generation-modal-content > .chat-ui-workflow-generation-status,
++.chat-ui-workflow-generation-modal-content > .chat-ui-workflow-generation-status {
++  flex-shrink: 0;
++}
++
+ .chat-ui-workflow-generation-buttons button.is-hidden {
+   display: none;
+ }
+@@ -5108,18 +5111,19 @@
+   overflow-y: auto;
+ }
+
+-/* Review section grows when visible */
++/* Preserve the review's content height in auto-height modals. A zero flex
++   basis collapses the body to its padding before the modal has a fixed height. */
+ .chat-ui-workflow-generation-modal-content > .chat-ui-workflow-generation-review-section:not(.is-hidden) {
+-  flex: 1;
++  flex: 0 1 auto;
+   display: flex;
+   flex-direction: column;
+   min-height: 0;
+ }
+
+ .chat-ui-workflow-generation-modal-content > .chat-ui-workflow-generation-review-section:not(.is-hidden) .chat-ui-workflow-generation-review {
+-  flex: 1 1 0;
++  flex: 1 1 auto;
+   min-height: 0;
+-  max-height: none;
++  max-height: 50vh;
+   overflow-y: auto;
+ }
+
+--- a/src/ui/workflow/WorkflowGenerationModal.ts
++++ b/src/ui/workflow/WorkflowGenerationModal.ts
+@@ -195,6 +195,8 @@
+     this.currentPhase = phase;
+     this.renderPhaseIndicator();
+     this.updateStatusText();
++    // Confirmation hides the main Cancel button; every active phase restores it.
++    this.cancelBtn?.removeClass("is-hidden");
+     // Record phase on contentEl so CSS can style sections based on active phase
+     this.contentEl.dataset.phase = phase;
+
+@@ -229,12 +231,11 @@
+
+   private updateStatusText(): void {
+     if (!this.statusEl) return;
+-    const loadingDots = this.statusEl.querySelector(`.${cls("workflow-generation-loading-dots")}`);
+     const statusKey = `workflow.generation.${this.currentPhase}` as const;
+     this.statusEl.textContent = t(statusKey);
+-    if (loadingDots) {
+-      this.statusEl.appendChild(loadingDots);
+-    }
++    // Confirmation removes loading dots. Recreate them when generation resumes.
++    const loadingDots = this.statusEl.createSpan({ cls: cls("workflow-generation-loading-dots") });
++    for (let i = 0; i < 3; i++) loadingDots.createSpan({ cls: "dot" });
+   }
+
+   private setupDragHandle(dragHandle: HTMLElement, modalEl: HTMLElement): void {
+--- a/src/ui/workflow/AIWorkflowModal.ts
++++ b/src/ui/workflow/AIWorkflowModal.ts
+@@ -1456,8 +1456,10 @@
+         this.resolvePromise(null);
+       }
+     } catch (error) {
+-      generationModal.close();
+       const message = formatError(error);
++      // Keep the request and failure visible after transient Notices disappear.
++      generationModal.setComplete();
++      generationModal.setStatus(`Error: ${message}`);
+       workflowTracing().traceEnd(traceId, { metadata: { status: "error", error: message } });
+       workflowTracing().score(traceId, { name: "status", value: 0, comment: message });
+       new Notice(`Error: ${message}`);
