@@ -62,7 +62,7 @@ Workflows invoked through integrations such as Dashboard Hub should avoid intera
 - `script`: runs sandboxed JavaScript in an iframe. Prefer built-in nodes for vault operations; use script for transformations that are awkward in YAML.
 - `obsidian-command`: runs an Obsidian command by command id.
 - `workflow`: calls another workflow as a sub-workflow and can pass variables through.
-- `rag-sync`: compatibility node for syncing notes to the RAG store.
+- `rag-sync`: syncs notes to the RAG store. Omit `path` or leave it empty for a full incremental sync; set a path to sync one file. `ragSetting` accepts a literal setting name or `{{variable}}`; omitted or empty values use the selected setting. `saveTo` stores the sync result as JSON.
 
 ## Output conventions
 

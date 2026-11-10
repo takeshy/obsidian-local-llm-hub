@@ -41,13 +41,14 @@
     "tslib": "^2.4.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.49.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "yaml": "^2.9.1"
   },
   "dependencies": {
     "diff": "^8.0.3",
     "fflate": "^0.8.3",
     "lucide-react": "^0.503.0",
-    "obsidian-llm-hub-common": "file:vendor/obsidian-llm-hub-common-0.1.10-workflow-generation-fix.tgz",
+    "obsidian-llm-hub-common": "file:vendor/obsidian-llm-hub-common-0.1.14.tgz",
     "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

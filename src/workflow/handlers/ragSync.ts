@@ -10,9 +10,11 @@ export async function handleRagSyncNode(
   app: App,
   plugin: LocalLlmHubPlugin,
   abortSignal?: AbortSignal,
-): Promise<void> {
+): Promise<{ ragSetting: string }> {
   abortSignal?.throwIfAborted();
-  const settingName = node.properties["ragSetting"] || plugin.getSelectedRagSettingName();
+  // Variable values often carry stray whitespace (LLM or dialog output); blank means "use the selected setting".
+  const settingName = replaceVariables(node.properties["ragSetting"] || "", context).trim()
+    || plugin.getSelectedRagSettingName();
   if (!settingName) {
     throw new Error("No RAG setting selected. Please select or create a RAG setting first.");
   }
@@ -46,4 +48,6 @@ export async function handleRagSyncNode(
   if (saveTo) {
     context.variables.set(saveTo, JSON.stringify(result));
   }
+  // The executor records this in logs and history instead of the unresolved property.
+  return { ragSetting: settingName };
 }

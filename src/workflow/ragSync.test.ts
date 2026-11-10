@@ -5,6 +5,16 @@ import type { LocalLlmHubPlugin } from "../plugin";
 import { DEFAULT_RAG_SETTING, DEFAULT_SETTINGS, type RagSetting } from "../types";
 import { getRagStore } from "../core/ragStore";
 import { configureLocalWorkflowHost } from "./host";
+import { parseWorkflowFromMarkdown } from "./parser";
+
+vi.mock("obsidian", async (importOriginal) => {
+  const yaml = await import("yaml");
+  return {
+    ...(await importOriginal<typeof import("obsidian")>()),
+    parseYaml: (source: string) => yaml.parse(source),
+    stringifyYaml: (value: unknown) => yaml.stringify(value),
+  };
+});
 
 const embeddings = vi.hoisted(() => vi.fn());
 vi.mock("../core/embeddingProvider", () => ({ generateEmbeddings: embeddings }));
@@ -97,6 +107,46 @@ describe("rag-sync workflow host", () => {
     expect(JSON.parse(String(result.context.variables.get("result")))).toMatchObject({
       indexedFiles: 51, deferredFiles: 0,
     });
+  });
+
+  it.each(["", '    path: ""\n'])("executes the documented YAML with an omitted or empty path: %s", async pathProperty => {
+    addFile("Notes/one.md");
+    const workflow = parseWorkflowFromMarkdown('```llm-workflow\nnodes:\n  - id: sync-to-rag\n    type: rag-sync\n    ragSetting: notes\n' + pathProperty + '    saveTo: syncResult\n```');
+    const result = await new WorkflowExecutor(app).execute(workflow, { variables: new Map() });
+
+    expect(Object.keys(readIndex().fileChecksums)).toEqual(["Notes/one.md"]);
+    expect(JSON.parse(String(result.context.variables.get("syncResult")))).toMatchObject({ indexedFiles: 1 });
+  });
+
+  it.each(["", "Notes/one.md"])("resolves the RAG setting from variables for path %s", async path => {
+    addFile("Notes/one.md");
+    plugin.getSelectedRagSettingName = () => "a-different-setting";
+    await run({ ragSetting: "{{settingName}}", path }, new Map([["settingName", "notes"]]));
+
+    expect(Object.keys(readIndex().fileChecksums)).toEqual(["Notes/one.md"]);
+  });
+
+  it.each(["", " \n"])("uses the selected setting and logs it when the variable resolves to blank: %j", async value => {
+    addFile("Notes/one.md");
+    const logs: ExecutionLog[] = [];
+    await run({ ragSetting: "{{settingName}}" }, new Map([["settingName", value]]), undefined, logs);
+
+    expect(Object.keys(readIndex().fileChecksums)).toEqual(["Notes/one.md"]);
+    expect(logs.find(log => log.status === "success")?.input).toMatchObject({ ragSetting: "notes" });
+  });
+
+  it("trims whitespace around a resolved RAG setting name", async () => {
+    addFile("Notes/one.md");
+    plugin.getSelectedRagSettingName = () => "a-different-setting";
+    await run({ ragSetting: "{{settingName}}" }, new Map([["settingName", " notes\n"]]));
+
+    expect(Object.keys(readIndex().fileChecksums)).toEqual(["Notes/one.md"]);
+  });
+
+  it("reports an unknown resolved RAG setting instead of falling back", async () => {
+    await expect(run({ ragSetting: "{{settingName}}" }, new Map([["settingName", "missing"]])))
+      .rejects.toThrow('RAG setting "missing" not found');
+    expect(embeddings).not.toHaveBeenCalled();
   });
 
   it("restores file sync, resolves event paths and removes renamed entries", async () => {

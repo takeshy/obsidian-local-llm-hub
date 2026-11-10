@@ -89,6 +89,16 @@ Local LLM Hub は、[Gemini Helper](https://github.com/takeshy/obsidian-gemini-h
 
 `rag-sync` ノードを使ったワークフローを作成し、更新する RAG 設定を選択します。パスを空欄にすると全体同期になります。
 
+`path` プロパティは省略できます。`ragSetting` には設定名または `{{変数名}}` を指定できます。省略または空欄の場合は、現在選択中の設定を使います。
+
+```yaml
+nodes:
+  - id: sync-to-rag
+    type: rag-sync
+    ragSetting: "my-rag-store"
+    saveTo: syncResult
+```
+
 ![RAG 同期ワークフロー](docs/images/rag_workflow.png)
 
 **イベントトリガーを設定** を開き、**起動時** を有効にして保存します。Obsidian のワークスペース準備完了後に、このワークフローが一度実行されます。

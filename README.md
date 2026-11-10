@@ -89,6 +89,16 @@ Load any workflow, click **AI Modify**, describe the change. The same plan → g
 
 Create a workflow with a `rag-sync` node, select the RAG setting you want to update, and leave the path empty to run a full sync.
 
+The `path` property can be omitted entirely. `ragSetting` accepts a setting name or a `{{variable}}` expression; omit it or leave it empty to use the selected setting.
+
+```yaml
+nodes:
+  - id: sync-to-rag
+    type: rag-sync
+    ragSetting: "my-rag-store"
+    saveTo: syncResult
+```
+
 ![RAG sync workflow](docs/images/rag_workflow.png)
 
 Open **Configure event triggers**, enable **Startup**, and save. The workflow will run once the Obsidian workspace is ready.
