@@ -160,6 +160,9 @@ export class WorkspaceStateManager {
       { ...existing, ...updates },
     );
     await this.saveWorkspaceState();
+    if (updates.hybridSearch !== undefined) {
+      this.settingsEmitter.emit("workspace-state-loaded", this.workspaceState);
+    }
   }
 
   async deleteRagSetting(name: string): Promise<void> {

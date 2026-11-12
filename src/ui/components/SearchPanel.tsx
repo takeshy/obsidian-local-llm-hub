@@ -1,3 +1,4 @@
+import { RagSearchModeBadge, RagSearchResultMeta } from "obsidian-llm-hub-common/chat";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, MessageSquare, FileText, ChevronDown, Loader2, Settings2, RefreshCw, Pencil, Plus, Undo2, X, Sparkles } from "lucide-react";
 import { Notice } from "obsidian";
@@ -754,6 +755,7 @@ export default function SearchPanel({ plugin, onChatWithResults }: SearchPanelPr
             />
           </label>
         </div>
+        <RagSearchModeBadge hybridSearch={currentRagSetting?.hybridSearch === true} />
         <div className="llm-hub-search-query-row">
           <textarea
             className="llm-hub-search-query-input"
@@ -902,9 +904,7 @@ export default function SearchPanel({ plugin, onChatWithResults }: SearchPanelPr
                   {result.contentType === "pdf" && result.pageLabel && (
                     <span className="llm-hub-search-result-page-label">{result.pageLabel}</span>
                   )}
-                  <span className="llm-hub-search-result-score">
-                    {(result.score * 100).toFixed(1)}%
-                  </span>
+                  <RagSearchResultMeta score={result.score} retrievalSource={result.retrievalSource} />
                   {result.contentType === "pdf" && (
                     <>
                       <span className="llm-hub-search-result-pdf-badge">PDF</span>

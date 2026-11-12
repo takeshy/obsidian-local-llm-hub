@@ -35,11 +35,13 @@ describe("WorkspaceStateManager", () => {
     read.mockResolvedValue(JSON.stringify({ ragSettings: { Notes: legacy, Hybrid: {
       ...legacy, hybridSearch: true, hybridCandidateK: 45, rrfK: 25,
     } } }));
-    const manager = new WorkspaceStateManager(app as never, createEmitter() as never);
+    const emitter = createEmitter();
+    const manager = new WorkspaceStateManager(app as never, emitter as never);
     await manager.loadWorkspaceState();
     expect(manager.getRagSetting("Notes")).toMatchObject({ hybridSearch: false, hybridCandidateK: 30, rrfK: 60 });
     expect(manager.getRagSetting("Hybrid")).toMatchObject({ hybridSearch: true, hybridCandidateK: 45, rrfK: 25 });
     await manager.updateRagSetting("Notes", { hybridSearch: true, hybridCandidateK: 40 });
+    expect(emitter.emit).toHaveBeenLastCalledWith("workspace-state-loaded", manager.workspaceState);
     const state = JSON.parse(write.mock.calls.at(-1)![1]);
     expect(state.ragSettings.Notes).toMatchObject({ hybridSearch: true, hybridCandidateK: 40, rrfK: 60 });
   });

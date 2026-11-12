@@ -2425,6 +2425,49 @@ body.llm-hub-hide-workspace-folder .nav-folder:has(> .nav-folder-title[data-path
 
 /* Canonical chat UI: obsidian-local-llm-hub. */
 
+/* RAG retrieval mode and the source of each ranked result. */
+.llm-hub-rag-search-mode {
+  display: inline-flex;
+  align-self: flex-start;
+  width: fit-content;
+  padding: 3px 8px;
+  margin-bottom: 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.llm-hub-rag-search-mode[data-mode="hybrid"] {
+  color: var(--text-accent);
+  background: var(--background-secondary);
+  border-color: var(--interactive-accent);
+}
+
+.llm-hub-rag-retrieval-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.llm-hub-rag-retrieval-source {
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-accent);
+}
+
+.llm-hub-rag-retrieval-source[data-source="bm25"] {
+  color: var(--color-green);
+}
+
+.llm-hub-rag-retrieval-source[data-source="both"] {
+  color: var(--color-purple);
+}
+
 
 /* Chat Container */
 .llm-hub-chat-container {

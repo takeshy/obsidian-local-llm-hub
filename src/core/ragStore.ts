@@ -1,4 +1,4 @@
-import { ChunkBm25Index, collectHybridCandidates, normalizeHybridSearchOptions } from "obsidian-llm-hub-common/core";
+import { ChunkBm25Index, collectHybridCandidates, normalizeHybridSearchOptions, type RagRetrievalSource } from "obsidian-llm-hub-common/core";
 /**
  * RAG Store
  * Manages chunking, embedding, indexing, and searching of vault notes.
@@ -44,6 +44,8 @@ export interface RagSyncProgress {
 }
 
 export interface RagSearchResult {
+  /** Only present on RRF results; absent results keep cosine score semantics. */
+  retrievalSource?: RagRetrievalSource;
   text: string;
   filePath: string;
   score: number;
@@ -698,7 +700,7 @@ class RagStore {
     scores.sort((a, b) => b.score - a.score);
     const minScore = ragSetting.minScore ?? 0;
     const options = normalizeHybridSearchOptions(ragSetting);
-    let topK = scores
+    let topK: Array<{ index: number; score: number; retrievalSource?: RagRetrievalSource }> = scores
       .filter(s => s.score >= minScore)
       .slice(0, options.hybridSearch ? options.hybridCandidateK : ragSetting.topK);
     if (options.hybridSearch) {
@@ -709,7 +711,7 @@ class RagStore {
       });
       topK = collectHybridCandidates(
         topK.map(r => ({ id: String(r.index), score: r.score })), lexical, ragSetting.topK, options,
-      ).map(r => ({ index: Number(r.id), score: r.score }));
+      ).map(r => ({ index: Number(r.id), score: r.score, retrievalSource: r.retrievalSource }));
     }
 
     // Compute headings at search time for markdown results (topK is small).
@@ -736,7 +738,7 @@ class RagStore {
       }
     }
 
-    return topK.map(({ index: idx, score }) => {
+    return topK.map(({ index: idx, score, retrievalSource }) => {
       const meta = index.meta[idx];
       const isPdf = !!meta.contentType || !!meta.pageLabel;
       let heading: string | undefined;
@@ -749,6 +751,7 @@ class RagStore {
         filePath: meta.filePath,
         score,
         startOffset: meta.startOffset,
+        ...(retrievalSource ? { retrievalSource } : {}),
         ...(!isPdf && heading !== undefined && heading !== "" ? { heading } : {}),
         ...(meta.contentType && { contentType: meta.contentType }),
         ...(meta.pageLabel && { pageLabel: meta.pageLabel }),
