@@ -1,3 +1,4 @@
+import { ChunkBm25Index, collectHybridCandidates, normalizeHybridSearchOptions } from "obsidian-llm-hub-common/core";
 /**
  * RAG Store
  * Manages chunking, embedding, indexing, and searching of vault notes.
@@ -11,6 +12,8 @@ import { generateEmbeddings, generateEmbedding } from "./embeddingProvider";
 import { extractPdfTextWithOffsets, type PdfExtractResult } from "obsidian-llm-hub-common/vault";
 import {
   saveRagIndex,
+  loadRagBm25,
+  saveRagBm25,
   loadRagIndex,
   loadRagVectors,
   deleteRagIndex,
@@ -89,6 +92,7 @@ async function yieldToEventLoop(): Promise<void> {
 }
 
 interface StoreEntry {
+  bm25?: Promise<ChunkBm25Index>;
   index: RagIndex | null;
   vectors: Float32Array | null;
   loaded: boolean;
@@ -474,6 +478,13 @@ class RagStore {
     });
 
     await saveRagIndex(app, settingName, newIndex, newVectors, this.workspaceFolder);
+    if (ragSetting.hybridSearch) {
+      const previous = await this.ensureBm25(app, settingName, entry);
+      // Preserve a consistent corpus for searches already using the old entry.
+      const bm25 = new ChunkBm25Index(newIndex.meta, previous.serialize());
+      await this.persistBm25(app, settingName, bm25);
+      this.entries.get(settingName)!.bm25 = Promise.resolve(bm25);
+    }
 
     return {
       totalChunks: allMeta.length,
@@ -628,6 +639,13 @@ class RagStore {
     });
 
     await saveRagIndex(app, settingName, newIndex, newVectors, this.workspaceFolder);
+    if (ragSetting.hybridSearch) {
+      const previous = await this.ensureBm25(app, settingName, entry);
+      // Preserve a consistent corpus for searches already using the old entry.
+      const bm25 = new ChunkBm25Index(newIndex.meta, previous.serialize());
+      await this.persistBm25(app, settingName, bm25);
+      this.entries.get(settingName)!.bm25 = Promise.resolve(bm25);
+    }
 
     return { path: filePath, syncedAt: new Date().toISOString() };
   }
@@ -679,9 +697,20 @@ class RagStore {
 
     scores.sort((a, b) => b.score - a.score);
     const minScore = ragSetting.minScore ?? 0;
-    const topK = scores
+    const options = normalizeHybridSearchOptions(ragSetting);
+    let topK = scores
       .filter(s => s.score >= minScore)
-      .slice(0, ragSetting.topK);
+      .slice(0, options.hybridSearch ? options.hybridCandidateK : ragSetting.topK);
+    if (options.hybridSearch) {
+      const bm25 = await this.ensureBm25(app, settingName, entry);
+      const lexical = bm25.search(query, options.hybridCandidateK, i => {
+        const ext = index.meta[i].filePath.split(".").pop()?.toLowerCase() ?? "";
+        return normalizedExtensions.size === 0 || normalizedExtensions.has(ext);
+      });
+      topK = collectHybridCandidates(
+        topK.map(r => ({ id: String(r.index), score: r.score })), lexical, ragSetting.topK, options,
+      ).map(r => ({ index: Number(r.id), score: r.score }));
+    }
 
     // Compute headings at search time for markdown results (topK is small).
     // PDFs have no Markdown headings -> heading is omitted; pageLabel is used instead.
@@ -843,6 +872,21 @@ class RagStore {
     await deleteRagIndex(app, settingName, this.workspaceFolder);
   }
 
+  private ensureBm25(app: App, settingName: string, entry: StoreEntry): Promise<ChunkBm25Index> {
+    return entry.bm25 ??= (async () => {
+      const persistent = !this.externalPaths.has(settingName) && !this.sourceRagSettings.has(settingName);
+      const snapshot = persistent ? await loadRagBm25(app, settingName, this.workspaceFolder) : null;
+      const bm25 = new ChunkBm25Index(entry.index?.meta ?? [], snapshot);
+      if (persistent) await this.persistBm25(app, settingName, bm25);
+      return bm25;
+    })();
+  }
+
+  private async persistBm25(app: App, settingName: string, bm25: ChunkBm25Index): Promise<void> {
+    try { await saveRagBm25(app, settingName, bm25.serialize(), this.workspaceFolder); }
+    catch (error) { console.warn("Local LLM Hub: could not save BM25 cache", error); }
+  }
+
   private async ensureLoaded(
     app: App,
     settingName: string,
@@ -917,6 +961,14 @@ export function getRagStore(): RagStore {
     ragStoreInstance = new RagStore();
   }
   return ragStoreInstance;
+}
+
+/** Shared entry for Chat, rag_search, Search and connected integrations. */
+export function searchLocalRagResults(
+  settingName: string, query: string, ragSetting: RagSetting, llmConfig: LocalLlmConfig,
+  app: App, fileExtensions?: string[],
+): Promise<RagSearchResult[]> {
+  return getRagStore().search(settingName, query, ragSetting, llmConfig, app, fileExtensions);
 }
 
 // --- Utility functions ---

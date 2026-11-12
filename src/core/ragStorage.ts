@@ -40,6 +40,21 @@ interface ExternalRagIndex {
 
 const META_FILE = "rag-index.json";
 const VECTORS_FILE = "rag-vectors.bin";
+const BM25_FILE = "bm25.json";
+
+export async function loadRagBm25(app: App, settingName: string, workspaceFolder: string): Promise<unknown> {
+  try {
+    const path = `${getSettingDir(settingName, workspaceFolder)}/${BM25_FILE}`;
+    if (!(await app.vault.adapter.exists(path))) return null;
+    return JSON.parse(await app.vault.adapter.read(path)) as unknown;
+  } catch { return null; }
+}
+
+export async function saveRagBm25(app: App, settingName: string, snapshot: unknown, workspaceFolder: string): Promise<void> {
+  const dir = getSettingDir(settingName, workspaceFolder);
+  await ensureDir(app, dir, workspaceFolder);
+  await app.vault.adapter.write(`${dir}/${BM25_FILE}`, JSON.stringify(snapshot));
+}
 
 // The directory-safe form of a setting name is shared: the collision check that
 // depends on it lives in the library, and the two must agree.
@@ -192,6 +207,11 @@ export async function renameRagIndex(
     if (await app.vault.adapter.exists(oldVectors)) {
       const vectorBuffer = await app.vault.adapter.readBinary(oldVectors);
       await app.vault.adapter.writeBinary(getVectorsPath(newSettingName, workspaceFolder), vectorBuffer);
+    }
+
+    const oldBm25 = `${oldDir}/${BM25_FILE}`;
+    if (await app.vault.adapter.exists(oldBm25)) {
+      await app.vault.adapter.write(`${newDir}/${BM25_FILE}`, await app.vault.adapter.read(oldBm25));
     }
 
     // Remove old

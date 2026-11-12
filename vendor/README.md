@@ -1,29 +1,21 @@
 # Shared library package
 
-The plugin uses `obsidian-llm-hub-common-0.1.14.tgz`, which contains prebuilt
-JavaScript and TypeScript declarations for `npm ci --ignore-scripts`. It is the
-only archive kept here; older ones are in the Git history.
+`obsidian-llm-hub-common-0.1.15.tgz` contains prebuilt JavaScript and TypeScript declarations for `npm ci --ignore-scripts`.
 
-Source: sibling `obsidian-llm-hub-common` commit
-`1727cce954654b6ee2579abc1103915a6e8f6f8c` (0.1.14). Run `npm run build` there to reproduce the package contents.
+Source: [takeshy/obsidian-llm-hub-common commit 5d1ee69](https://github.com/takeshy/obsidian-llm-hub-common/commit/5d1ee69307400ffbd0ffad0986e6807e394fbf4a), version 0.1.15, on branch `feat/hybrid-rag-search`.
 
-Changes in 0.1.14 relative to 0.1.13:
-
-- The `rag-sync` node editor takes the RAG setting as text with the host's
-  setting names as suggestions, so `{{variable}}` expressions can be shown,
-  typed and kept.
-- `runRagSyncNode` may return the setting it actually used. Logs and history
-  record that name instead of an empty one when the host falls back to the
-  selected setting.
-- The generation modal shows exactly one group of loading dots.
-- A generation error replaces Cancel with Close, and an error raised after the
-  modal has closed no longer writes into it.
-
-Build and the full shared-library test suite passed before packaging. The archive
-was then created with `npm pack --ignore-scripts` from that validated build.
+Version 0.1.15 adds the shared tokenizer, incremental BM25 index, chunk cache adapter,
+and reciprocal rank fusion candidate selection. The shared settings UI adds an
+opt-in hybrid toggle and per-channel candidate count, translated into all nine
+locales. The default remains vector-only retrieval. Existing cached text builds
+BM25 without new document embeddings; hosts persist `bm25.json` for internal
+indexes and construct combined/external keyword indexes in memory.
 
 Archive integrity:
 
 ```text
-sha512-Qr/V5tGdXj+QjVEXoIRrtwyKpvKhnakgbTH9VUp2aTWl1i06TaUNEuViVYW1mTRHiEKfDHBTavkbiVIBUI5/fg==
+sha512-q1qHEQsOh9biUDEFwC7MmdHqZ9VZ0ChB9vek9D2RkJtMxubWbXAraDtNFdGHAG3cIgrEvabeXUHQ/HNfr75MCQ==
 ```
+
+Created with `npm pack --ignore-scripts` after the build and the full shared-library
+test suite passed. The MIT license is included. Previous archives are retained for history.

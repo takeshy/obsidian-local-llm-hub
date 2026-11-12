@@ -8,6 +8,7 @@ import { deleteRagIndex } from "src/core/ragStorage";
 import { fetchEmbeddingModels } from "src/core/localLlmProvider";
 import {
   addExcludePatternsSetting,
+  addHybridSearchSettings,
   addRagSettingHeader,
   addRagSettingSelector,
   addTargetFoldersSetting,
@@ -90,6 +91,8 @@ function displaySelectedRagSetting(
   addRagSettingHeader(containerEl, plugin, name, display, {
     beforeDelete: (settingName) => deleteRagIndex(plugin.app, settingName, plugin.settings.workspaceFolder),
   });
+
+  addHybridSearchSettings(containerEl, ragSetting, updateSetting, display);
 
   // RAG index mode
   new Setting(containerEl)

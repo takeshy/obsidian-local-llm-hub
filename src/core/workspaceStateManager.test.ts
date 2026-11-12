@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { WorkspaceStateManager } from "./workspaceStateManager";
-import type { RagConfig } from "../types";
+import { DEFAULT_RAG_SETTING, type RagConfig } from "../types";
 
 function createAppMock() {
   const exists = vi.fn(async () => false);
@@ -27,6 +27,23 @@ function createEmitter() {
 }
 
 describe("WorkspaceStateManager", () => {
+  it("loads legacy indexes with hybrid disabled and persists per-index hybrid choices", async () => {
+    const legacy = { ...DEFAULT_RAG_SETTING } as Partial<typeof DEFAULT_RAG_SETTING>;
+    delete legacy.hybridSearch; delete legacy.hybridCandidateK; delete legacy.rrfK;
+    const { app, exists, read, write } = createAppMock();
+    exists.mockResolvedValue(true);
+    read.mockResolvedValue(JSON.stringify({ ragSettings: { Notes: legacy, Hybrid: {
+      ...legacy, hybridSearch: true, hybridCandidateK: 45, rrfK: 25,
+    } } }));
+    const manager = new WorkspaceStateManager(app as never, createEmitter() as never);
+    await manager.loadWorkspaceState();
+    expect(manager.getRagSetting("Notes")).toMatchObject({ hybridSearch: false, hybridCandidateK: 30, rrfK: 60 });
+    expect(manager.getRagSetting("Hybrid")).toMatchObject({ hybridSearch: true, hybridCandidateK: 45, rrfK: 25 });
+    await manager.updateRagSetting("Notes", { hybridSearch: true, hybridCandidateK: 40 });
+    const state = JSON.parse(write.mock.calls.at(-1)![1]);
+    expect(state.ragSettings.Notes).toMatchObject({ hybridSearch: true, hybridCandidateK: 40, rrfK: 60 });
+  });
+
   beforeEach(() => {
     vi.restoreAllMocks();
   });

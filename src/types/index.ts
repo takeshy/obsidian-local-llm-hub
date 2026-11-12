@@ -1,3 +1,4 @@
+import { DEFAULT_HYBRID_SEARCH, type HybridSearchOptions } from "obsidian-llm-hub-common/core";
 import type { McpServerConfig } from "obsidian-llm-hub-common/core";
 import { DEFAULT_VOICE_CHAT_SETTINGS, type VoiceChatSettings } from "obsidian-llm-hub-common/core";
 import type { McpFraming } from "obsidian-llm-hub-common/core";
@@ -51,7 +52,7 @@ export type ChunkStrategy = "fixed" | "sentence" | "block";
 // at runtime from the chunk text.
 
 // Named RAG setting (one per index)
-export interface RagSetting {
+export interface RagSetting extends HybridSearchOptions {
   embeddingModel: string;       // e.g. "nomic-embed-text"
   embeddingBaseUrl: string;     // separate embedding server URL (empty = same as LLM)
   chunkSize: number;            // characters per chunk
@@ -67,6 +68,7 @@ export interface RagSetting {
 }
 
 export const DEFAULT_RAG_SETTING: RagSetting = {
+  ...DEFAULT_HYBRID_SEARCH,
   embeddingModel: "nomic-embed-text",
   embeddingBaseUrl: "",
   chunkSize: 1000,

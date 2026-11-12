@@ -5,7 +5,7 @@ import { getVaultTools, readNoteTool, skillWorkflowTool } from "src/core/tools";
 import { executeToolCall } from "src/core/toolExecutor";
 import { loadBuiltinSkill, builtinFolderPath } from "src/core/builtinSkills";
 import { WORKFLOW_SPECIFICATION } from "src/workflow/workflowSpec";
-import { getRagStore } from "src/core/ragStore";
+import { searchLocalRagResults } from "src/core/ragStore";
 import { runSkillWorkflow } from "obsidian-llm-hub-common/workflow";
 import {
   assertTimelineAnswerSupported, dashboardBasePrompt, dashboardRewritePrompt, dashboardWorkflowPrompt,
@@ -110,7 +110,7 @@ export async function answerDashboardTimeline(plugin: LocalLlmHubPlugin, request
   if (request.ragSetting) {
     const setting = plugin.getRagSearchSetting(request.ragSetting);
     if (!setting) throw new Error(`RAG setting "${request.ragSetting}" was not found.`);
-    const results = await getRagStore().search(request.ragSetting, request.question, setting, { ...plugin.settings.llmConfig, model: request.modelId }, plugin.app);
+    const results = await searchLocalRagResults(request.ragSetting, request.question, setting, { ...plugin.settings.llmConfig, model: request.modelId }, plugin.app);
     if (results.length > 0) {
       ragContext = "\n\nRelevant excerpts from the user's RAG index. Prefer them over guessing and cite file paths when you use them:\n"
         + results.map((result) => `--- ${result.filePath}${result.heading ? ` # ${result.heading}` : ""}${result.pageLabel ? ` (${result.pageLabel})` : ""}\n${result.text}`).join("\n\n");

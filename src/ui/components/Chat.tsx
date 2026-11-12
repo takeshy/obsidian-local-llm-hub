@@ -44,7 +44,7 @@ import { getVaultTools, readNoteTool, skillWorkflowTool, SKILL_WORKFLOW_TOOL_NAM
 import { EXECUTE_JAVASCRIPT_TOOL } from "src/core/sandboxExecutor";
 import { executeToolCall, type ToolExecutionResult } from "src/core/toolExecutor";
 import { GET_WORKFLOW_SPEC_TOOL, GET_WORKFLOW_SPEC_TOOL_NAME, handleGetWorkflowSpec } from "src/workflow/workflowSpec";
-import { getRagStore, type RagSearchResult } from "src/core/ragStore";
+import { searchLocalRagResults, type RagSearchResult } from "src/core/ragStore";
 import {
   formatRagSearchToolResult,
   MAX_DYNAMIC_RAG_RESULTS,
@@ -982,7 +982,7 @@ const Chat = forwardRef<ChatRef, ChatProps>(({ plugin, onToggleSidebarWidth }, r
 
                   let results: RagSearchResult[];
                   try {
-                    results = await getRagStore().search(
+                    results = await searchLocalRagResults(
                       selectedRagSetting,
                       query,
                       { ...activeRagSetting, topK: Math.min(activeRagSetting.topK, MAX_DYNAMIC_RAG_RESULTS) },

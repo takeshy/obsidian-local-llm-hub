@@ -5,7 +5,7 @@ import { RagChunkEditModal } from "./RagChunkEditModal";
 import type { LocalLlmHubPlugin } from "src/plugin";
 import type { Attachment, Message } from "src/types";
 import { DEFAULT_RAG_SETTING } from "src/types";
-import { getRagStore, type RagSearchResult, type RagSyncProgress } from "src/core/ragStore";
+import { getRagStore, searchLocalRagResults, type RagSearchResult, type RagSyncProgress } from "src/core/ragStore";
 import { localLlmChatStream } from "src/core/localLlmProvider";
 import { extractPdfPages } from "src/core/pdfUtils";
 import { parseFilterTerms, matchesFilter, removeRedundantTerms } from "./searchUtils";
@@ -315,7 +315,6 @@ export default function SearchPanel({ plugin, onChatWithResults }: SearchPanelPr
       return;
     }
 
-    const store = getRagStore();
     setIsSearching(true);
     setHasSearched(true);
     setResults([]);
@@ -337,7 +336,7 @@ export default function SearchPanel({ plugin, onChatWithResults }: SearchPanelPr
         .split(",")
         .map(ext => ext.trim())
         .filter(ext => ext.length > 0);
-      const searchResults = await store.search(
+      const searchResults = await searchLocalRagResults(
         selectedRagSetting,
         query.trim(),
         overriddenSetting,

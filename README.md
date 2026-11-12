@@ -188,6 +188,14 @@ Agent Plugins can contribute stdio MCP servers alongside namespaced skills. A te
 
 Index your vault with a local embedding model (e.g. `nomic-embed-text`). Relevant notes and PDFs are automatically included as context. PDF text is extracted via PDF.js and chunked alongside Markdown files. Everything computed and stored locally.
 
+#### Hybrid search (BM25 + vector + RRF)
+
+Enable **Hybrid search** separately for each RAG setting (off by default). It combines keyword and vector rankings using reciprocal rank fusion, then applies Top K. **Candidates per search** defaults to 30 per channel; RRF k defaults to 60. The cosine threshold applies only to vector candidates, so exact keyword matches can still appear below it. Fused scores are RRF scores, not cosine similarities.
+
+The first hybrid search or enabled sync automatically creates `bm25.json` beside the existing index files using their stored text, without re-embedding. Subsequent syncs update added, changed, and deleted chunks. Combined and external indexes build their keyword index in memory and do not write to external directories. Disabling hybrid search keeps vector-only retrieval and skips BM25 cache I/O.
+
+Japanese and other CJK text use word segmentation with `Intl.Segmenter`; older runtimes fall back to overlapping two-character tokens. Identifiers such as `PRJ-123` and `snake_case` are retained whole and split into components. Bigrams use more memory and may match partial words. A query embedding is still required. PDF text is searched when extraction is available. Existing keyword filters/search are unchanged.
+
 ### RAG Search
 
 A dedicated search interface for semantic vector search with keyword filtering, chunk editing, and AI-powered refinement.
