@@ -1,5 +1,6 @@
 import {
   acceptedAttachmentTypes,
+  attachmentKindFor,
   detectComposerTrigger,
   fileToAttachment,
   isAttachmentRejection,
@@ -9,8 +10,8 @@ import type { VoiceChatSettings, VoiceConversationSession } from "obsidian-llm-h
 import { clampReadAloudRate, MAX_READ_ALOUD_RATE, MIN_READ_ALOUD_RATE } from "obsidian-llm-hub-common/chat";
 import { InputArea as SharedInputArea } from "obsidian-llm-hub-common";
 import { Composer, Autocomplete, Attachments, VaultToolControl, EnabledMcpServers, ChipRow, ReadAloudChip, VoiceConversationChip, InputButtons, SearchSelector, ModelRow } from "obsidian-llm-hub-common";
-import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
-import { Notice, type App } from "obsidian";
+import { useState, useRef, useEffect, type ClipboardEvent, KeyboardEvent, ChangeEvent, forwardRef, useImperativeHandle } from "react";
+import { Notice, Platform, type App } from "obsidian";
 import type { Attachment, VaultToolMode } from "src/types";
 import type { McpServerInfo } from "src/core/mcpManager";
 import type { SkillMetadata } from "src/core/skillsLoader";
@@ -20,6 +21,7 @@ import SkillSelector from "./SkillSelector";
 import OkfSelector from "./OkfSelector";
 import ModelSelector from "./ModelSelector";
 import { t } from "src/i18n";
+import { readMacClipboardImage } from "./chat/macClipboardImage";
 import { isCaretOnFirstLine, isCaretOnLastLine } from "./chat/chatUtils";
 import { formatComposerMention } from "obsidian-llm-hub-common/chat";
 
@@ -371,6 +373,16 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (Platform.isMacOS && e.isTrusted && e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey
+      && e.key.toLowerCase() === "v" && !isLoading) {
+      const image = readMacClipboardImage();
+      if (image) {
+        e.preventDefault();
+        e.stopPropagation();
+        void addFiles([image]);
+        return;
+      }
+    }
     // Slash command autocomplete
     if (showSlashAutocomplete) {
       if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
@@ -461,16 +473,37 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
     }
   };
 
+  const addFiles = async (files: File[]) => {
+    const attachments: Attachment[] = [];
+    for (const file of files) {
+      const attachment = await processFile(file);
+      if (attachment) attachments.push(attachment);
+    }
+    if (attachments.length) setPendingAttachments(prev => [...prev, ...attachments]);
+  };
+
+  const handleImagePaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (isLoading) return;
+    const { files, items } = event.clipboardData;
+    const clipboardFiles = files.length ? Array.from(files) : Array.from(items)
+      .filter(item => item.kind === "file")
+      .map(item => item.getAsFile())
+      .filter((file): file is File => file !== null);
+    const images = clipboardFiles.filter(file => attachmentKindFor(file, ["image"]));
+    if (!images.length && Platform.isMacOS && event.isTrusted && !event.clipboardData.getData("text/plain")) {
+      const image = readMacClipboardImage();
+      if (image) images.push(image);
+    }
+    if (!images.length) return;
+
+    event.preventDefault();
+    void addFiles(images);
+  };
+
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
-    for (const file of Array.from(files)) {
-      const attachment = await processFile(file);
-      if (attachment) {
-        setPendingAttachments(prev => [...prev, attachment]);
-      }
-    }
+    await addFiles(Array.from(files));
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -631,6 +664,7 @@ const InputArea = forwardRef<InputAreaHandle, InputAreaProps>(function InputArea
       composer={<Composer classPrefix="llm-hub" textareaRef={textareaRef}
           textarea={{ value: input,
           onChange: handleInputChange,
+          onPaste: handleImagePaste,
           onKeyDown: handleKeyDown,
           placeholder: t("input.placeholder") }}
           isLoading={isLoading}
